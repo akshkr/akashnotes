@@ -1,4 +1,8 @@
-## Convolution Neural Networks
+# Convolution Neural network
+
+Convolution neural networks or CNN is a revolutionary algorithm used in modeling image data. Images are nothing but numbers, very similar to any other tabular data, but with a few fundamental differences. One, Image pixels are associated with nearby pixels. If I provide you with a long list of image pixel values, it might mean nothing, but when you know the nearby pixels of an area, it forms some meaningful property of the image, so it's very important to understand the relation of pixels nearby each other. Second, there are a lot of pixels in an image, so if we link one input node (pixel) with one edge to the next layer, we might end up having a very large number of trainable parameters. So CNN used something called parameter sharing to optimise that.
+
+## Convolution layer
 
 Convolution neural networks are designed to extract features from images to differentiate one image from another. The preprocessing required in this type of network is very less compared to other algorithms that work on images.
 
