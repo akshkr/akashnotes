@@ -1,3 +1,5 @@
+Optimizers in deep learning are algorithms that adjust the model parameters to minimize a loss function.
+
 ### Gradient descent optimizer
 
 repeat until convergence:
@@ -85,6 +87,35 @@ The use of the moving average is that it helps to prevent the learning rate from
 ### Adadelta
 
 Adadelta is an extension of Adagrad that seeks to reduce its aggressive, monotonically decreasing learning rate. Instead of accumulating all past squared gradients, Adadelta restricts the window of accumulated past gradients to some fixed size w.
+
+### Adam - Adaptive momentum estimation
+
+The idea is to mix SGD with momentum and adaptive learning from RMS prop.
+
+Estimates of first moment (mean) -
+
+$$ m_{t} = \beta_{1} m_{t-1} + (1 - \beta_{1})\bigtriangledown w_{t}$$
+
+Estimates of second moment (variance) -
+
+$$ v_{t} = \beta_{2} v_{t-1} + (1 - \beta_{2})(\bigtriangledown w_{t})^{2} $$
+
+Bias correction -
+
+$$ \hat{m_{t}} = \frac{m_{t}}{1 - \beta_{1}^{t}} $$
+
+$$ \hat{v_{t}} = \frac{v_{t}}{1 - \beta_{2}^{t}} $$
+
+This step helps ensure that the moving averages are accurate even at the start of the optimization process, before the averages have had time to stabilize.
+
+Optimization step -
+
+$$ \theta_{t+1} = \theta_{t} - \frac{\alpha}{\sqrt{\hat{v_{t}} + \epsilon}}.\hat{m_{t}} $$
+
+#### Advantages
+
+- This method is fast and converges rapidly.
+- Recifies vanishing learning rate and high variance.
 
 #### References
 
