@@ -27,7 +27,7 @@ In regression, the output variable is continuous, which means that it can take o
 
 #### Classification
 
-Classification on the other hand is used used to predict the categorical class labels of input data based on one or more input variables.
+Classification on the other hand is used to predict the categorical class labels of input data based on one or more input variables.
 
 In classification, the output variable is categorical, which means that it can take on a limited number of values, such as "spam" or "not spam", "positive" or "negative", or "red", "green", or "blue".
 
@@ -46,3 +46,5 @@ The performance of unsupervised learning algorithms is typically evaluated based
 ### Reinforcement learning
 
 Reinforcement learning is a type of machine learning where an agent learns to make decisions in an environment by trial and error. The agent takes actions and gets feedback in the form of rewards or penalties. The goal of the agent is to maximize the rewards it receives over time by learning a set of rules, or a policy, that tells it what action to take in each situation. Reinforcement learning can be used in many applications, like teaching robots to perform tasks, or helping computer programs make decisions.
+
+Now, do you have an understanding of the various types of machine learning algorithms that are available? It's okay if you have any doubts; we will clear them up as we go through the algorithms and examples. Now, let's take a look at some terminologies that you may come across in machine learning.
