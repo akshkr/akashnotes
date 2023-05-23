@@ -47,6 +47,9 @@ Initially we've a random value of θ, which means that we could be anywhere on t
 
 $$ \hat{y} = h_{\theta}(x) = \theta_{0} + \theta_{1}x_{1} + \theta_{2}x_{2} + \theta_{3}x_{3} + \theta_{4}x_{4} + . . . + \theta_{n}x_{n} $$
 
+vector form:
+$$ \hat{y} = h_{\theta}(x) = \theta^{T}x $$
+
 #### Cost function
 
 $$ J(\theta) = \frac{1}{2m} \sum_{i=1}^{m}(\hat{y}_{i} - y_{i})^{2} $$
