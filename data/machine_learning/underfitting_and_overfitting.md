@@ -42,3 +42,6 @@ To mitigate overfitting, several strategies can be employed:
 4. Cross-validation: Employ techniques like k-fold cross-validation to assess the model's performance on multiple subsets of the data and identify potential overfitting.
 5. Feature selection: Carefully select relevant features or use dimensionality reduction techniques to focus on the most informative attributes and reduce noise in the input data.
 
+![underfitting_and_overfitting](/data/assets/machine_learning/under_over_fitting.png)
+
+In the next section we are going to deep dive into one of the techniques to avoid overfitting - Regularization.

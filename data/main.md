@@ -21,4 +21,9 @@
 [3. Linear regression](/data/machine_learning/linear_regression.md)</br>
 [4. Assumption of Linear Regression](/data/machine_learning/assumptions_of_linear_regression.md)</br>
 [5. Logistic regression](/data/machine_learning/logistic_regression.md)</br>
-[6. Underfitting and Overfitting](/data/machine_learning/underfitting_and_overfitting.md)
+[6. Underfitting and Overfitting](/data/machine_learning/underfitting_and_overfitting.md)</br>
+[7. Regularization](/data/machine_learning/regularization.md)</br>
+[8. Support Vector Machine (Linear)]() </br>
+[9. Support Vector Machine (Kernel)]() </br>
+[10. Decision Tree (CART)]() </br>
+[11. Decision Tree (ID3)]() </br>
