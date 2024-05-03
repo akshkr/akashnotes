@@ -6,13 +6,7 @@ Lets look at a formal definition -
 
 ### Types of machine learning algorithm
 
-1. SUPERVISED LEARNING
-    - Regression
-    - Classification
-2. UNSUPERVISED LEARNING
-    - Clustering
-    - Non-clusterinng
-3. REINFORCEMENT LEARNING
+![Machine Learning](/data/assets/machine_learning/ml.png)
 
 ### Supervised Learning
 Supervised learning is a type of machine learning algorithm where the algorithm is trained on a labeled dataset, where the desired output is known for each input. The goal of supervised learning is to learn a function that can make accurate predictions on new, unseen data.
@@ -25,11 +19,15 @@ Regression is a type of supervised learning algorithm that is used to predict a 
 
 In regression, the output variable is continuous, which means that it can take on any value within a certain range. For example, in a simple linear regression problem, the output variable might represent the price of a house, which can take on any positive value. The input variables are also known as predictors or independent variables, and they can be either continuous or categorical.
 
+Examples of Regression algorithms are Linear Regression, Lasso Regression, Decision Tree Regression, KNN Regression, etc
+
 #### Classification
 
 Classification on the other hand is used to predict the categorical class labels of input data based on one or more input variables.
 
 In classification, the output variable is categorical, which means that it can take on a limited number of values, such as "spam" or "not spam", "positive" or "negative", or "red", "green", or "blue".
+
+Examples of classification algorithms are Logistric Regression, Decision Tree Classifier, Support Vector Machine, etc
 
 ### Unsupervised learning
 

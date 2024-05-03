@@ -23,7 +23,7 @@ ID3 stands for Iterative Dichotomiser 3 and is named such because the algorithm 
 
 ID3 uses a top-down greedy approach to build a decision tree. In simple words, the top-down approach means that we start building the tree from the top and the greedy approach means that at each iteration we select the best feature at the present moment to create a node.
 
-Most generally ID3 is only used for classification problems with nominal features only.
+Most generally ID3 is only used for classification problems with nominal features.
 
 Let's take a COVID-19 sample data to understand this algorithm better. The target column is Infected - YES/NO and the columns to make decisions are Fever, Cough and Breathing issues.
 
@@ -93,12 +93,12 @@ where Sᵥ is the set of rows in S for which the feature column A has value v, |
 
 ### Implementation
 
-Now let us look at our dataset and see how we can construct decision tree.
+Now let us look at our dataset and see how we can construct decision tree using covid dataset.
 
 1. Calculate the Information Gain of each feature.
 
 IG calculation for Fever:
-In this feature there are 8 rows having value YES and 6 rows having value NO.
+In this feature, 8 rows have the value YES, and 6 rows have the value NO.
 As shown below, in the 8 rows with YES for Fever, there are 6 rows having target value YES and 2 rows having target value NO.
 
 ```
