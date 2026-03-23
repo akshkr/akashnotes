@@ -1,0 +1,505 @@
+# Evaluating RAG Systems with Ragas
+
+Ragas is a framework specifically designed to evaluate Retrieval-Augmented Generation systems. This guide shows you how to measure retrieval and generation quality.
+
+---
+
+## What is Ragas?
+
+```mermaid
+flowchart TB
+    subgraph "RAG System"
+        Q["Question"] --> R["Retriever"]
+        R --> C["Contexts"]
+        C --> G["Generator"]
+        G --> A["Answer"]
+    end
+
+    subgraph "Ragas Evaluation"
+        C --> M1["Context Precision"]
+        C --> M2["Context Recall"]
+        Q --> M3["Answer Relevancy"]
+        A --> M3
+        C --> M4["Faithfulness"]
+        A --> M4
+    end
+
+    style M1 fill:#90EE90
+    style M2 fill:#90EE90
+    style M3 fill:#90EE90
+    style M4 fill:#90EE90
+```
+
+Ragas measures:
+- **Faithfulness**: Is the answer grounded in retrieved context?
+- **Answer Relevancy**: Does the answer address the question?
+- **Context Precision**: Are retrieved contexts relevant?
+- **Context Recall**: Do contexts contain the needed information?
+
+---
+
+## Installation
+
+```bash
+pip install ragas datasets
+```
+
+---
+
+## Basic Ragas Evaluation
+
+```python
+from ragas import evaluate
+from ragas.metrics import (
+    faithfulness,
+    answer_relevancy,
+    context_precision,
+    context_recall
+)
+from datasets import Dataset
+
+# Prepare your evaluation data
+eval_data = {
+    "question": [
+        "What is the capital of France?",
+        "Who invented the telephone?",
+        "What is photosynthesis?"
+    ],
+    "answer": [
+        "The capital of France is Paris, which is known for the Eiffel Tower.",
+        "Alexander Graham Bell invented the telephone in 1876.",
+        "Photosynthesis is the process by which plants convert sunlight into energy."
+    ],
+    "contexts": [
+        ["Paris is the capital city of France. It is known for landmarks like the Eiffel Tower."],
+        ["Alexander Graham Bell was a Scottish-born inventor who patented the telephone in 1876."],
+        ["Photosynthesis is a biological process where plants use sunlight, water, and CO2 to produce glucose and oxygen."]
+    ],
+    "ground_truth": [
+        "Paris",
+        "Alexander Graham Bell",
+        "Photosynthesis is the process by which plants convert light energy into chemical energy"
+    ]
+}
+
+# Create dataset
+dataset = Dataset.from_dict(eval_data)
+
+# Run evaluation
+results = evaluate(
+    dataset,
+    metrics=[
+        faithfulness,
+        answer_relevancy,
+        context_precision,
+        context_recall
+    ]
+)
+
+print(results)
+print(f"\nFaithfulness: {results['faithfulness']:.3f}")
+print(f"Answer Relevancy: {results['answer_relevancy']:.3f}")
+print(f"Context Precision: {results['context_precision']:.3f}")
+print(f"Context Recall: {results['context_recall']:.3f}")
+```
+
+---
+
+## Understanding Each Metric
+
+### Faithfulness
+
+Measures if the answer can be inferred from the context:
+
+```python
+from ragas.metrics import faithfulness
+
+# High faithfulness - answer matches context
+high_faith = {
+    "question": "What color is the sky?",
+    "answer": "The sky is blue.",
+    "contexts": [["The sky appears blue due to Rayleigh scattering."]]
+}
+
+# Low faithfulness - answer includes hallucination
+low_faith = {
+    "question": "What color is the sky?",
+    "answer": "The sky is blue, and it's always sunny in Philadelphia.",
+    "contexts": [["The sky appears blue due to Rayleigh scattering."]]
+}
+```
+
+### Answer Relevancy
+
+Measures if the answer addresses the question:
+
+```python
+from ragas.metrics import answer_relevancy
+
+# High relevancy - directly answers question
+high_rel = {
+    "question": "What is machine learning?",
+    "answer": "Machine learning is a type of AI where computers learn from data without explicit programming."
+}
+
+# Low relevancy - doesn't answer question
+low_rel = {
+    "question": "What is machine learning?",
+    "answer": "Python is a popular programming language used by many developers."
+}
+```
+
+### Context Precision
+
+Measures if retrieved contexts are relevant:
+
+```python
+from ragas.metrics import context_precision
+
+# High precision - all contexts relevant
+high_prec = {
+    "question": "What is the Eiffel Tower?",
+    "contexts": [
+        ["The Eiffel Tower is a wrought-iron lattice tower in Paris."],
+        ["It was built for the 1889 World's Fair."]
+    ]
+}
+
+# Low precision - some contexts irrelevant
+low_prec = {
+    "question": "What is the Eiffel Tower?",
+    "contexts": [
+        ["The Eiffel Tower is a wrought-iron lattice tower in Paris."],
+        ["Pizza is a popular Italian food."]  # Irrelevant!
+    ]
+}
+```
+
+### Context Recall
+
+Measures if contexts contain ground truth information:
+
+```python
+from ragas.metrics import context_recall
+
+# High recall - context contains needed info
+high_rec = {
+    "question": "When was Python created?",
+    "contexts": [["Python was created by Guido van Rossum and released in 1991."]],
+    "ground_truth": "Python was created in 1991"
+}
+
+# Low recall - context missing key info
+low_rec = {
+    "question": "When was Python created?",
+    "contexts": [["Python is a popular programming language."]],  # Missing date!
+    "ground_truth": "Python was created in 1991"
+}
+```
+
+---
+
+## Custom Evaluation Pipeline
+
+Build a complete evaluation pipeline:
+
+```python
+from ragas import evaluate
+from ragas.metrics import faithfulness, answer_relevancy, context_precision, context_recall
+from datasets import Dataset
+from typing import List, Dict
+
+class RAGEvaluator:
+    """Evaluate RAG system with Ragas metrics."""
+
+    def __init__(self):
+        self.metrics = [
+            faithfulness,
+            answer_relevancy,
+            context_precision,
+            context_recall
+        ]
+        self.results_history = []
+
+    def evaluate_single(
+        self,
+        question: str,
+        answer: str,
+        contexts: List[str],
+        ground_truth: str = None
+    ) -> Dict:
+        """Evaluate a single Q&A pair."""
+
+        data = {
+            "question": [question],
+            "answer": [answer],
+            "contexts": [contexts],
+        }
+
+        if ground_truth:
+            data["ground_truth"] = [ground_truth]
+
+        dataset = Dataset.from_dict(data)
+        results = evaluate(dataset, metrics=self.metrics)
+
+        return {
+            "faithfulness": results["faithfulness"],
+            "answer_relevancy": results["answer_relevancy"],
+            "context_precision": results["context_precision"],
+            "context_recall": results.get("context_recall", None)
+        }
+
+    def evaluate_batch(self, test_cases: List[Dict]) -> Dict:
+        """Evaluate a batch of test cases."""
+
+        data = {
+            "question": [tc["question"] for tc in test_cases],
+            "answer": [tc["answer"] for tc in test_cases],
+            "contexts": [tc["contexts"] for tc in test_cases],
+        }
+
+        if all("ground_truth" in tc for tc in test_cases):
+            data["ground_truth"] = [tc["ground_truth"] for tc in test_cases]
+
+        dataset = Dataset.from_dict(data)
+        results = evaluate(dataset, metrics=self.metrics)
+
+        self.results_history.append(results)
+        return results
+
+    def get_score_breakdown(self, results: Dict) -> str:
+        """Get formatted score breakdown."""
+
+        output = "\n📊 Evaluation Results\n"
+        output += "=" * 40 + "\n"
+
+        metrics_display = [
+            ("Faithfulness", "faithfulness", "Is answer grounded in context?"),
+            ("Answer Relevancy", "answer_relevancy", "Does answer address question?"),
+            ("Context Precision", "context_precision", "Are contexts relevant?"),
+            ("Context Recall", "context_recall", "Do contexts have needed info?")
+        ]
+
+        for name, key, description in metrics_display:
+            score = results.get(key)
+            if score is not None:
+                bar = "█" * int(score * 10) + "░" * (10 - int(score * 10))
+                output += f"\n{name}:\n"
+                output += f"  [{bar}] {score:.2%}\n"
+                output += f"  {description}\n"
+
+        return output
+
+# Usage
+evaluator = RAGEvaluator()
+
+# Evaluate single
+result = evaluator.evaluate_single(
+    question="What is the capital of Japan?",
+    answer="Tokyo is the capital of Japan, a bustling metropolis.",
+    contexts=["Tokyo is the capital and largest city of Japan."],
+    ground_truth="Tokyo"
+)
+
+print(evaluator.get_score_breakdown(result))
+```
+
+---
+
+## Evaluating Your RAG System
+
+Integrate with your existing RAG:
+
+```python
+from openai import OpenAI
+import chromadb
+
+client = OpenAI()
+
+class EvaluatedRAG:
+    """RAG system with built-in evaluation."""
+
+    def __init__(self, collection_name: str):
+        self.chroma = chromadb.Client()
+        self.collection = self.chroma.get_or_create_collection(collection_name)
+        self.evaluator = RAGEvaluator()
+        self.query_log = []
+
+    def add_documents(self, documents: List[str], ids: List[str] = None):
+        """Add documents to the index."""
+        if ids is None:
+            ids = [f"doc_{i}" for i in range(len(documents))]
+
+        self.collection.add(documents=documents, ids=ids)
+
+    def query(self, question: str, evaluate: bool = True) -> Dict:
+        """Query the RAG system."""
+
+        # Retrieve
+        results = self.collection.query(query_texts=[question], n_results=3)
+        contexts = results["documents"][0]
+
+        # Generate
+        context_text = "\n".join(contexts)
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": f"Answer based on this context:\n{context_text}"},
+                {"role": "user", "content": question}
+            ]
+        )
+        answer = response.choices[0].message.content
+
+        # Package result
+        result = {
+            "question": question,
+            "answer": answer,
+            "contexts": contexts
+        }
+
+        # Evaluate if requested
+        if evaluate:
+            eval_result = self.evaluator.evaluate_single(
+                question=question,
+                answer=answer,
+                contexts=contexts
+            )
+            result["evaluation"] = eval_result
+
+        self.query_log.append(result)
+        return result
+
+    def get_evaluation_summary(self) -> Dict:
+        """Get summary of all evaluations."""
+
+        if not self.query_log:
+            return {"message": "No queries yet"}
+
+        evals = [q["evaluation"] for q in self.query_log if "evaluation" in q]
+
+        return {
+            "total_queries": len(self.query_log),
+            "evaluated_queries": len(evals),
+            "avg_faithfulness": sum(e["faithfulness"] for e in evals) / len(evals),
+            "avg_relevancy": sum(e["answer_relevancy"] for e in evals) / len(evals),
+            "avg_context_precision": sum(e["context_precision"] for e in evals) / len(evals)
+        }
+
+# Usage
+rag = EvaluatedRAG("my_knowledge_base")
+
+# Add documents
+rag.add_documents([
+    "Python was created by Guido van Rossum in 1991.",
+    "JavaScript was created by Brendan Eich in 1995.",
+    "Python is known for its simple and readable syntax."
+])
+
+# Query with evaluation
+result = rag.query("When was Python created?")
+print(f"Answer: {result['answer']}")
+print(f"Faithfulness: {result['evaluation']['faithfulness']:.2%}")
+
+# Get overall summary
+summary = rag.get_evaluation_summary()
+print(f"\nOverall avg faithfulness: {summary['avg_faithfulness']:.2%}")
+```
+
+---
+
+## Benchmarking Against Test Sets
+
+```python
+def run_benchmark(rag_system, test_set: List[Dict]) -> Dict:
+    """Run benchmark evaluation."""
+
+    results = []
+
+    for i, test in enumerate(test_set):
+        print(f"Evaluating {i+1}/{len(test_set)}...")
+
+        result = rag_system.query(
+            question=test["question"],
+            evaluate=True
+        )
+
+        results.append({
+            "question": test["question"],
+            "expected": test.get("expected_answer"),
+            "actual": result["answer"],
+            "metrics": result["evaluation"]
+        })
+
+    # Aggregate metrics
+    avg_metrics = {
+        "faithfulness": sum(r["metrics"]["faithfulness"] for r in results) / len(results),
+        "relevancy": sum(r["metrics"]["answer_relevancy"] for r in results) / len(results),
+        "precision": sum(r["metrics"]["context_precision"] for r in results) / len(results)
+    }
+
+    return {
+        "individual_results": results,
+        "aggregate_metrics": avg_metrics
+    }
+
+# Test set
+test_set = [
+    {"question": "What is Python?", "expected_answer": "A programming language"},
+    {"question": "When was JavaScript created?", "expected_answer": "1995"},
+]
+
+benchmark_results = run_benchmark(rag, test_set)
+print(f"Avg Faithfulness: {benchmark_results['aggregate_metrics']['faithfulness']:.2%}")
+```
+
+---
+
+## Summary
+
+```mermaid
+mindmap
+  root((Ragas))
+    Metrics
+      Faithfulness
+      Answer Relevancy
+      Context Precision
+      Context Recall
+    Usage
+      Single evaluation
+      Batch evaluation
+      Benchmarking
+    Integration
+      With RAG systems
+      Continuous monitoring
+```
+
+---
+
+## Quick Reference
+
+```python
+from ragas import evaluate
+from ragas.metrics import faithfulness, answer_relevancy, context_precision, context_recall
+from datasets import Dataset
+
+# Prepare data
+data = {
+    "question": ["..."],
+    "answer": ["..."],
+    "contexts": [["..."]],
+    "ground_truth": ["..."]
+}
+
+# Evaluate
+dataset = Dataset.from_dict(data)
+results = evaluate(dataset, metrics=[faithfulness, answer_relevancy])
+
+print(results["faithfulness"])
+print(results["answer_relevancy"])
+```
+
+---
+
+## What's Next?
+
+Now let's learn about **Agent Trajectory Evaluation** - measuring how efficiently agents solve problems!

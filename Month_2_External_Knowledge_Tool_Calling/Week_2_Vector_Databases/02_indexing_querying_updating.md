@@ -1,0 +1,508 @@
+# Indexing, Querying, and Updating Vector Databases
+
+Now that you have vector databases set up, let's master the core operations: adding data efficiently, searching smartly, and keeping your database up to date.
+
+---
+
+## The Three Core Operations
+
+```mermaid
+flowchart LR
+    subgraph Operations
+        A["Index\n(Add data)"]
+        B["Query\n(Search)"]
+        C["Update\n(Modify/Delete)"]
+    end
+
+    A --> DB[(Vector DB)]
+    DB --> B
+    C --> DB
+```
+
+---
+
+## Indexing: Adding Data Efficiently
+
+### Batch Indexing for Performance
+
+```python
+import chromadb
+from openai import OpenAI
+
+client = chromadb.PersistentClient(path="./vectordb")
+collection = client.get_or_create_collection("documents")
+openai_client = OpenAI()
+
+def batch_index(
+    documents: list[str],
+    metadatas: list[dict] = None,
+    batch_size: int = 100
+):
+    """Index documents in batches for efficiency."""
+    total = len(documents)
+
+    for i in range(0, total, batch_size):
+        batch_docs = documents[i:i + batch_size]
+        batch_meta = metadatas[i:i + batch_size] if metadatas else [{}] * len(batch_docs)
+        batch_ids = [f"doc_{i + j}" for j in range(len(batch_docs))]
+
+        # Get embeddings in batch
+        response = openai_client.embeddings.create(
+            model="text-embedding-3-small",
+            input=batch_docs
+        )
+        embeddings = [d.embedding for d in sorted(response.data, key=lambda x: x.index)]
+
+        # Add to collection
+        collection.add(
+            ids=batch_ids,
+            embeddings=embeddings,
+            documents=batch_docs,
+            metadatas=batch_meta
+        )
+
+        print(f"Indexed {min(i + batch_size, total)}/{total}")
+
+# Usage
+documents = [f"Document content {i}" for i in range(500)]
+metadatas = [{"source": "test", "index": i} for i in range(500)]
+batch_index(documents, metadatas)
+```
+
+### Handling Duplicates
+
+```python
+import hashlib
+
+def generate_doc_id(content: str) -> str:
+    """Generate deterministic ID from content to prevent duplicates."""
+    return hashlib.sha256(content.encode()).hexdigest()[:16]
+
+def index_with_dedup(documents: list[str], collection):
+    """Index documents, skipping duplicates."""
+    # Get existing IDs
+    existing = set(collection.get()["ids"])
+
+    new_docs = []
+    new_ids = []
+    new_metas = []
+
+    for doc in documents:
+        doc_id = generate_doc_id(doc)
+        if doc_id not in existing:
+            new_docs.append(doc)
+            new_ids.append(doc_id)
+            new_metas.append({"added": "new"})
+
+    if new_docs:
+        # Generate embeddings and add
+        response = openai_client.embeddings.create(
+            model="text-embedding-3-small",
+            input=new_docs
+        )
+        embeddings = [d.embedding for d in sorted(response.data, key=lambda x: x.index)]
+
+        collection.add(
+            ids=new_ids,
+            embeddings=embeddings,
+            documents=new_docs,
+            metadatas=new_metas
+        )
+        print(f"Added {len(new_docs)} new documents, skipped {len(documents) - len(new_docs)} duplicates")
+    else:
+        print("No new documents to add")
+```
+
+---
+
+## Querying: Smart Search Strategies
+
+### Basic Semantic Search
+
+```python
+def semantic_search(query: str, n_results: int = 5) -> list[dict]:
+    """Perform basic semantic search."""
+    # Get query embedding
+    response = openai_client.embeddings.create(
+        model="text-embedding-3-small",
+        input=query
+    )
+    query_embedding = response.data[0].embedding
+
+    # Search
+    results = collection.query(
+        query_embeddings=[query_embedding],
+        n_results=n_results,
+        include=["documents", "metadatas", "distances"]
+    )
+
+    # Format results
+    return [
+        {
+            "document": results["documents"][0][i],
+            "metadata": results["metadatas"][0][i],
+            "similarity": 1 - results["distances"][0][i]  # Convert distance to similarity
+        }
+        for i in range(len(results["ids"][0]))
+    ]
+```
+
+### Filtered Search
+
+```python
+def filtered_search(
+    query: str,
+    filters: dict,
+    n_results: int = 5
+) -> list[dict]:
+    """Search with metadata filters."""
+
+    response = openai_client.embeddings.create(
+        model="text-embedding-3-small",
+        input=query
+    )
+    query_embedding = response.data[0].embedding
+
+    # ChromaDB filter syntax
+    results = collection.query(
+        query_embeddings=[query_embedding],
+        n_results=n_results,
+        where=filters,  # e.g., {"category": "tech"} or {"year": {"$gte": 2020}}
+        include=["documents", "metadatas", "distances"]
+    )
+
+    return results
+
+# Examples
+# Filter by exact match
+results = filtered_search("AI news", {"category": "technology"})
+
+# Filter by range
+results = filtered_search("recent papers", {"year": {"$gte": 2023}})
+
+# Multiple conditions
+results = filtered_search(
+    "Python tutorials",
+    {"$and": [{"category": "programming"}, {"difficulty": "beginner"}]}
+)
+```
+
+### Hybrid Search (Keyword + Semantic)
+
+```python
+def hybrid_search(
+    query: str,
+    collection,
+    n_results: int = 5,
+    keyword_weight: float = 0.3
+) -> list[dict]:
+    """Combine semantic search with keyword matching."""
+
+    # Semantic search
+    response = openai_client.embeddings.create(
+        model="text-embedding-3-small",
+        input=query
+    )
+    query_embedding = response.data[0].embedding
+
+    semantic_results = collection.query(
+        query_embeddings=[query_embedding],
+        n_results=n_results * 2,  # Get more for re-ranking
+        include=["documents", "metadatas", "distances"]
+    )
+
+    # Keyword scoring
+    query_terms = set(query.lower().split())
+    scored_results = []
+
+    for i in range(len(semantic_results["ids"][0])):
+        doc = semantic_results["documents"][0][i]
+        doc_terms = set(doc.lower().split())
+
+        # Calculate keyword overlap
+        keyword_score = len(query_terms & doc_terms) / len(query_terms) if query_terms else 0
+
+        # Semantic score (convert distance to similarity)
+        semantic_score = 1 - semantic_results["distances"][0][i]
+
+        # Combined score
+        combined = (1 - keyword_weight) * semantic_score + keyword_weight * keyword_score
+
+        scored_results.append({
+            "document": doc,
+            "metadata": semantic_results["metadatas"][0][i],
+            "semantic_score": semantic_score,
+            "keyword_score": keyword_score,
+            "combined_score": combined
+        })
+
+    # Sort by combined score
+    scored_results.sort(key=lambda x: x["combined_score"], reverse=True)
+    return scored_results[:n_results]
+```
+
+---
+
+## Updating: Keeping Data Fresh
+
+### Update Existing Documents
+
+```python
+def update_document(doc_id: str, new_content: str, new_metadata: dict = None):
+    """Update an existing document."""
+
+    # Generate new embedding
+    response = openai_client.embeddings.create(
+        model="text-embedding-3-small",
+        input=new_content
+    )
+    new_embedding = response.data[0].embedding
+
+    # ChromaDB update
+    collection.update(
+        ids=[doc_id],
+        embeddings=[new_embedding],
+        documents=[new_content],
+        metadatas=[new_metadata] if new_metadata else None
+    )
+
+    print(f"Updated document {doc_id}")
+
+# Usage
+update_document(
+    "doc_42",
+    "Updated content for document 42",
+    {"updated_at": "2024-01-15", "version": 2}
+)
+```
+
+### Upsert: Add or Update
+
+```python
+def upsert_documents(
+    documents: list[str],
+    ids: list[str],
+    metadatas: list[dict] = None
+):
+    """Add new documents or update existing ones."""
+
+    # Generate embeddings
+    response = openai_client.embeddings.create(
+        model="text-embedding-3-small",
+        input=documents
+    )
+    embeddings = [d.embedding for d in sorted(response.data, key=lambda x: x.index)]
+
+    # ChromaDB upsert
+    collection.upsert(
+        ids=ids,
+        embeddings=embeddings,
+        documents=documents,
+        metadatas=metadatas or [{}] * len(documents)
+    )
+
+    print(f"Upserted {len(documents)} documents")
+
+# Usage - works for both new and existing IDs
+upsert_documents(
+    ["New or updated content 1", "New or updated content 2"],
+    ["doc_1", "doc_2"],
+    [{"source": "update"}, {"source": "update"}]
+)
+```
+
+### Delete Documents
+
+```python
+def delete_documents(ids: list[str]):
+    """Delete documents by ID."""
+    collection.delete(ids=ids)
+    print(f"Deleted {len(ids)} documents")
+
+def delete_by_filter(where: dict):
+    """Delete documents matching a filter."""
+    collection.delete(where=where)
+    print(f"Deleted documents matching filter: {where}")
+
+# Usage
+delete_documents(["doc_1", "doc_2"])
+delete_by_filter({"category": "outdated"})
+```
+
+---
+
+## Query Patterns
+
+```mermaid
+flowchart TB
+    subgraph "Search Patterns"
+        A["Simple Query"]
+        B["Filtered Query"]
+        C["Hybrid Query"]
+        D["Multi-Query"]
+    end
+
+    A -->|"Find similar"| R1["Top K results"]
+    B -->|"Similar + constraints"| R2["Filtered results"]
+    C -->|"Semantic + keyword"| R3["Re-ranked results"]
+    D -->|"Multiple queries"| R4["Merged results"]
+```
+
+### Multi-Query Search
+
+```python
+def multi_query_search(
+    queries: list[str],
+    n_results_per_query: int = 5
+) -> list[dict]:
+    """Search with multiple queries and merge results."""
+
+    all_results = {}
+
+    for query in queries:
+        response = openai_client.embeddings.create(
+            model="text-embedding-3-small",
+            input=query
+        )
+        query_embedding = response.data[0].embedding
+
+        results = collection.query(
+            query_embeddings=[query_embedding],
+            n_results=n_results_per_query,
+            include=["documents", "metadatas", "distances"]
+        )
+
+        # Merge results, keeping best score for duplicates
+        for i in range(len(results["ids"][0])):
+            doc_id = results["ids"][0][i]
+            score = 1 - results["distances"][0][i]
+
+            if doc_id not in all_results or all_results[doc_id]["score"] < score:
+                all_results[doc_id] = {
+                    "document": results["documents"][0][i],
+                    "metadata": results["metadatas"][0][i],
+                    "score": score,
+                    "matched_query": query
+                }
+
+    # Sort by score
+    sorted_results = sorted(all_results.values(), key=lambda x: x["score"], reverse=True)
+    return sorted_results
+
+# Usage - search with query variations
+results = multi_query_search([
+    "machine learning basics",
+    "ML fundamentals",
+    "intro to machine learning"
+])
+```
+
+---
+
+## Performance Optimization
+
+```python
+class OptimizedVectorStore:
+    """Vector store with caching and batching."""
+
+    def __init__(self, persist_dir: str = "./vectordb"):
+        self.client = chromadb.PersistentClient(path=persist_dir)
+        self.collection = self.client.get_or_create_collection("documents")
+        self.openai = OpenAI()
+        self._embedding_cache = {}
+
+    def _get_embedding(self, text: str) -> list[float]:
+        """Get embedding with caching."""
+        if text not in self._embedding_cache:
+            response = self.openai.embeddings.create(
+                model="text-embedding-3-small",
+                input=text
+            )
+            self._embedding_cache[text] = response.data[0].embedding
+        return self._embedding_cache[text]
+
+    def search(
+        self,
+        query: str,
+        n_results: int = 5,
+        threshold: float = 0.7
+    ) -> list[dict]:
+        """Search with similarity threshold."""
+        embedding = self._get_embedding(query)
+
+        results = self.collection.query(
+            query_embeddings=[embedding],
+            n_results=n_results,
+            include=["documents", "metadatas", "distances"]
+        )
+
+        # Filter by threshold
+        filtered = []
+        for i in range(len(results["ids"][0])):
+            similarity = 1 - results["distances"][0][i]
+            if similarity >= threshold:
+                filtered.append({
+                    "document": results["documents"][0][i],
+                    "similarity": similarity
+                })
+
+        return filtered
+
+    def clear_cache(self):
+        """Clear embedding cache."""
+        self._embedding_cache.clear()
+```
+
+---
+
+## Summary
+
+```mermaid
+mindmap
+  root((Vector DB Ops))
+    Index
+      Batch processing
+      Deduplication
+      Metadata
+    Query
+      Semantic search
+      Filtered search
+      Hybrid search
+      Multi-query
+    Update
+      Modify content
+      Upsert
+      Delete
+    Optimize
+      Caching
+      Batching
+      Thresholds
+```
+
+---
+
+## Quick Reference
+
+```python
+# Add documents
+collection.add(ids=["1"], documents=["text"], embeddings=[[...]])
+
+# Query
+collection.query(query_embeddings=[[...]], n_results=5, where={"key": "value"})
+
+# Update
+collection.update(ids=["1"], documents=["new text"], embeddings=[[...]])
+
+# Upsert (add or update)
+collection.upsert(ids=["1"], documents=["text"], embeddings=[[...]])
+
+# Delete
+collection.delete(ids=["1"])
+collection.delete(where={"category": "old"})
+```
+
+---
+
+## What's Next?
+
+Now that you've mastered vector databases, let's put it all together with **Retrieval-Augmented Generation (RAG)** - making LLMs smarter with your own data!
