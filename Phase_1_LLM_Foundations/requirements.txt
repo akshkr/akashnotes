@@ -1,0 +1,11 @@
+# Phase 1: LLM Foundations
+# Covers: LLM APIs, structured output, streaming, async, tokenization, prompting
+# Install with: pip install -r requirements.txt
+
+openai>=1.30.0
+anthropic>=0.30.0
+pydantic>=2.0.0
+tiktoken>=0.7.0
+python-dotenv>=1.0.0
+json-repair>=0.25.0
+numpy>=1.26.0

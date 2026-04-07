@@ -1,54 +1,51 @@
-# WordPress Publishing Scripts
+# WordPress Publishing Script
 
-Scripts to publish the AI curriculum to WordPress with proper formatting.
+Publishes the 100-day AI curriculum to WordPress via REST API.
 
 ## Setup
 
-### 1. Install Python Dependencies
+### 1. Python dependencies
 
 ```bash
 cd scripts
 pip install -r requirements.txt
 ```
 
-### 2. Install WordPress Plugins
-
-Install these plugins on your WordPress site:
-
-**For Mermaid Diagrams (pick one):**
-- [WP Mermaid](https://wordpress.org/plugins/flavor/) - Renders mermaid shortcodes
-- [Flavor](https://wordpress.org/plugins/flavor/) - Gutenberg mermaid support
-
-**For Code Highlighting (pick one):**
-- [SyntaxHighlighter Evolved](https://wordpress.org/plugins/syntaxhighlighter/) - Most compatible
-- [Prismatic](https://wordpress.org/plugins/flavor/) - Lightweight
-- [Code Block Pro](https://wordpress.org/plugins/flavor/) - Modern UI
-
-### 3. Enable XML-RPC in WordPress
-
-Go to **Settings → Writing** and ensure XML-RPC is enabled.
-
-### 4. Create Application Password
+### 2. WordPress: Create Application Password
 
 1. Go to **Users → Profile**
 2. Scroll to **Application Passwords**
-3. Enter a name (e.g., "Publish Script")
-4. Click **Add New Application Password**
-5. Copy the generated password (you won't see it again!)
+3. Enter a name (e.g., "Publish Script") and click **Add New**
+4. Copy the generated password
+
+### 3. WordPress: Install plugins
+
+**For Mermaid diagrams** (if using `--mermaid shortcode` mode):
+- [WP Mermaid](https://wordpress.org/plugins/flavor/) — renders `[mermaid]` shortcodes
+
+**For code highlighting** (pick one):
+- [Highlight.js](https://wordpress.org/plugins/flavor/) — auto-highlights `<code class="language-python">`
+- [Enlighter](https://wordpress.org/plugins/flavor/) — full-featured
+- [Prismatic](https://wordpress.org/plugins/flavor/) — lightweight
+
+### 4. Optional: Mermaid CLI (for pre-rendering diagrams to images/SVG)
+
+```bash
+npm install -g @mermaid-js/mermaid-cli
+```
 
 ## Usage
 
-### Publish All Files (as drafts)
+### Publish all files as drafts
 
 ```bash
 python publish_to_wordpress.py \
   --url https://yourblog.com \
   --user your_username \
-  --password "xxxx xxxx xxxx xxxx" \
-  --path /Users/akash/Personal/notes
+  --password "xxxx xxxx xxxx xxxx"
 ```
 
-### Publish All Files (immediately)
+### Publish immediately
 
 ```bash
 python publish_to_wordpress.py \
@@ -58,64 +55,79 @@ python publish_to_wordpress.py \
   --publish
 ```
 
-### Publish Single File
+### Publish a single file
 
 ```bash
 python publish_to_wordpress.py \
   --url https://yourblog.com \
   --user your_username \
   --password "xxxx xxxx xxxx xxxx" \
-  --single "/Users/akash/Personal/notes/Month_1_LLM_Basics/Week_1_Introduction/01_llm_architecture.md"
+  --single "Phase_1_LLM_Foundations/Day_002_transformer_intuition/transformer_intuition.md"
 ```
 
-### Convert Mermaid to Images
-
-If the mermaid plugin doesn't work well, convert diagrams to images:
+### Pre-render mermaid diagrams to images
 
 ```bash
-# First install mermaid-cli
-npm install -g @mermaid-js/mermaid-cli
-
-# Then run with --mermaid-images flag
 python publish_to_wordpress.py \
   --url https://yourblog.com \
   --user your_username \
   --password "xxxx xxxx xxxx xxxx" \
-  --mermaid-images
+  --mermaid image
+```
+
+### Dry run (preview without publishing)
+
+```bash
+python publish_to_wordpress.py \
+  --url https://yourblog.com \
+  --user your_username \
+  --password "xxxx xxxx xxxx xxxx" \
+  --dry-run
 ```
 
 ## Options
 
-| Flag | Description |
-|------|-------------|
-| `--url` | WordPress site URL (required) |
-| `--user` | WordPress username (required) |
-| `--password` | Application password (required) |
-| `--path` | Path to notes directory (default: /Users/akash/Personal/notes) |
-| `--publish` | Publish immediately instead of creating drafts |
-| `--mermaid-images` | Convert mermaid to PNG images |
-| `--single` | Publish only one specific file |
+| Flag | Description | Default |
+|------|-------------|---------|
+| `--url` | WordPress site URL | required |
+| `--user` | WordPress username | required |
+| `--password` | Application Password | required |
+| `--path` | Path to notes directory | `/Users/akash/Personal/notes` |
+| `--publish` | Publish immediately instead of drafts | off |
+| `--mermaid` | Mermaid mode: `shortcode`, `image`, or `svg` | `shortcode` |
+| `--category` | Top-level WordPress category | `AI Curriculum` |
+| `--delay` | Seconds between posts (rate limiting) | `1.0` |
+| `--single` | Publish one specific file only | — |
+| `--dry-run` | Preview without publishing | off |
 
-## Output
+## How it works
 
-The script will:
-1. Create posts organized by category (Month X - Week Y)
-2. Convert mermaid diagrams to shortcodes or images
-3. Convert Python/Bash/YAML code blocks to syntax-highlighted shortcodes
-4. Convert markdown tables to HTML
+1. Walks `Phase_*/Day_*/` directories in order
+2. For each `.md` file:
+   - Extracts the `# Day N: Title` as the post title
+   - Converts mermaid blocks to shortcodes (or pre-renders to SVG/PNG)
+   - Converts code blocks to `<pre><code class="language-X">` for plugin highlighting
+   - Converts "Coming from SWE?" callouts to styled HTML divs
+   - Converts remaining markdown (tables, lists, bold, etc.) to HTML
+3. Creates the post via `POST /wp-json/wp/v2/posts`
+4. Organizes posts into categories: **AI Curriculum → Phase 1: LLM Foundations**, etc.
+
+## Mermaid rendering modes
+
+| Mode | How it works | Pros | Cons |
+|------|-------------|------|------|
+| `shortcode` | Outputs `[mermaid]...[/mermaid]` | Simple, no build step | Requires WP Mermaid plugin |
+| `image` | Runs `mmdc` → uploads PNG | No plugin needed | Requires Node.js + mmdc |
+| `svg` | Runs `mmdc` → inlines SVG | Crisp at any size, no plugin | Requires Node.js + mmdc, larger HTML |
 
 ## Troubleshooting
 
-### "XML-RPC services are disabled"
-Enable XML-RPC in WordPress Settings → Writing
+**"401 Unauthorized"** — Make sure you're using an Application Password, not your main password.
 
-### "Invalid credentials"
-Make sure you're using an Application Password, not your main password
+**"rest_cannot_create"** — Your user role may not have `publish_posts` capability. Check user permissions.
 
-### "Mermaid not rendering"
-- Check if WP Mermaid plugin is activated
-- Try the `--mermaid-images` flag instead
+**Mermaid not rendering** — If using shortcode mode, ensure the WP Mermaid plugin is active. Otherwise, use `--mermaid image` or `--mermaid svg`.
 
-### "Code not highlighted"
-- Install SyntaxHighlighter Evolved plugin
-- Make sure it supports the language (python, bash, yaml)
+**Code not highlighted** — Install a syntax highlighting plugin that supports `<code class="language-python">` format.
+
+**Rate limited** — Increase `--delay` (default is 1 second between posts).

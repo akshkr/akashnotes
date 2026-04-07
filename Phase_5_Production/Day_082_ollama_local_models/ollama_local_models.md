@@ -1,0 +1,437 @@
+# Running Models Locally with Ollama
+
+Welcome to Month 6! You've learned to build powerful AI systems. Now let's explore running models **locally** - no API calls, no costs, complete privacy.
+
+> **Coming from Software Engineering?** Ollama is like Docker for ML models — you `pull` a model, `run` it, and it exposes a local API on a port. If you've used Docker Hub to pull images and run containers locally, or even Homebrew to install services, the workflow is nearly identical. The local API is OpenAI-compatible, so your existing API integration code works unchanged — just swap the base URL to `localhost:11434`.
+
+---
+
+## Why Run Models Locally?
+
+```mermaid
+flowchart TB
+    subgraph "Cloud API"
+        A["Your Data"] --> B["Internet"]
+        B --> C["OpenAI/Anthropic"]
+        C --> D["$$ per token"]
+    end
+
+    subgraph "Local Model"
+        E["Your Data"] --> F["Your Computer"]
+        F --> G["Free!\nPrivate!"]
+    end
+
+    style D fill:#ff6b6b
+    style G fill:#90EE90
+```
+
+Benefits:
+- **Privacy**: Data never leaves your machine
+- **Cost**: No per-token charges
+- **Offline**: Works without internet
+- **Customization**: Fine-tune for your needs
+- **Speed**: No network latency
+
+---
+
+## Installing Ollama
+
+Ollama makes running local models easy:
+
+```bash
+# macOS
+brew install ollama
+
+# Linux
+curl -fsSL https://ollama.com/install.sh | sh
+
+# Windows - Download from ollama.com
+
+# Start the server
+ollama serve
+```
+
+### Pulling Models
+
+```bash
+# Pull popular models
+ollama pull llama3           # Meta's Llama 3 (8B)
+ollama pull llama3:70b       # Larger version
+ollama pull mistral          # Mistral 7B
+ollama pull codellama        # Code-specialized
+ollama pull phi3             # Microsoft's small model
+
+# List downloaded models
+ollama list
+```
+
+---
+
+## Using Ollama from Python
+
+### Direct API
+
+```python
+import requests
+
+def ollama_generate(prompt: str, model: str = "llama3") -> str:
+    """Generate text using Ollama."""
+    response = requests.post(
+        "http://localhost:11434/api/generate",
+        json={
+            "model": model,
+            "prompt": prompt,
+            "stream": False
+        }
+    )
+    return response.json()["response"]
+
+# Usage
+result = ollama_generate("Explain Python in one sentence")
+print(result)
+```
+
+### Chat API
+
+```python
+def ollama_chat(messages: list, model: str = "llama3") -> str:
+    """Chat using Ollama."""
+    response = requests.post(
+        "http://localhost:11434/api/chat",
+        json={
+            "model": model,
+            "messages": messages,
+            "stream": False
+        }
+    )
+    return response.json()["message"]["content"]
+
+# Usage
+result = ollama_chat([
+    {"role": "system", "content": "You are a helpful assistant."},
+    {"role": "user", "content": "What is machine learning?"}
+])
+print(result)
+```
+
+### Using the Ollama Python Library
+
+```bash
+pip install ollama
+```
+
+```python
+import ollama
+
+# Simple generation
+response = ollama.generate(model='llama3', prompt='Why is the sky blue?')
+print(response['response'])
+
+# Chat
+response = ollama.chat(model='llama3', messages=[
+    {'role': 'user', 'content': 'Hello!'}
+])
+print(response['message']['content'])
+
+# Streaming
+for chunk in ollama.chat(
+    model='llama3',
+    messages=[{'role': 'user', 'content': 'Tell me a joke'}],
+    stream=True
+):
+    print(chunk['message']['content'], end='', flush=True)
+```
+
+---
+
+## OpenAI-Compatible Interface
+
+Use Ollama as a drop-in replacement for OpenAI:
+
+```python
+from openai import OpenAI
+
+# Point to local Ollama server
+client = OpenAI(
+    base_url="http://localhost:11434/v1",
+    api_key="ollama"  # Required but not used
+)
+
+# Use exactly like OpenAI!
+response = client.chat.completions.create(
+    model="llama3",
+    messages=[
+        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": "What is Python?"}
+    ]
+)
+
+print(response.choices[0].message.content)
+```
+
+### Swap Between Local and Cloud
+
+```python
+from openai import OpenAI
+import os
+
+def get_llm_client(use_local: bool = False):
+    """Get LLM client - local or cloud."""
+    if use_local:
+        return OpenAI(
+            base_url="http://localhost:11434/v1",
+            api_key="ollama"
+        ), "llama3"
+    else:
+        return OpenAI(), "gpt-4o-mini"
+
+# Usage - easy to switch!
+client, model = get_llm_client(use_local=True)
+
+response = client.chat.completions.create(
+    model=model,
+    messages=[{"role": "user", "content": "Hello!"}]
+)
+```
+
+---
+
+## Understanding Quantization
+
+Local models use **quantization** to fit in memory:
+
+```mermaid
+flowchart LR
+    A["Original Model\n70B parameters\n140GB"] --> B["Quantization"]
+    B --> C["Quantized Model\n70B params\n35-70GB"]
+
+    style C fill:#90EE90
+```
+
+### Quantization Levels
+
+| Format | Bits | Size Reduction | Quality |
+|--------|------|----------------|---------|
+| F16 | 16-bit | 50% | Best |
+| Q8 | 8-bit | 75% | Excellent |
+| Q4_K_M | 4-bit | 87% | Good |
+| Q4_0 | 4-bit | 87% | Acceptable |
+| Q2_K | 2-bit | 94% | Degraded |
+
+### Choosing Model Size
+
+```python
+def recommend_model(available_ram_gb: int) -> str:
+    """Recommend model based on available RAM."""
+    if available_ram_gb >= 64:
+        return "llama3:70b"      # Best quality
+    elif available_ram_gb >= 32:
+        return "llama3:70b-q4"   # Good quality, fits in RAM
+    elif available_ram_gb >= 16:
+        return "llama3"          # 8B model
+    elif available_ram_gb >= 8:
+        return "phi3"            # Small but capable
+    else:
+        return "tinyllama"       # Minimal requirements
+```
+
+---
+
+## Model Comparison
+
+```python
+import ollama
+import time
+
+def benchmark_models(prompt: str, models: list) -> dict:
+    """Compare models on the same prompt."""
+    results = {}
+
+    for model in models:
+        try:
+            start = time.time()
+            response = ollama.generate(model=model, prompt=prompt)
+            elapsed = time.time() - start
+
+            results[model] = {
+                "response": response["response"][:200],
+                "time_seconds": elapsed,
+                "tokens_per_second": response.get("eval_count", 0) / elapsed if elapsed > 0 else 0
+            }
+        except Exception as e:
+            results[model] = {"error": str(e)}
+
+    return results
+
+# Compare
+prompt = "Explain recursion in programming"
+models = ["llama3", "mistral", "phi3"]
+
+results = benchmark_models(prompt, models)
+for model, data in results.items():
+    print(f"\n{model}:")
+    print(f"  Time: {data.get('time_seconds', 'N/A'):.2f}s")
+    print(f"  Speed: {data.get('tokens_per_second', 'N/A'):.1f} tok/s")
+```
+
+---
+
+## Using Local Models in Your Code
+
+### Replace Cloud Calls
+
+```python
+class LLMProvider:
+    """Unified LLM provider supporting local and cloud."""
+
+    def __init__(self, provider: str = "openai"):
+        self.provider = provider
+
+        if provider == "ollama":
+            self.client = OpenAI(
+                base_url="http://localhost:11434/v1",
+                api_key="ollama"
+            )
+            self.default_model = "llama3"
+        elif provider == "openai":
+            self.client = OpenAI()
+            self.default_model = "gpt-4o-mini"
+
+    def chat(self, messages: list, **kwargs) -> str:
+        """Send chat completion request."""
+        model = kwargs.pop("model", self.default_model)
+
+        response = self.client.chat.completions.create(
+            model=model,
+            messages=messages,
+            **kwargs
+        )
+        return response.choices[0].message.content
+
+    def embed(self, text: str) -> list:
+        """Get embeddings."""
+        if self.provider == "ollama":
+            import ollama
+            response = ollama.embeddings(model="nomic-embed-text", prompt=text)
+            return response["embedding"]
+        else:
+            response = self.client.embeddings.create(
+                model="text-embedding-3-small",
+                input=text
+            )
+            return response.data[0].embedding
+
+# Usage
+llm = LLMProvider("ollama")  # or "openai"
+response = llm.chat([{"role": "user", "content": "Hello!"}])
+```
+
+### Local Embeddings
+
+```python
+import ollama
+
+# Pull embedding model
+# ollama pull nomic-embed-text
+
+def local_embed(texts: list) -> list:
+    """Generate embeddings locally."""
+    embeddings = []
+    for text in texts:
+        response = ollama.embeddings(
+            model="nomic-embed-text",
+            prompt=text
+        )
+        embeddings.append(response["embedding"])
+    return embeddings
+
+# Usage
+texts = ["Hello world", "Machine learning is cool"]
+embeddings = local_embed(texts)
+print(f"Got {len(embeddings)} embeddings of dimension {len(embeddings[0])}")
+```
+
+---
+
+## Performance Tips
+
+### GPU Acceleration
+
+```bash
+# Check if GPU is being used
+ollama run llama3 --verbose
+
+# For NVIDIA GPUs, install CUDA drivers
+# Models automatically use GPU if available
+```
+
+### Concurrent Requests
+
+```python
+import ollama
+import asyncio
+
+async def process_batch(prompts: list, model: str = "llama3"):
+    """Process multiple prompts (note: Ollama processes sequentially)."""
+    results = []
+    for prompt in prompts:
+        response = ollama.generate(model=model, prompt=prompt)
+        results.append(response["response"])
+    return results
+
+# For true concurrency, run multiple Ollama instances
+# or use vLLM for production batching
+```
+
+---
+
+## Summary
+
+```mermaid
+mindmap
+  root((Local LLMs))
+    Setup
+      Ollama
+      Model pulling
+      Quantization
+    Usage
+      Direct API
+      OpenAI compatible
+      Python library
+    Benefits
+      Privacy
+      Free
+      Offline
+    Considerations
+      Hardware requirements
+      Model selection
+      Speed vs quality
+```
+
+---
+
+## Quick Reference
+
+```bash
+# Ollama commands
+ollama pull llama3        # Download model
+ollama run llama3         # Interactive chat
+ollama list               # Show models
+ollama rm llama3          # Delete model
+```
+
+```python
+# Python usage
+import ollama
+response = ollama.chat(model='llama3', messages=[...])
+
+# OpenAI-compatible
+from openai import OpenAI
+client = OpenAI(base_url="http://localhost:11434/v1", api_key="ollama")
+```
+
+---
+
+## What's Next?
+
+Now let's learn about **Wrapping Agents in APIs** - deploying your AI systems with FastAPI!

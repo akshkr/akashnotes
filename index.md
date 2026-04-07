@@ -1,167 +1,178 @@
-### Month 1: The LLM Interface & Python Integration
+# 100-Day AI Engineering Challenge
+
+A structured, day-by-day learning path for software engineers transitioning into AI engineering. From LLM fundamentals to production-ready AI agents — with capstone projects, career checkpoints, and SWE-to-AI bridging throughout.
+
+---
+
+## Phase 0: Getting Started (Day 1)
+
+Goal: Map the AI engineering landscape, understand how your SWE skills transfer, and set your baseline.
+
+| Day | Topic |
+|-----|-------|
+| 001 | AI Engineering Career Map |
+
+---
+
+## Phase 1: LLM Foundations (Days 2-26)
 
 Goal: Understand how to communicate programmatically with LLMs and force them to return predictable, usable data.
 
-* **Week 1: Mental Models for LLMs**
-* High-level Transformer intuition (no heavy math, just concepts: self-attention, context windows).
-* Tokenization (how LLMs see text, calculating token costs).
-* Temperature, Top-P, and frequency penalties.
+| Day | Topic |
+|-----|-------|
+| 002 | Transformer Intuition |
+| 003 | Tokenization — Part 1 |
+| 004 | Tokenization — Part 2 |
+| 005 | Temperature And Sampling — Part 1 |
+| 006 | Temperature And Sampling — Part 2 |
+| 007 | Zero Shot vs Few Shot — Part 1 |
+| 008 | Zero Shot vs Few Shot — Part 2 |
+| 009 | Chain Of Thought — Part 1 |
+| 010 | Chain Of Thought — Part 2 |
+| 011 | System vs User Prompts — Part 1 |
+| 012 | System vs User Prompts — Part 2 |
+| 013 | OpenAI Anthropic SDKs — Part 1 |
+| 014 | OpenAI Anthropic SDKs — Part 2 |
+| 015 | Async LLM Calls — Part 1 |
+| 016 | Async LLM Calls — Part 2 |
+| 017 | Streaming Responses — Part 1 |
+| 018 | Streaming Responses — Part 2 |
+| 019 | Pydantic Schemas — Part 1 |
+| 020 | Pydantic Schemas — Part 2 |
+| 021 | Testing LLM Applications |
+| 022 | Forcing JSON Output — Part 1 |
+| 023 | Forcing JSON Output — Part 2 |
+| 024 | Retry Loops — Part 1 |
+| 025 | Retry Loops — Part 2 |
+| 026 | **Capstone: Data Extraction Pipeline** |
 
+---
 
-* **Week 2: Advanced Prompting Techniques**
-* Zero-shot vs. Few-shot prompting.
-* Chain of Thought (CoT) and Step-by-Step reasoning.
-* System prompts vs. User prompts.
+## Phase 2: External Knowledge & Tool Calling (Days 27-40)
 
+Goal: Give your LLM the ability to read proprietary data, query vector databases, and trigger Python functions.
 
-* **Week 3: Python API Mastery**
-* Using the `openai` and `anthropic` Python SDKs.
-* Handling asynchronous LLM calls with `asyncio` for faster processing.
-* Streaming responses (handling server-sent events in Python).
+| Day | Topic |
+|-----|-------|
+| 027 | What Are Embeddings |
+| 028 | Cosine Euclidean Similarity |
+| 029 | Generating Embeddings API |
+| 030 | ChromaDB FAISS Setup |
+| 031 | Indexing Querying Updating |
+| 032 | Document Parsing |
+| 033 | Text Chunking |
+| 034 | Context Injection |
+| 035 | Function Calling Basics |
+| 036 | JSON Schema Generation |
+| 037 | Tool Execution Handling — Part 1 |
+| 038 | Tool Execution Handling — Part 2 |
+| 039 | Cost Engineering For LLMs |
+| 040 | **Capstone: RAG Chatbot** |
 
+---
 
-* **Week 4: Structured Output & Data Parsing**
-* Using **Pydantic** to define strict data schemas.
-* Forcing LLMs to return valid JSON.
-* Building retry loops for when the LLM hallucinates the data structure.
-
-
-
-### Month 2: External Knowledge & Tool Calling
-
-Goal: Give your LLM the ability to read your proprietary data and trigger your Python functions.
-
-* **Week 1: Embeddings & Vector Math Intuition**
-* What are embeddings? (Translating text to arrays of numbers).
-* Cosine similarity and Euclidean distance in Python (using `numpy`).
-* Generating embeddings via API.
-
-
-* **Week 2: Vector Databases**
-* Setting up local vector stores in Python (ChromaDB or FAISS).
-* Indexing, querying, and updating vector databases.
-
-
-* **Week 3: Retrieval-Augmented Generation (RAG)**
-* Document parsing (PDFs, text files, web scraping).
-* Text chunking strategies (recursive character splitting, semantic splitting).
-* Injecting retrieved context into the prompt dynamically.
-
-
-* **Week 4: Native Tool Calling (Function Calling)**
-* Writing clean, single-purpose Python functions for the LLM.
-* Generating JSON schemas for your Python functions.
-* Parsing the LLM's tool-call request, executing the Python function, and returning the result back to the LLM.
-
-
-
-### Month 3: Single-Agent Architectures & State Machines
+## Phase 3: Single Agent Architectures (Days 41-54)
 
 Goal: Move from linear scripts to cyclical agents that can plan, execute, and correct their own mistakes.
 
-* **Week 1: The "From Scratch" Agent**
-* Building the ReAct (Reason + Act) loop using a pure Python `while` loop.
-* Managing conversational history (lists of dictionaries) manually.
-* Implementing a hard stop (max iterations) to prevent infinite loops.
+| Day | Topic |
+|-----|-------|
+| 041 | React Loop |
+| 042 | Conversation History |
+| 043 | Max Iterations |
+| 044 | LangChain Basics |
+| 045 | LlamaIndex And Framework Comparison |
+| 046 | State Machines |
+| 047 | Nodes And Edges |
+| 048 | Compiling Graphs |
+| 049 | Checkpoints Persistence |
+| 050 | Time Travel Debugging |
+| 051 | Database Storage |
+| 052 | Debugging AI Agents |
+| 053 | **Capstone: Autonomous Research Agent** |
+| 054 | Career Checkpoint |
 
+---
 
-* **Week 2: Introduction to LangChain & LlamaIndex**
-* LangChain Expression Language (LCEL) syntax.
-* Using LlamaIndex for advanced data ingestion and query engines.
-* Understanding the abstraction trade-offs (when to use a framework vs. vanilla Python).
+## Phase 4: Multi-Agent Systems, Evaluation & Security (Days 55-81)
 
+Goal: Design teams of specialized agents, then ensure they are reliable, measurable, and safe.
 
-* **Week 3: Stateful Agents with LangGraph**
-* The concept of treating agents as state machines.
-* Defining Nodes (Python functions) and Edges (conditional routing).
-* Compiling a basic graph agent.
+| Day | Topic |
+|-----|-------|
+| 055 | Agent Topologies |
+| 056 | Supervisor Worker |
+| 057 | Adversarial Debate |
+| 058 | CrewAI Basics |
+| 059 | Tasks Definition |
+| 060 | Sequential Parallel |
+| 061 | AutoGen Basics |
+| 062 | User Proxy Agents |
+| 063 | Code Execution Environments |
+| 064 | LangSmith Phoenix |
+| 065 | Token Latency Visualization |
+| 066 | LLM As Judge — Part 1 |
+| 067 | LLM As Judge — Part 2 |
+| 068 | RAGAS Evaluation |
+| 069 | Trajectory Evaluation |
+| 070 | Prompt Injection |
+| 071 | Output Sanitization |
+| 072 | NeMo Guardrails |
+| 073 | Docker Sandboxing — Part 1 |
+| 074 | Docker Sandboxing — Part 2 |
+| 075 | API Key Security |
+| 076 | Production Hardening |
+| 077 | HITL Patterns — Part 1 |
+| 078 | HITL Patterns — Part 2 |
+| 079 | Breakpoints Design |
+| 080 | Injecting Feedback |
+| 081 | **Capstone: Multi Agent Pipeline** |
 
+---
 
-* **Week 4: Advanced Memory & Persistence**
-* Adding checkpoints to LangGraph to save agent state.
-* Time-travel debugging (rewinding an agent to a previous state).
-* Storing conversation threads in SQLite or PostgreSQL.
-
-
-
-### Month 4: Multi-Agent Systems
-
-Goal: Design teams of specialized agents that collaborate to solve complex problems.
-
-* **Week 1: Multi-Agent Topologies**
-* Supervisor/Worker (Hierarchical) routing.
-* Networked (peer-to-peer) collaboration.
-* Adversarial debate (agents critiquing each other's work).
-
-
-* **Week 2: Task-Oriented Frameworks (CrewAI)**
-* Defining Agents (role, backstory, goal).
-* Defining Tasks (expected output, assigned agent).
-* Running sequential and parallel processes in CrewAI.
-
-
-* **Week 3: Code-Execution Frameworks (Microsoft AutoGen)**
-* Conversational programming with AutoGen.
-* Creating user proxy agents and assistant agents.
-* Setting up local code execution environments.
-
-
-* **Week 4: Human-in-the-Loop (HITL)**
-* Designing breakpoints in your code.
-* Pausing graph execution to wait for user input (e.g., "Do you approve this API call?").
-* Injecting human feedback back into the agent's state.
-
-
-
-### Month 5: Evaluation, Observability, and Security
-
-Goal: Ensure your AI systems are reliable, measurable, and safe for real-world use.
-
-* **Week 1: Observability & Tracing**
-* Integrating **LangSmith** or **Phoenix** into your Python code.
-* Visualizing the exact prompt, token count, and latency of every agent step.
-
-
-* **Week 2: Automated Evaluation**
-* Using the "LLM-as-a-judge" pattern.
-* Evaluating RAG systems (context precision, context recall) using frameworks like **Ragas**.
-* Evaluating agent trajectories (did it take the most efficient path?).
-
-
-* **Week 3: Security & Guardrails**
-* Understanding and mitigating Prompt Injection attacks.
-* Implementing output sanitization.
-* Using libraries like `NeMo-Guardrails` or `guardrails-ai`.
-
-
-* **Week 4: Safe Sandboxing**
-* Using Docker to containerize the environment where your agents write or execute code.
-* Managing API key security within agent workflows.
-
-
-
-### Month 6: Open Source, Local Models & Production
+## Phase 5: Production Deployment (Days 82-97)
 
 Goal: Take your agents out of the terminal and into a scalable, production-ready environment.
 
-* **Week 1: Local & Open-Source Models**
-* Running models locally using **Ollama** or **vLLM**.
-* Understanding quantization (GGUF, AWQ) to run large models on consumer hardware.
-* Swapping out OpenAI for local Llama 3 or Mistral in your Python code.
+| Day | Topic |
+|-----|-------|
+| 082 | Ollama Local Models |
+| 083 | Quantization And Swapping Models |
+| 084 | FastAPI Agents |
+| 085 | Async Task Handling |
+| 086 | WebSockets Streaming |
+| 087 | Streamlit Gradio |
+| 088 | Displaying Content UI |
+| 089 | Docker Deployment |
+| 090 | Rate Limits Backoffs |
+| 091 | Semantic Caching |
+| 092 | Model Fallback Strategies |
+| 093 | Cloud Deployment |
+| 094 | Prompt Engineering Discipline |
+| 095 | Model Context Protocol |
+| 096 | Claude Agent SDK |
+| 097 | **Capstone: Deploy To Production** |
 
+---
 
-* **Week 2: Wrapping Agents in APIs**
-* Using **FastAPI** to create endpoints for your agents.
-* Handling long-running agent tasks asynchronously in a web server.
-* Implementing WebSockets for real-time streaming of agent thoughts.
+## Phase 6: Career Launch (Days 98-100)
 
+Goal: Package everything you have built into a compelling portfolio and prepare for AI engineering interviews.
 
-* **Week 3: Building Agent UIs**
-* Creating rapid prototypes using **Streamlit** or **Gradio**.
-* Displaying markdown, tables, and agent reasoning steps in the UI.
+| Day | Topic |
+|-----|-------|
+| 098 | AI Engineering Interview Prep |
+| 099 | Building Your Portfolio |
+| 100 | Career Launch — What's Next |
 
+---
 
-* **Week 4: Cloud Deployment & Reliability**
-* Dockerizing your Python agent application.
-* Handling rate limits, exponential backoffs, and circuit breakers in production.
-* Deploying to AWS, GCP, or platforms like Render/Railway.
+## Capstone Projects
+
+| # | Day | Project | Key Skills |
+|---|-----|---------|------------|
+| 1 | 026 | Data Extraction Pipeline | LLM APIs, Pydantic, retry logic, structured output, testing |
+| 2 | 040 | RAG Chatbot | Embeddings, ChromaDB, context injection, tool calling, cost engineering |
+| 3 | 053 | Autonomous Research Agent | ReAct loop, LangGraph, tool calling, state machines, persistence |
+| 4 | 081 | Multi Agent Pipeline | Multi-agent, LLM-as-judge, HITL, prompt injection defense |
+| 5 | 097 | Deploy To Production | FastAPI, Docker, streaming, monitoring, cloud deploy |
