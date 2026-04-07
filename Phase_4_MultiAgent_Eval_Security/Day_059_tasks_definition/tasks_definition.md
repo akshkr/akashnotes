@@ -244,6 +244,8 @@ task = Task(
 result = task.output
 print(result.title)  # Typed access
 print(result.key_findings)
+
+# > **Note:** CrewAI 0.70+ may have changed this API. Check the [CrewAI docs](https://docs.crewai.com) for the latest syntax.
 ```
 
 ---

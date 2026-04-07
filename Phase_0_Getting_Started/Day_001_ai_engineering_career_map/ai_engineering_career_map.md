@@ -55,15 +55,15 @@ This is the question that separates reality from hype. Here's what a typical wee
 
 **Monday morning:** You're debugging why the document extraction pipeline is returning malformed JSON for certain edge-case inputs. You add better output parsing and retry logic.
 
-**Monday afternoon:** Meeting with product to scope a new feature: the RAG chatbot needs to cite its sources. You sketch the architecture changes needed.
+**Monday afternoon:** Meeting with product to scope a new feature: the support agent needs to handle multi-step workflows — checking order status, issuing refunds, and escalating to humans. You sketch the agentic architecture.
 
-**Tuesday:** Implementing the citation feature. You modify the retrieval step to track source metadata and update the prompt template to include citation instructions.
+**Tuesday:** Implementing the workflow agent. You define tool schemas, wire up the ReAct loop, and add guardrails so the agent can't take destructive actions without confirmation.
 
 **Wednesday:** Running evals. You have a test set of 50 questions with expected answers. You're measuring whether your latest prompt change improved accuracy or hurt it. You write a script to automate this.
 
 **Thursday:** The agent is making too many API calls and costs are exploding. You implement caching, reduce context window usage, and add cost tracking. You write a postmortem doc.
 
-**Friday:** Code review, documentation, and a deep-dive on a new paper about better chunking strategies for RAG. You prototype a new approach.
+**Friday:** Code review, documentation, and a deep-dive on a new paper about using small language models (SLMs) for classification tasks that don't need a full frontier model. You prototype a new approach.
 
 Notice what this week doesn't include: training neural networks from scratch, writing CUDA kernels, or deriving backpropagation. That's ML Engineering. AI Engineering is about building reliable, efficient, maintainable systems *using* LLMs as a core component.
 
@@ -92,7 +92,7 @@ graph LR
     subgraph "Growing Fast (Future-Proof)"
         I[Multi-Agent Systems]
         J[LLM Security]
-        K[Cost Optimization]
+        K[SLMs & Model Selection]
         L[Streaming & Real-time]
     end
 
@@ -103,48 +103,23 @@ graph LR
     end
 ```
 
-**1. RAG (Retrieval-Augmented Generation) — Extremely High Demand**
-Almost every company with an AI product uses RAG. It's the technique of augmenting LLM responses with retrieved context from a knowledge base. If you can build, evaluate, and optimize RAG systems, you can get a job.
+**1. AI Agents & Agentic Workflows — Extremely High Demand**
+Agents are LLM-powered systems that can plan, reason, and take actions: browse the web, execute code, call APIs, read files. The tooling (LangGraph, AutoGen, CrewAI, Claude Agent SDK) is maturing fast. Building reliable agentic workflows — with tool calling, memory, and human-in-the-loop patterns — is the single most in-demand skill right now.
 
-**2. AI Agents — Very High Demand, Growing Fast**
-Agents are LLM-powered systems that can take actions: browse the web, execute code, call APIs, read files. The tooling (LangGraph, AutoGen, CrewAI) is maturing fast. This is where the field is heading.
+**2. RAG (Retrieval-Augmented Generation) — Very High Demand**
+The technique of augmenting LLM responses with retrieved context from a knowledge base. Most AI products use some form of RAG. If you can build, evaluate, and optimize retrieval systems, you're highly employable.
 
 **3. Evaluation & Testing — High Demand, Often Overlooked**
 Companies are realizing that "it works in my demo" isn't good enough. Building robust eval pipelines, measuring model quality, and detecting regressions is a critical and underserved skill.
 
-**4. LLM API Integration — Table Stakes**
+**4. SLMs & Model Selection — Growing Fast**
+Not every task needs GPT-4 or Claude Opus. Small Language Models (SLMs) like Phi, Gemma, and quantized Llama variants can handle classification, extraction, and routing tasks at a fraction of the cost and latency. Knowing when to use a frontier model vs. an SLM is a key engineering skill.
+
+**5. LLM API Integration — Table Stakes**
 OpenAI, Anthropic, Google Gemini, open-source models via Ollama or Together.ai. You need to know how to call these APIs efficiently, handle errors, manage rate limits, and understand token economics.
 
-**5. Prompt Engineering — Foundational**
+**6. Prompt Engineering — Foundational**
 Not just writing prompts — understanding *why* certain prompts work, how to structure few-shot examples, how to use chain-of-thought, and how to make prompts robust to adversarial inputs.
-
----
-
-## Salary Bands and Job Market (2025-2026)
-
-The market for AI engineers is strong and growing. Here are realistic ranges based on current data:
-
-| Role | Level | US Salary Range | Notes |
-|------|-------|-----------------|-------|
-| AI Engineer | Junior (0-2 yrs) | $120k - $160k | Rare — most companies want experience |
-| AI Engineer | Mid (2-4 yrs) | $160k - $220k | Sweet spot with SWE background |
-| AI Engineer | Senior (4+ yrs) | $220k - $320k+ | High demand, low supply |
-| LLM Engineer | Mid-Senior | $180k - $280k | Specialized, premium |
-| Applied AI Scientist | Senior | $200k - $350k+ | Needs ML depth too |
-
-**For SWE transitions specifically:**
-
-If you have 3-5 years of SWE experience, you're not entering as a junior. Companies will hire you at mid-to-senior level because you bring:
-- Production engineering discipline
-- System design skills
-- Code quality and testing habits
-- Ability to ship things that work
-
-The gap you need to close is the LLM-specific knowledge: RAG, agents, evals, prompt engineering. That's exactly what this 100 days covers.
-
-**Remote work:** More common in AI engineering than in many SWE roles. The talent pool is thin enough that companies are willing to hire globally.
-
-**Industries hiring:** Tech companies (obviously), but also: finance, healthcare, legal tech, education, e-commerce, enterprise SaaS. The AI wave is sector-agnostic.
 
 ---
 
@@ -170,7 +145,7 @@ pie title "SWE Skills That Transfer to AI Engineering"
 
 - **API integration** — Calling LLM APIs is just HTTP with JSON. You've done this a thousand times.
 - **Python** — The entire AI engineering ecosystem runs on Python. If you've been writing backend code, you're already there.
-- **System design** — Designing a RAG pipeline requires the same thinking as designing any data pipeline. You understand queues, caches, databases, services.
+- **System design** — Designing an agentic pipeline requires the same thinking as designing any data pipeline. You understand queues, caches, databases, services.
 - **Testing discipline** — Writing evals for LLM systems is just a different flavor of writing tests. The habit of "how do I know this works?" is the same.
 - **Debugging** — Tracking down why an agent is hallucinating is debugging. The tools are different but the mindset is identical.
 - **Code quality** — AI systems go to production too. They need error handling, logging, retry logic, graceful degradation. All skills you have.
@@ -183,6 +158,7 @@ pie title "SWE Skills That Transfer to AI Engineering"
 - Prompt engineering patterns
 - Retrieval systems and embeddings
 - Agent architectures (ReAct, tool calling, memory)
+- Small language models and when to use them
 - LLM-specific evaluation techniques
 - Cost management and token optimization
 
@@ -269,10 +245,10 @@ Before we start, let's get honest about where you are. Rate yourself 1-5 on each
 - [ ] Deploying ML/AI services: ___/5
 - [ ] Monitoring & observability: ___/5
 
-**Scoring:**
-- **0-40:** You're starting fresh on the AI side. That's fine — your SWE skills will accelerate everything.
-- **41-70:** You've dabbled. This journey will fill in the gaps and add depth.
-- **71-100:** You have real experience. Use this journey to fill blind spots and build portfolio projects.
+**Scoring (max 110):**
+- **0-45:** You're starting fresh on the AI side. That's fine — your SWE skills will accelerate everything.
+- **46-80:** You've dabbled. This journey will fill in the gaps and add depth.
+- **81-110:** You have real experience. Use this journey to fill blind spots and build portfolio projects.
 
 Write down your scores somewhere. You'll revisit this on Day 54 (the career checkpoint) and Day 100. The progress will surprise you.
 

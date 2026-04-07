@@ -488,6 +488,8 @@ async def main():
 asyncio.run(main())
 ```
 
+> **Note:** Python 3.11+ introduced `asyncio.TaskGroup()` which handles cancellation scoping natively. The signal-based timeout approach shown above is Unix-only and won't work on Windows.
+
 ---
 
 ## Progress Monitoring

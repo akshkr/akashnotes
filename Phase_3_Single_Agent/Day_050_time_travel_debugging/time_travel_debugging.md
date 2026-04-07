@@ -41,7 +41,7 @@ First, enable checkpointing to record states:
 
 ```python
 from langgraph.graph import StateGraph, END
-from langgraph.checkpoint.sqlite import SqliteSaver
+from langgraph.checkpoint.memory import MemorySaver  # or: pip install langgraph-checkpoint-sqlite
 from typing import TypedDict, Annotated
 from operator import add
 
@@ -52,7 +52,7 @@ class AgentState(TypedDict):
     decision: str
 
 # Create checkpointer
-checkpointer = SqliteSaver.from_conn_string("time_travel.db")
+checkpointer = MemorySaver()  # For production, use PostgresSaver or SqliteSaver
 
 # Define nodes
 def step_one(state: AgentState) -> dict:
@@ -109,7 +109,7 @@ def list_checkpoints(checkpointer, thread_id: str):
     """List all checkpoints for a thread."""
 
     config = {"configurable": {"thread_id": thread_id}}
-    checkpoints = list(checkpointer.list(config))
+    checkpoints = list(app.get_state_history(config))
 
     print(f"Found {len(checkpoints)} checkpoints:")
     print("=" * 60)
@@ -159,7 +159,7 @@ def rewind_to_checkpoint(app, checkpointer, thread_id: str, checkpoint_index: in
 
     # Get all checkpoints
     config = {"configurable": {"thread_id": thread_id}}
-    checkpoints = list(checkpointer.list(config))
+    checkpoints = list(app.get_state_history(config))
 
     if checkpoint_index >= len(checkpoints):
         raise ValueError(f"Checkpoint {checkpoint_index} not found")
@@ -222,7 +222,7 @@ print(f"New result: {new_result}")
 
 ```python
 from langgraph.graph import StateGraph, END
-from langgraph.checkpoint.sqlite import SqliteSaver
+from langgraph.checkpoint.memory import MemorySaver  # or: pip install langgraph-checkpoint-sqlite
 from typing import TypedDict, Annotated, Literal
 from operator import add
 
@@ -259,7 +259,7 @@ workflow.add_edge("choose", "process")
 workflow.add_edge("process", END)
 
 # Compile with checkpointing
-checkpointer = SqliteSaver.from_conn_string("debug_choices.db")
+checkpointer = MemorySaver()
 app = workflow.compile(checkpointer=checkpointer)
 
 # First run - choose A
@@ -273,7 +273,7 @@ print(f"First run: {result1['outcome']}")
 
 # Oops! Let's go back and try B instead
 # Get checkpoints
-checkpoints = list(checkpointer.list(config))
+checkpoints = list(app.get_state_history(config))
 print(f"We have {len(checkpoints)} checkpoints")
 
 # Rewind to before the choice was processed (checkpoint 1)
@@ -333,7 +333,7 @@ class TimeTraceDebugger:
     def refresh_checkpoints(self):
         """Reload checkpoints from storage."""
         config = {"configurable": {"thread_id": self.thread_id}}
-        self.checkpoints = list(self.checkpointer.list(config))
+        self.checkpoints = list(self.app.get_state_history(config))
         self.current_index = len(self.checkpoints) - 1
 
     def show_checkpoints(self):
@@ -419,7 +419,7 @@ config = {"configurable": {"thread_id": "abc123"}}
 def cleanup_old_checkpoints(checkpointer, thread_id: str, keep_last: int = 10):
     """Remove old checkpoints to save space."""
     config = {"configurable": {"thread_id": thread_id}}
-    checkpoints = list(checkpointer.list(config))
+    checkpoints = list(app.get_state_history(config))
 
     if len(checkpoints) > keep_last:
         # Delete older checkpoints
@@ -464,7 +464,7 @@ mindmap
 
 ```python
 # Setup checkpointing
-checkpointer = SqliteSaver.from_conn_string("db.sqlite")
+checkpointer = MemorySaver()
 app = workflow.compile(checkpointer=checkpointer)
 
 # Run with thread ID
@@ -472,7 +472,7 @@ config = {"configurable": {"thread_id": "my-thread"}}
 result = app.invoke(state, config=config)
 
 # List checkpoints
-checkpoints = list(checkpointer.list(config))
+checkpoints = list(app.get_state_history(config))
 
 # Rewind and replay
 resume_config = {

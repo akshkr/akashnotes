@@ -234,10 +234,10 @@ print(result["result"])
 ### Add Checkpointing
 
 ```python
-from langgraph.checkpoint.sqlite import SqliteSaver
+from langgraph.checkpoint.memory import MemorySaver  # or: pip install langgraph-checkpoint-sqlite
 
 # Create a checkpointer
-checkpointer = SqliteSaver.from_conn_string("checkpoints.db")
+checkpointer = MemorySaver()
 
 # Compile with checkpointer
 app = workflow.compile(checkpointer=checkpointer)
@@ -476,7 +476,7 @@ mindmap
 app = workflow.compile()
 
 # With checkpointing
-app = workflow.compile(checkpointer=SqliteSaver.from_conn_string("db.sqlite"))
+app = workflow.compile(checkpointer=MemorySaver())
 
 # Run complete
 result = app.invoke(initial_state)

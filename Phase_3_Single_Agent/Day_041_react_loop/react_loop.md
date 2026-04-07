@@ -118,6 +118,81 @@ Always start with a Thought. Never skip the thinking step."""
             return {"type": "action", "action": action, "input": action_input}
 
         return {"type": "unknown", "text": text}
+```
+
+> **Production Tip:** In production, use OpenAI's native function calling or `response_format={"type": "json_object"}` instead of regex parsing. This eliminates parsing failures.
+
+### Modern Alternative: Structured JSON Output
+
+Instead of parsing free-text with regex, you can ask the LLM to return structured JSON directly using `response_format`:
+
+```python
+    def _get_structured_response(self, messages: list) -> dict:
+        """Get a structured response using JSON mode instead of regex parsing."""
+        json_system_prompt = """You are a helpful assistant that solves problems step by step.
+Return your response as JSON with this exact schema:
+{
+    "thought": "your reasoning about what to do next",
+    "action": "tool_name or null if you have the final answer",
+    "action_input": "input for the tool as a JSON string, or null",
+    "final_answer": "your final answer, or null if you need to use a tool"
+}"""
+
+        response = client.chat.completions.create(
+            model="gpt-4o",
+            messages=[{"role": "system", "content": json_system_prompt}] + messages[1:],
+            temperature=0,
+            response_format={"type": "json_object"}
+        )
+
+        return json.loads(response.choices[0].message.content)
+
+    # Usage in the run loop:
+    # parsed = self._get_structured_response(messages)
+    # if parsed["final_answer"]:
+    #     return parsed["final_answer"]
+    # elif parsed["action"]:
+    #     result = self.tools[parsed["action"]](parsed["action_input"])
+```
+
+The regex approach above is valuable for understanding how ReAct works under the hood, but structured output eliminates an entire class of parsing bugs.
+
+> **Production Tip:** In production, use OpenAI's native function calling or `response_format={"type": "json_object"}` instead of regex parsing. This eliminates parsing failures.
+
+### Modern Alternative: Structured JSON Output
+
+The regex approach above is great for learning how ReAct works under the hood, but it is fragile -- the LLM might format its output slightly differently and break the regex. Modern APIs let you enforce structured output directly:
+
+```python
+    def _get_structured_response(self, messages: list) -> dict:
+        """Get a structured response using JSON mode instead of regex parsing."""
+
+        # Add instruction for JSON output to the last message
+        json_messages = messages.copy()
+        json_messages[0] = {
+            "role": "system",
+            "content": messages[0]["content"] + """
+
+IMPORTANT: Always respond in this exact JSON format:
+{
+    "thought": "your reasoning about what to do next",
+    "action": "tool_name or null if you have the final answer",
+    "action_input": {"param": "value"} or null,
+    "final_answer": "your answer if action is null, otherwise null"
+}"""
+        }
+
+        response = client.chat.completions.create(
+            model="gpt-4o",
+            messages=json_messages,
+            temperature=0,
+            response_format={"type": "json_object"}
+        )
+
+        return json.loads(response.choices[0].message.content)
+```
+
+With this approach, `_parse_response` becomes a simple dictionary lookup -- no regex needed, no parsing failures.
 
     def run(self, task: str) -> str:
         """Run the agent on a task."""

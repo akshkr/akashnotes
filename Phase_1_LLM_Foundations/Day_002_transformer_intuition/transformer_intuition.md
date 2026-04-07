@@ -297,15 +297,16 @@ Here's a simple mental exercise:
 
 ```python
 # Think about this sentence:
-sentence = "The bank by the river had no money."
+sentence = "The bank by the river was overgrown with grass."
 
 # Questions to ponder:
 # 1. What does "bank" mean here?
 # 2. How would self-attention help disambiguate?
 # 3. Which words would have high attention scores with "bank"?
 
-# Answer: "river" would have high attention with "bank"
-# helping the model understand it's a riverbank, not a financial bank!
+# Answer: "river", "overgrown", and "grass" would all have high attention
+# with "bank" — helping the model understand it's a riverbank,
+# not a financial bank!
 ```
 
 Understanding these concepts will make you a much more effective AI developer. You're building the foundation for everything that comes next!

@@ -406,6 +406,32 @@ print(estimate_cache_savings())
 
 ---
 
+## Native Prompt Caching
+
+Separately from semantic caching, major providers now offer **server-side prompt caching** that discounts repeated prefixes in your API calls. This is especially useful for system prompts, few-shot examples, or large context documents that stay the same across requests.
+
+**OpenAI** automatically caches prompt prefixes for requests to supported models, giving a 50% discount on cached input tokens with no code changes required.
+
+**Anthropic** offers explicit cache control -- you mark which parts of the prompt to cache and receive a 90% discount on cached input tokens:
+
+```python
+# Anthropic prompt caching — 90% discount on cached input tokens
+response = client.messages.create(
+    model="claude-sonnet-4-5",
+    max_tokens=1024,
+    system=[{
+        "type": "text",
+        "text": "Your large system prompt here...",
+        "cache_control": {"type": "ephemeral"}
+    }],
+    messages=[{"role": "user", "content": query}]
+)
+```
+
+**How this complements semantic caching:** Prompt caching and semantic caching solve different problems. Prompt caching handles repeated *prefixes* -- the same system prompt or context documents sent across many requests. Semantic caching handles similar *queries* -- different users asking the same question in different words. In production, you often want both: prompt caching reduces per-token cost on every request, while semantic caching eliminates redundant LLM calls entirely for repeated questions.
+
+---
+
 ## Summary
 
 ```mermaid

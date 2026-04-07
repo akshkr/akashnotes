@@ -437,6 +437,72 @@ async def limited_chat(request: ChatRequest, _: None = Depends(rate_limit)):
 
 ---
 
+## Streaming Responses with SSE
+
+Server-Sent Events (SSE) is the standard pattern for streaming LLM output over HTTP. Unlike WebSockets, SSE is unidirectional (server to client), uses plain HTTP, and works through most proxies and CDNs without special configuration. This is how ChatGPT, Claude, and most LLM-powered UIs stream responses to the browser.
+
+```python
+from fastapi import FastAPI
+from fastapi.responses import StreamingResponse
+from openai import OpenAI
+
+app = FastAPI()
+client = OpenAI()
+
+@app.post("/chat/stream")
+async def chat_stream(request: ChatRequest):
+    """Stream LLM responses using Server-Sent Events."""
+    async def generate():
+        stream = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": request.message}],
+            stream=True,
+        )
+        for chunk in stream:
+            if chunk.choices[0].delta.content:
+                yield f"data: {chunk.choices[0].delta.content}\n\n"
+        yield "data: [DONE]\n\n"
+
+    return StreamingResponse(generate(), media_type="text/event-stream")
+```
+
+On the client side, you consume SSE with the `EventSource` API in JavaScript or any HTTP client that supports streaming. The `data:` prefix and double newline are part of the SSE protocol -- each `data:` line is one event delivered to the client in real time.
+
+---
+
+## Streaming Responses with SSE
+
+Server-Sent Events (SSE) is the standard pattern for streaming LLM output over HTTP. Unlike WebSockets, SSE is unidirectional (server to client), which is a natural fit for LLM generation where the client sends a prompt and the server streams back tokens. Most LLM frontend libraries (including the OpenAI JS SDK) expect SSE format.
+
+```python
+from fastapi import FastAPI
+from fastapi.responses import StreamingResponse
+from openai import OpenAI
+
+app = FastAPI()
+client = OpenAI()
+
+@app.post("/chat/stream")
+async def chat_stream(request: ChatRequest):
+    """Stream LLM responses using Server-Sent Events."""
+    async def generate():
+        stream = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": request.message}],
+            stream=True,
+        )
+        for chunk in stream:
+            if chunk.choices[0].delta.content:
+                yield f"data: {chunk.choices[0].delta.content}\n\n"
+        yield "data: [DONE]\n\n"
+
+    return StreamingResponse(generate(), media_type="text/event-stream")
+```
+
+The `text/event-stream` media type tells the client to expect an SSE stream. Each chunk is prefixed with `data: ` and terminated with a double newline, following the SSE specification. The `[DONE]` sentinel signals the end of the stream -- this convention is also used by the OpenAI API itself.
+
+---
+
 ## Summary
 
 ```mermaid

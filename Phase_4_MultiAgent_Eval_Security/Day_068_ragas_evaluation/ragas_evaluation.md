@@ -43,7 +43,7 @@ Ragas measures:
 ## Installation
 
 ```bash
-pip install ragas>=0.2 datasets
+pip install ragas>=0.3 datasets
 ```
 
 ---
@@ -51,23 +51,17 @@ pip install ragas>=0.2 datasets
 ## Basic Ragas Evaluation
 
 ```python
-from ragas import evaluate
-from ragas.metrics import (
-    Faithfulness,
-    AnswerRelevancy,
-    ContextPrecision,
-    ContextRecall
-)
-from datasets import Dataset
+from ragas import evaluate, EvaluationDataset
+from ragas.metrics import faithfulness, answer_relevancy, context_precision, context_recall
 
 # Prepare your evaluation data
 eval_data = {
-    "question": [
+    "user_input": [
         "What is the capital of France?",
         "Who invented the telephone?",
         "What is photosynthesis?"
     ],
-    "answer": [
+    "response": [
         "The capital of France is Paris, which is known for the Eiffel Tower.",
         "Alexander Graham Bell invented the telephone in 1876.",
         "Photosynthesis is the process by which plants convert sunlight into energy."
@@ -84,18 +78,13 @@ eval_data = {
     ]
 }
 
-# Create dataset
-dataset = Dataset.from_dict(eval_data)
+# Create dataset using EvaluationDataset
+eval_dataset = EvaluationDataset.from_dict(eval_data)
 
-# Run evaluation
+# Run evaluation — metrics are module-level instances, not classes
 results = evaluate(
-    dataset,
-    metrics=[
-        Faithfulness(),
-        AnswerRelevancy(),
-        ContextPrecision(),
-        ContextRecall()
-    ]
+    dataset=eval_dataset,
+    metrics=[faithfulness, answer_relevancy, context_precision, context_recall],
 )
 
 print(results)
@@ -114,19 +103,19 @@ print(f"Context Recall: {results['context_recall']:.3f}")
 Measures if the answer can be inferred from the context:
 
 ```python
-from ragas.metrics import Faithfulness
+from ragas.metrics import faithfulness
 
 # High faithfulness - answer matches context
 high_faith = {
-    "question": "What color is the sky?",
-    "answer": "The sky is blue.",
+    "user_input": "What color is the sky?",
+    "response": "The sky is blue.",
     "retrieved_contexts": [["The sky appears blue due to Rayleigh scattering."]]
 }
 
 # Low faithfulness - answer includes hallucination
 low_faith = {
-    "question": "What color is the sky?",
-    "answer": "The sky is blue, and it's always sunny in Philadelphia.",
+    "user_input": "What color is the sky?",
+    "response": "The sky is blue, and it's always sunny in Philadelphia.",
     "retrieved_contexts": [["The sky appears blue due to Rayleigh scattering."]]
 }
 ```
@@ -136,18 +125,18 @@ low_faith = {
 Measures if the answer addresses the question:
 
 ```python
-from ragas.metrics import AnswerRelevancy
+from ragas.metrics import answer_relevancy
 
 # High relevancy - directly answers question
 high_rel = {
-    "question": "What is machine learning?",
-    "answer": "Machine learning is a type of AI where computers learn from data without explicit programming."
+    "user_input": "What is machine learning?",
+    "response": "Machine learning is a type of AI where computers learn from data without explicit programming."
 }
 
 # Low relevancy - doesn't answer question
 low_rel = {
-    "question": "What is machine learning?",
-    "answer": "Python is a popular programming language used by many developers."
+    "user_input": "What is machine learning?",
+    "response": "Python is a popular programming language used by many developers."
 }
 ```
 
@@ -156,11 +145,11 @@ low_rel = {
 Measures if retrieved contexts are relevant:
 
 ```python
-from ragas.metrics import ContextPrecision
+from ragas.metrics import context_precision
 
 # High precision - all contexts relevant
 high_prec = {
-    "question": "What is the Eiffel Tower?",
+    "user_input": "What is the Eiffel Tower?",
     "retrieved_contexts": [
         ["The Eiffel Tower is a wrought-iron lattice tower in Paris."],
         ["It was built for the 1889 World's Fair."]
@@ -169,7 +158,7 @@ high_prec = {
 
 # Low precision - some contexts irrelevant
 low_prec = {
-    "question": "What is the Eiffel Tower?",
+    "user_input": "What is the Eiffel Tower?",
     "retrieved_contexts": [
         ["The Eiffel Tower is a wrought-iron lattice tower in Paris."],
         ["Pizza is a popular Italian food."]  # Irrelevant!
@@ -182,18 +171,18 @@ low_prec = {
 Measures if contexts contain ground truth information:
 
 ```python
-from ragas.metrics import ContextRecall
+from ragas.metrics import context_recall
 
 # High recall - context contains needed info
 high_rec = {
-    "question": "When was Python created?",
+    "user_input": "When was Python created?",
     "retrieved_contexts": [["Python was created by Guido van Rossum and released in 1991."]],
     "reference": "Python was created in 1991"
 }
 
 # Low recall - context missing key info
 low_rec = {
-    "question": "When was Python created?",
+    "user_input": "When was Python created?",
     "retrieved_contexts": [["Python is a popular programming language."]],  # Missing date!
     "reference": "Python was created in 1991"
 }
@@ -206,21 +195,16 @@ low_rec = {
 Build a complete evaluation pipeline:
 
 ```python
-from ragas import evaluate
-from ragas.metrics import Faithfulness, AnswerRelevancy, ContextPrecision, ContextRecall
-from datasets import Dataset
+from ragas import evaluate, EvaluationDataset
+from ragas.metrics import faithfulness, answer_relevancy, context_precision, context_recall
 from typing import List, Dict
 
 class RAGEvaluator:
     """Evaluate RAG system with Ragas metrics."""
 
     def __init__(self):
-        self.metrics = [
-            Faithfulness(),
-            AnswerRelevancy(),
-            ContextPrecision(),
-            ContextRecall()
-        ]
+        # In Ragas 0.3+, metrics are module-level instances, not classes
+        self.metrics = [faithfulness, answer_relevancy, context_precision, context_recall]
         self.results_history = []
 
     def evaluate_single(
@@ -233,16 +217,16 @@ class RAGEvaluator:
         """Evaluate a single Q&A pair."""
 
         data = {
-            "question": [question],
-            "answer": [answer],
+            "user_input": [question],
+            "response": [answer],
             "retrieved_contexts": [contexts],
         }
 
         if reference:
             data["reference"] = [reference]
 
-        dataset = Dataset.from_dict(data)
-        results = evaluate(dataset, metrics=self.metrics)
+        eval_dataset = EvaluationDataset.from_dict(data)
+        results = evaluate(dataset=eval_dataset, metrics=self.metrics)
 
         return {
             "faithfulness": results["faithfulness"],
@@ -255,16 +239,16 @@ class RAGEvaluator:
         """Evaluate a batch of test cases."""
 
         data = {
-            "question": [tc["question"] for tc in test_cases],
-            "answer": [tc["answer"] for tc in test_cases],
+            "user_input": [tc["question"] for tc in test_cases],
+            "response": [tc["answer"] for tc in test_cases],
             "retrieved_contexts": [tc["contexts"] for tc in test_cases],
         }
 
         if all("reference" in tc for tc in test_cases):
             data["reference"] = [tc["reference"] for tc in test_cases]
 
-        dataset = Dataset.from_dict(data)
-        results = evaluate(dataset, metrics=self.metrics)
+        eval_dataset = EvaluationDataset.from_dict(data)
+        results = evaluate(dataset=eval_dataset, metrics=self.metrics)
 
         self.results_history.append(results)
         return results
@@ -480,21 +464,20 @@ mindmap
 ## Quick Reference
 
 ```python
-from ragas import evaluate
-from ragas.metrics import Faithfulness, AnswerRelevancy, ContextPrecision, ContextRecall
-from datasets import Dataset
+from ragas import evaluate, EvaluationDataset
+from ragas.metrics import faithfulness, answer_relevancy, context_precision, context_recall
 
 # Prepare data
 data = {
-    "question": ["..."],
-    "answer": ["..."],
+    "user_input": ["..."],
+    "response": ["..."],
     "retrieved_contexts": [["..."]],
     "reference": ["..."]
 }
 
-# Evaluate
-dataset = Dataset.from_dict(data)
-results = evaluate(dataset, metrics=[Faithfulness(), AnswerRelevancy()])
+# Evaluate — metrics are module-level instances, not classes to instantiate
+eval_dataset = EvaluationDataset.from_dict(data)
+results = evaluate(dataset=eval_dataset, metrics=[faithfulness, answer_relevancy])
 
 print(results["faithfulness"])
 print(results["answer_relevancy"])

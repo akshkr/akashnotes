@@ -685,6 +685,36 @@ messages = [
 
 ---
 
+## Long-Context Models vs RAG
+
+Models with large context windows -- Gemini (1M tokens), Claude (200K tokens), and GPT-4o (128K tokens) -- can sometimes replace RAG entirely for smaller document sets. If your entire corpus fits in the context window, you can skip the chunking, embedding, and retrieval pipeline and simply send all documents directly to the model.
+
+However, RAG is still necessary when:
+- **Documents exceed the context window** -- even 1M tokens has limits, and many production corpora are far larger.
+- **Documents change frequently** -- re-indexing changed documents is cheaper than re-sending everything each query.
+- **You need source attribution** -- RAG naturally tracks which chunks contributed to an answer, making citations straightforward.
+- **Cost matters at scale** -- sending 500K tokens per query is expensive; retrieving only the relevant 5K tokens is not.
+
+Frameworks like **LangChain** and **LlamaIndex** (covered in Phase 3) can simplify RAG pipeline construction significantly, handling chunking, embedding, retrieval, and prompt assembly with just a few lines of code.
+
+---
+
+## Long-Context Models vs RAG
+
+Models with large context windows -- Gemini (1M tokens), Claude (200K tokens), GPT-4o (128K tokens) -- can sometimes replace RAG entirely for smaller document sets. If your entire corpus fits in the context window, you can skip chunking, embeddings, and vector databases altogether and just send everything directly to the model.
+
+However, RAG is still necessary when:
+- Your documents are **too large** to fit in any context window (millions of pages, entire codebases)
+- Your data **changes frequently** and re-sending everything each query is impractical or expensive
+- You need **source attribution** -- RAG naturally tracks which chunks contributed to an answer
+- You need **precise retrieval** across thousands of heterogeneous documents where the model might lose focus
+
+For a deeper look at this tradeoff, see the "Long-Context Alternative" section earlier in this guide.
+
+> **Framework Note:** Frameworks like **LangChain** and **LlamaIndex** (covered in Phase 3) can significantly simplify RAG pipeline construction -- handling chunking, embedding, retrieval, and prompt assembly with just a few lines of code. If you find yourself rebuilding these patterns from scratch, consider reaching for a framework.
+
+---
+
 ## What's Next?
 
 Now you've built a complete RAG system! Next week, we'll learn about **Tool Calling** - giving LLMs the ability to execute functions!

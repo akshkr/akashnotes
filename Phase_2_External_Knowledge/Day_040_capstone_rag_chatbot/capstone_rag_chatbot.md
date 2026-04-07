@@ -708,6 +708,15 @@ That's a complete story. It demonstrates you can build the system and measure wh
 
 ---
 
+## Going Further
+
+Once you have this RAG chatbot working, there are several ways to extend it:
+
+- **Structured extraction with `instructor`**: The [instructor](https://github.com/jxnl/instructor) library lets you extract structured, validated data from LLM responses using Pydantic models. This is especially useful in RAG pipelines where you need to parse specific fields (dates, amounts, entities) from retrieved context rather than returning free-form text.
+- **LangChain and LlamaIndex**: These frameworks provide higher-level abstractions for building RAG pipelines -- document loaders, chunking strategies, retriever chains, and more. They trade flexibility for development speed. Both are covered in detail in Phase 3.
+
+---
+
 ## What's Next
 
 Phase 2 is complete. You now know how to give an LLM external knowledge. In Phase 3, we're going to give it the ability to take actions in the world. We're building agents.

@@ -229,7 +229,11 @@ from sentence_transformers import SentenceTransformer
 model = SentenceTransformer('all-MiniLM-L6-v2')
 
 def get_local_embeddings(texts: list[str]) -> list[list[float]]:
-    """Get embeddings using local model."""
+    """Get embeddings using local model.
+    
+    Note: In sentence-transformers v3.0+, .encode() consistently returns
+    numpy arrays regardless of input type, so .tolist() always works.
+    """
     embeddings = model.encode(texts)
     return embeddings.tolist()
 

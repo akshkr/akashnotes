@@ -62,6 +62,8 @@ logging.basicConfig(
     format='%(asctime)s %(levelname)s %(name)s %(message)s'
 )
 logger = logging.getLogger("agent")
+# For production observability, consider `structlog` which provides structured
+# JSON logging out of the box — easier to parse and query than plain text logs.
 
 
 @dataclass

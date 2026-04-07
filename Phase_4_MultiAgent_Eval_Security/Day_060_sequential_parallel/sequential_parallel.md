@@ -197,6 +197,8 @@ crew = Crew(
 )
 ```
 
+> **Note:** CrewAI 0.70+ may have changed this API. The `manager_llm` parameter may now require a model object (e.g., `ChatOpenAI(model="gpt-4o")`) rather than a plain string. Check the [CrewAI docs](https://docs.crewai.com) for the latest syntax.
+
 ---
 
 ## Async Task Execution
@@ -456,6 +458,7 @@ crew = Crew(
 )
 
 # Or verbose level 2 for more detail
+# > **Note:** CrewAI 0.70+ changed verbose to accept True/False only, not integer levels. Check the [CrewAI docs](https://docs.crewai.com) for the latest syntax.
 crew = Crew(
     agents=[...],
     tasks=[...],
@@ -518,4 +521,4 @@ result = crew.kickoff(inputs={"topic": "AI"})
 
 ## What's Next?
 
-Now let's explore **Microsoft AutoGen** - another powerful framework for multi-agent conversations!
+Now let's explore **AG2 (formerly Microsoft AutoGen)** - another powerful framework for multi-agent conversations!

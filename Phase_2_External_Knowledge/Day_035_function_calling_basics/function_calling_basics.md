@@ -48,38 +48,26 @@ sequenceDiagram
 
 ---
 
-## Defining Tools for OpenAI
+## Defining Tools: The Modern Way
+
+Modern SDKs auto-generate JSON schemas from Pydantic models — no hand-writing schemas.
+
+### OpenAI with Pydantic (Recommended)
 
 ```python
-from openai import OpenAI
+from openai import OpenAI, pydantic_function_tool
+from pydantic import BaseModel, Field
 
 client = OpenAI()
 
-# Define your tools (functions the LLM can call)
-tools = [
-    {
-        "type": "function",
-        "function": {
-            "name": "get_weather",
-            "description": "Get the current weather for a location",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "city": {
-                        "type": "string",
-                        "description": "The city name, e.g., 'London'"
-                    },
-                    "unit": {
-                        "type": "string",
-                        "enum": ["celsius", "fahrenheit"],
-                        "description": "Temperature unit"
-                    }
-                },
-                "required": ["city"]
-            }
-        }
-    }
-]
+# Define your tool as a Pydantic model — the SDK generates the schema for you
+class GetWeather(BaseModel):
+    """Get the current weather for a location."""
+    city: str = Field(description="The city name, e.g., 'London'")
+    unit: str = Field(default="celsius", description="Temperature unit", json_schema_extra={"enum": ["celsius", "fahrenheit"]})
+
+# pydantic_function_tool() converts the model to the OpenAI tool format automatically
+tools = [pydantic_function_tool(GetWeather)]
 
 # Make a request with tools
 response = client.chat.completions.create(
@@ -92,17 +80,58 @@ response = client.chat.completions.create(
 print(response.choices[0].message)
 ```
 
+### What the SDK Generates Under the Hood
+
+The `pydantic_function_tool()` call above produces this raw JSON schema — you rarely need to write this by hand anymore, but understanding it helps with debugging:
+
+```python
+# This is what pydantic_function_tool(GetWeather) generates:
+{
+    "type": "function",
+    "function": {
+        "name": "GetWeather",
+        "description": "Get the current weather for a location.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "city": {
+                    "type": "string",
+                    "description": "The city name, e.g., 'London'"
+                },
+                "unit": {
+                    "type": "string",
+                    "enum": ["celsius", "fahrenheit"],
+                    "description": "Temperature unit"
+                }
+            },
+            "required": ["city"]
+        }
+    }
+}
+```
+
 ---
 
 ## Implementing Tool Functions
 
 ```python
 import json
-from openai import OpenAI
+from openai import OpenAI, pydantic_function_tool
+from pydantic import BaseModel, Field
 
 client = OpenAI()
 
-# Your actual functions
+# Define tool schemas as Pydantic models
+class GetWeather(BaseModel):
+    """Get current weather for a city."""
+    city: str = Field(description="City name")
+    unit: str = Field(default="celsius", description="Temperature unit", json_schema_extra={"enum": ["celsius", "fahrenheit"]})
+
+class Calculate(BaseModel):
+    """Perform mathematical calculations."""
+    expression: str = Field(description="Math expression like '2 + 2'")
+
+# Your actual function implementations
 def get_weather(city: str, unit: str = "celsius") -> dict:
     """Get weather for a city (mock implementation)."""
     # In reality, you'd call a weather API here
@@ -122,9 +151,7 @@ def get_weather(city: str, unit: str = "celsius") -> dict:
 def calculate(expression: str) -> dict:
     """Safely evaluate a mathematical expression."""
     try:
-        # Use ast.literal_eval for safety — never use eval() with untrusted input
         import ast, operator
-        # Simple recursive math evaluator (no eval!)
         def safe_eval(node):
             if isinstance(node, ast.Constant):
                 return node.value
@@ -144,42 +171,12 @@ def calculate(expression: str) -> dict:
 
 # Map function names to implementations
 AVAILABLE_FUNCTIONS = {
-    "get_weather": get_weather,
-    "calculate": calculate
+    "GetWeather": get_weather,
+    "Calculate": calculate,
 }
 
-# Tool definitions
-tools = [
-    {
-        "type": "function",
-        "function": {
-            "name": "get_weather",
-            "description": "Get current weather for a city",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "city": {"type": "string", "description": "City name"},
-                    "unit": {"type": "string", "enum": ["celsius", "fahrenheit"]}
-                },
-                "required": ["city"]
-            }
-        }
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "calculate",
-            "description": "Perform mathematical calculations",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "expression": {"type": "string", "description": "Math expression like '2 + 2'"}
-                },
-                "required": ["expression"]
-            }
-        }
-    }
-]
+# Generate tool schemas from Pydantic models — no manual JSON needed
+tools = [pydantic_function_tool(GetWeather), pydantic_function_tool(Calculate)]
 ```
 
 ---
@@ -288,24 +285,26 @@ def process_parallel_tools(response_message):
 
 ## Tool Calling with Anthropic (Claude)
 
+Anthropic uses `input_schema` instead of `parameters`. You can generate this from Pydantic too:
+
 ```python
 from anthropic import Anthropic
+from pydantic import BaseModel, Field
 
 client = Anthropic()
 
-# Anthropic tool format
+# Same Pydantic model, different SDK format
+class GetWeather(BaseModel):
+    """Get current weather for a city."""
+    city: str = Field(description="City name")
+    unit: str = Field(default="celsius", description="Temperature unit", json_schema_extra={"enum": ["celsius", "fahrenheit"]})
+
+# Anthropic format: use model_json_schema() to generate input_schema
 tools = [
     {
         "name": "get_weather",
-        "description": "Get current weather for a city",
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "city": {"type": "string", "description": "City name"},
-                "unit": {"type": "string", "enum": ["celsius", "fahrenheit"]}
-            },
-            "required": ["city"]
-        }
+        "description": GetWeather.__doc__,
+        "input_schema": GetWeather.model_json_schema(),
     }
 ]
 
@@ -473,30 +472,24 @@ response = client.chat.completions.create(
 ## Complete Tool Calling System
 
 ```python
-from openai import OpenAI
+from openai import OpenAI, pydantic_function_tool
+from pydantic import BaseModel, Field
 from typing import Callable
 import json
 
 class ToolSystem:
-    """Reusable tool calling system."""
+    """Reusable tool calling system with Pydantic-based tool registration."""
 
     def __init__(self):
         self.client = OpenAI()
         self.tools = []
         self.functions = {}
 
-    def register(self, name: str, description: str, parameters: dict):
-        """Decorator to register a function as a tool."""
+    def register(self, schema: type[BaseModel]):
+        """Decorator to register a function as a tool using a Pydantic model."""
         def decorator(func: Callable):
-            self.tools.append({
-                "type": "function",
-                "function": {
-                    "name": name,
-                    "description": description,
-                    "parameters": parameters
-                }
-            })
-            self.functions[name] = func
+            self.tools.append(pydantic_function_tool(schema))
+            self.functions[schema.__name__] = func
             return func
         return decorator
 
@@ -535,30 +528,24 @@ class ToolSystem:
 
         return "Max tool rounds exceeded"
 
-# Usage
+# Usage — define schemas as Pydantic models, register with decorator
 system = ToolSystem()
 
-@system.register(
-    name="get_time",
-    description="Get the current time",
-    parameters={"type": "object", "properties": {}}
-)
+class GetTime(BaseModel):
+    """Get the current time."""
+    pass
+
+class AddNumbers(BaseModel):
+    """Add two numbers together."""
+    a: float = Field(description="First number")
+    b: float = Field(description="Second number")
+
+@system.register(GetTime)
 def get_time():
     from datetime import datetime
     return {"time": datetime.now().strftime("%H:%M:%S")}
 
-@system.register(
-    name="add_numbers",
-    description="Add two numbers together",
-    parameters={
-        "type": "object",
-        "properties": {
-            "a": {"type": "number"},
-            "b": {"type": "number"}
-        },
-        "required": ["a", "b"]
-    }
-)
+@system.register(AddNumbers)
 def add_numbers(a: float, b: float):
     return {"result": a + b}
 

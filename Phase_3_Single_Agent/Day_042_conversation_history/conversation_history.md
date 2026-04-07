@@ -190,6 +190,8 @@ for i in range(15):
 print(f"Messages kept: {len(history.messages)}")  # 10, not 30
 ```
 
+> **Modern Alternative:** LangGraph 0.4+ handles conversation history automatically with the `add_messages` reducer in state definitions. The manual approaches shown here are educational — in production, prefer LangGraph's built-in message management.
+
 ```mermaid
 flowchart LR
     subgraph "Sliding Window (max=6)"

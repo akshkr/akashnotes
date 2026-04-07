@@ -490,6 +490,8 @@ def run_research(topic: str, max_iterations: int = 15) -> str:
 
     # Run the graph with streaming to see progress
     final_state = None
+    # Use `stream_mode="debug"` during development for detailed execution traces
+    # showing every node entry/exit and state change.
     for event in graph.stream(initial_state, stream_mode="values"):
         final_state = event
         iteration = event.get("iteration_count", 0)

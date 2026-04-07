@@ -150,7 +150,7 @@ LangGraph provides built-in checkpointing:
 
 ```python
 from langgraph.graph import StateGraph, END
-from langgraph.checkpoint.sqlite import SqliteSaver
+from langgraph.checkpoint.memory import MemorySaver  # or: pip install langgraph-checkpoint-sqlite
 from typing import TypedDict, Annotated
 from operator import add
 
@@ -160,7 +160,7 @@ class AgentState(TypedDict):
     step_count: int
 
 # Create checkpointer
-checkpointer = SqliteSaver.from_conn_string("checkpoints.db")
+checkpointer = MemorySaver()  # For production, use PostgresSaver or SqliteSaver
 
 # Build graph
 def agent_node(state: AgentState) -> dict:
@@ -198,13 +198,13 @@ result2 = app.invoke(
 ### Time-Travel Debugging
 
 ```python
-from langgraph.checkpoint.sqlite import SqliteSaver
+from langgraph.checkpoint.memory import MemorySaver  # or: pip install langgraph-checkpoint-sqlite
 
-checkpointer = SqliteSaver.from_conn_string("checkpoints.db")
+checkpointer = MemorySaver()  # For production, use PostgresSaver or SqliteSaver
 
 # Get all checkpoints for a thread
 thread_id = "user-123"
-checkpoints = list(checkpointer.list({"configurable": {"thread_id": thread_id}}))
+checkpoints = list(app.get_state_history({"configurable": {"thread_id": thread_id}}))
 
 print(f"Found {len(checkpoints)} checkpoints")
 

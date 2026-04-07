@@ -55,8 +55,8 @@ pip install chromadb
 ```python
 import chromadb
 
-# Create an ephemeral client (in-memory)
-client = chromadb.EphemeralClient()
+# Create an in-memory client (for development/testing)
+client = chromadb.Client()
 
 # Create a collection (like a table)
 collection = client.create_collection(

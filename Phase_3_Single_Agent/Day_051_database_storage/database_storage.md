@@ -358,6 +358,7 @@ from langgraph.graph import StateGraph, END
 checkpointer = PostgresSaver.from_conn_string(
     "postgresql://user:pass@localhost:5432/agents"
 )
+# For async applications, use `AsyncPostgresSaver` from the same package.
 
 # Build your graph
 workflow = StateGraph(AgentState)

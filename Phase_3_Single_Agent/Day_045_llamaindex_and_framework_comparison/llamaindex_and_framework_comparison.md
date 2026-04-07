@@ -129,39 +129,36 @@ from llama_index.readers.notion import NotionPageReader
 ### 3. Index Types
 
 ```python
-from llama_index.core import (
-    VectorStoreIndex,
-    SummaryIndex,
-    TreeIndex,
-    KeywordTableIndex
-)
+from llama_index.core import VectorStoreIndex
+from llama_index.embeddings.openai import OpenAIEmbedding
 
-# Vector Index - semantic search (most common)
-vector_index = VectorStoreIndex.from_documents(documents)
+embed_model = OpenAIEmbedding()
 
-# Summary Index - for summarization tasks
-summary_index = SummaryIndex.from_documents(documents)
-
-# Tree Index - hierarchical structure
-tree_index = TreeIndex.from_documents(documents)
-
-# Keyword Index - keyword-based retrieval
-keyword_index = KeywordTableIndex.from_documents(documents)
+# Vector Index - semantic search (recommended primary path)
+vector_index = VectorStoreIndex.from_documents(documents, embed_model=embed_model)
 ```
+
+> **Note (LlamaIndex 0.13+):** `SummaryIndex`, `TreeIndex`, and `KeywordTableIndex` have been
+> deprecated. Use `VectorStoreIndex` as the primary index type. If you need summarization
+> behaviour, use a query engine with `response_mode="tree_summarize"` on a vector index instead.
 
 ```mermaid
 flowchart TB
-    subgraph "Index Types"
-        A["VectorStoreIndex"]
+    subgraph "Index Types (0.13+)"
+        A["VectorStoreIndex\n(primary)"]
+    end
+
+    A -->|"Best for"| A1["Semantic search\nQ&A\nSummarization"]
+
+    subgraph "Deprecated"
         B["SummaryIndex"]
         C["TreeIndex"]
         D["KeywordTableIndex"]
     end
 
-    A -->|"Best for"| A1["Semantic search\nQ&A"]
-    B -->|"Best for"| B1["Summarization\nOverviews"]
-    C -->|"Best for"| C1["Hierarchical data\nBooks/docs"]
-    D -->|"Best for"| D1["Keyword search\nExact matching"]
+    style B fill:#FFB6C1
+    style C fill:#FFB6C1
+    style D fill:#FFB6C1
 ```
 
 ---
@@ -322,24 +319,24 @@ index = VectorStoreIndex.from_documents(documents, storage_context=storage_conte
 Combine multiple indices:
 
 ```python
-from llama_index.core import (
-    VectorStoreIndex,
-    SummaryIndex,
-    SimpleDirectoryReader
-)
+from llama_index.core import VectorStoreIndex, SimpleDirectoryReader
+from llama_index.llms.openai import OpenAI
+from llama_index.embeddings.openai import OpenAIEmbedding
 from llama_index.core.tools import QueryEngineTool, ToolMetadata
 from llama_index.core.query_engine import RouterQueryEngine
 from llama_index.core.selectors import LLMSingleSelector
 
-# Create different indices for different purposes
+llm = OpenAI(model="gpt-4o-mini")
+embed_model = OpenAIEmbedding()
+
+# Create different query engines for different purposes
 docs = SimpleDirectoryReader("./data").load_data()
 
-vector_index = VectorStoreIndex.from_documents(docs)
-summary_index = SummaryIndex.from_documents(docs)
+vector_index = VectorStoreIndex.from_documents(docs, embed_model=embed_model)
 
-# Create tools from query engines
-vector_tool = QueryEngineTool(
-    query_engine=vector_index.as_query_engine(),
+# Create tools from query engines with different response modes
+detail_tool = QueryEngineTool(
+    query_engine=vector_index.as_query_engine(llm=llm, response_mode="compact"),
     metadata=ToolMetadata(
         name="vector_search",
         description="Useful for specific questions about details"
@@ -347,7 +344,7 @@ vector_tool = QueryEngineTool(
 )
 
 summary_tool = QueryEngineTool(
-    query_engine=summary_index.as_query_engine(),
+    query_engine=vector_index.as_query_engine(llm=llm, response_mode="tree_summarize"),
     metadata=ToolMetadata(
         name="summary",
         description="Useful for summarization questions"
@@ -356,21 +353,21 @@ summary_tool = QueryEngineTool(
 
 # Router automatically selects the right tool
 router_engine = RouterQueryEngine(
-    selector=LLMSingleSelector.from_defaults(),
-    query_engine_tools=[vector_tool, summary_tool]
+    selector=LLMSingleSelector.from_defaults(llm=llm),
+    query_engine_tools=[detail_tool, summary_tool]
 )
 
-# Ask questions - router picks the right index!
-response = router_engine.query("Give me a summary")  # Uses summary_index
-response = router_engine.query("What is the exact definition of X?")  # Uses vector_index
+# Ask questions - router picks the right engine!
+response = router_engine.query("Give me a summary")  # Uses tree_summarize mode
+response = router_engine.query("What is the exact definition of X?")  # Uses compact mode
 ```
 
 ```mermaid
 flowchart TB
     A["User Query"] --> B["Router"]
     B --> C{"Query Type?"}
-    C -->|"Summary"| D["Summary Index"]
-    C -->|"Specific"| E["Vector Index"]
+    C -->|"Summary"| D["tree_summarize engine"]
+    C -->|"Specific"| E["compact engine"]
     D --> F["Response"]
     E --> F
 ```
@@ -388,7 +385,6 @@ from llama_index.core import (
 )
 from llama_index.llms.openai import OpenAI
 from llama_index.embeddings.openai import OpenAIEmbedding
-from llama_index.core import Settings
 import os
 
 class KnowledgeBase:
@@ -398,14 +394,14 @@ class KnowledgeBase:
         self.data_dir = data_dir
         self.persist_dir = persist_dir
 
-        # Configure settings
-        Settings.llm = OpenAI(model="gpt-4o-mini", temperature=0)
-        Settings.embed_model = OpenAIEmbedding()
+        # Create model instances (passed directly to constructors, not via Settings)
+        self.llm = OpenAI(model="gpt-4o-mini", temperature=0)
+        self.embed_model = OpenAIEmbedding()
 
         # Load or create index
         self.index = self._load_or_create_index()
-        self.query_engine = self.index.as_query_engine(similarity_top_k=5)
-        self.chat_engine = self.index.as_chat_engine(chat_mode="condense_plus_context")
+        self.query_engine = self.index.as_query_engine(llm=self.llm, similarity_top_k=5)
+        self.chat_engine = self.index.as_chat_engine(llm=self.llm, chat_mode="condense_plus_context")
 
     def _load_or_create_index(self):
         """Load existing index or create new one."""
@@ -416,7 +412,7 @@ class KnowledgeBase:
         else:
             print("Creating new index...")
             documents = SimpleDirectoryReader(self.data_dir).load_data()
-            index = VectorStoreIndex.from_documents(documents)
+            index = VectorStoreIndex.from_documents(documents, embed_model=self.embed_model)
             index.storage_context.persist(persist_dir=self.persist_dir)
             return index
 
@@ -478,10 +474,8 @@ mindmap
       Nodes
       Loaders
     Indices
-      Vector
-      Summary
-      Tree
-      Keyword
+      VectorStoreIndex
+      Response modes
     Engines
       Query Engine
       Chat Engine

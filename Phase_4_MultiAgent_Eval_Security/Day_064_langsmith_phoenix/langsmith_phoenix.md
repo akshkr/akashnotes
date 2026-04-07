@@ -393,6 +393,8 @@ mindmap
       Quality issues
 ```
 
+> **Also worth knowing:** [Langfuse](https://langfuse.com) is an open-source alternative to LangSmith that offers tracing, evaluation, and prompt management. It's self-hostable and has a generous free tier.
+
 ---
 
 ## Quick Reference

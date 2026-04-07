@@ -477,4 +477,4 @@ result = crew.kickoff(inputs={"key": "value"})
 
 ## What's Next?
 
-Now let's explore **Microsoft AutoGen** - another powerful framework for multi-agent conversations!
+Now let's explore **AG2 (formerly Microsoft AutoGen)** - another powerful framework for multi-agent conversations!

@@ -115,6 +115,8 @@ json_parser = JsonOutputParser(pydantic_object=MovieReview)
 print(json_parser.get_format_instructions())
 ```
 
+> **Modern Alternative:** In LangChain 0.4+, use `model.with_structured_output(MyPydanticModel)` instead of `JsonOutputParser` for more reliable structured output. For complex multi-step workflows, consider LangGraph over LCEL chains.
+
 ---
 
 ## LangChain Expression Language (LCEL)

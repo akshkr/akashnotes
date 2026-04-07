@@ -86,6 +86,8 @@ def parse_markdown(file_path: str) -> dict:
 
 PDFs are trickier - they're designed for display, not extraction.
 
+> **Recommendation:** For new projects, start with **PyMuPDF** (`fitz`) as your default PDF parser -- it is the fastest and handles most layouts accurately. Use **pdfplumber** when you need precise table extraction. PyPDF2 is shown first below for simplicity, but PyMuPDF is the better production choice.
+
 ### Using PyPDF2
 
 ```bash

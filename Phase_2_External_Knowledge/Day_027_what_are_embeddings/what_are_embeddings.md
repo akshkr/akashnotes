@@ -252,7 +252,7 @@ visualize_embeddings(texts)
 |-------|------------|----------|------|
 | text-embedding-3-small | 1536 | General use, cost-effective | $ |
 | text-embedding-3-large | 3072 | Higher accuracy needs | $$ |
-| text-embedding-ada-002 | 1536 | Legacy, still widely used | $ |
+| text-embedding-ada-002 | 1536 | Legacy — do not use for new projects | $ |
 
 ### Choosing the Right Model
 

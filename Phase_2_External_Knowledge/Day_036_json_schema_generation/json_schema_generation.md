@@ -1,529 +1,315 @@
-# Generating JSON Schemas for Python Functions
+# Tool Schemas: From Pydantic Models to LLM-Ready Definitions
 
-When you want an LLM to call your Python functions, you need to describe those functions in a format the LLM understands: **JSON Schema**. This guide shows you how to create these schemas.
+When you want an LLM to call your Python functions, you need to describe those functions in a format the LLM understands: **JSON Schema**. The good news: modern SDKs generate these schemas automatically from Pydantic models. You rarely need to write them by hand.
 
-> **Coming from Software Engineering?** JSON Schema generation for tool calling is like writing OpenAPI/Swagger specs for your internal functions. If you've used tools like Pydantic, Marshmallow, or Joi to define and validate API schemas, this is the same skill — just for an AI consumer instead of a frontend.
-
----
-
-## What is a JSON Schema?
-
-A JSON Schema is a blueprint that describes the structure of JSON data. For function calling, it tells the LLM:
-- What the function does
-- What parameters it accepts
-- What types those parameters should be
-
-```mermaid
-flowchart LR
-    A["Python Function"] --> B["JSON Schema"]
-    B --> C["LLM understands<br/>how to call it"]
-
-    style B fill:#90EE90
-```
+> **Coming from Software Engineering?** This is like OpenAPI/Swagger spec generation. Just as FastAPI auto-generates API docs from your type annotations, LLM SDKs auto-generate tool schemas from Pydantic models. The days of hand-writing JSON schemas for every function are over.
 
 ---
 
-## Basic Schema Structure
+## The Modern Approach: Pydantic Does the Work
 
-Here's the anatomy of a function schema for OpenAI:
+Every major LLM SDK now supports generating tool schemas from Pydantic models. Define your tool once, use it everywhere.
 
-```python
-function_schema = {
-    "name": "get_weather",           # Function name
-    "description": "Get current weather for a city",  # What it does
-    "parameters": {                   # Input parameters
-        "type": "object",
-        "properties": {
-            "city": {
-                "type": "string",
-                "description": "The city name"
-            },
-            "unit": {
-                "type": "string",
-                "enum": ["celsius", "fahrenheit"],
-                "description": "Temperature unit"
-            }
-        },
-        "required": ["city"]          # Required parameters
-    }
-}
-```
-
----
-
-## Manual Schema Creation
-
-### Simple Function
+### OpenAI: `pydantic_function_tool()`
 
 ```python
-# Your Python function
-def search_products(query: str, max_results: int = 10) -> list:
-    """Search for products in the catalog."""
-    # Implementation here
-    pass
-
-# The JSON schema for it
-search_schema = {
-    "name": "search_products",
-    "description": "Search for products in the catalog",
-    "parameters": {
-        "type": "object",
-        "properties": {
-            "query": {
-                "type": "string",
-                "description": "Search query for products"
-            },
-            "max_results": {
-                "type": "integer",
-                "description": "Maximum number of results to return",
-                "default": 10
-            }
-        },
-        "required": ["query"]
-    }
-}
-```
-
-### Function with Complex Types
-
-```python
-# Function with nested parameters
-def create_event(
-    title: str,
-    date: str,
-    attendees: list,
-    location: dict
-) -> dict:
-    """Create a calendar event."""
-    pass
-
-# Schema with nested objects and arrays
-event_schema = {
-    "name": "create_event",
-    "description": "Create a calendar event",
-    "parameters": {
-        "type": "object",
-        "properties": {
-            "title": {
-                "type": "string",
-                "description": "Event title"
-            },
-            "date": {
-                "type": "string",
-                "description": "Event date in ISO format (YYYY-MM-DD)"
-            },
-            "attendees": {
-                "type": "array",
-                "items": {
-                    "type": "string"
-                },
-                "description": "List of attendee email addresses"
-            },
-            "location": {
-                "type": "object",
-                "properties": {
-                    "name": {"type": "string"},
-                    "address": {"type": "string"},
-                    "virtual": {"type": "boolean"}
-                },
-                "description": "Event location details"
-            }
-        },
-        "required": ["title", "date"]
-    }
-}
-```
-
----
-
-## Automatic Schema Generation with Pydantic
-
-Let Pydantic generate schemas for you automatically!
-
-```python
+from openai import OpenAI, pydantic_function_tool
 from pydantic import BaseModel, Field
-from typing import Optional, List
-import json
+from typing import Optional
 
-class ProductSearch(BaseModel):
-    """Search parameters for products."""
+client = OpenAI()
+
+class SearchProducts(BaseModel):
+    """Search for products in the catalog."""
     query: str = Field(description="Search query for products")
     category: Optional[str] = Field(None, description="Filter by category")
     max_price: Optional[float] = Field(None, description="Maximum price filter")
     max_results: int = Field(10, description="Maximum results to return")
 
-# Generate JSON schema automatically
-schema = ProductSearch.model_json_schema()
-print(json.dumps(schema, indent=2))
+# One line — the SDK generates the full JSON schema
+tools = [pydantic_function_tool(SearchProducts)]
+
+response = client.chat.completions.create(
+    model="gpt-4o-mini",
+    messages=[{"role": "user", "content": "Find me running shoes under $100"}],
+    tools=tools,
+)
 ```
 
-Output:
-```json
-{
-  "type": "object",
-  "properties": {
-    "query": {
-      "type": "string",
-      "description": "Search query for products"
-    },
-    "category": {
-      "type": "string",
-      "description": "Filter by category"
-    },
-    "max_price": {
-      "type": "number",
-      "description": "Maximum price filter"
-    },
-    "max_results": {
-      "type": "integer",
-      "default": 10,
-      "description": "Maximum results to return"
+That's it. The SDK inspects `SearchProducts`, pulls the docstring as the description, reads field types and descriptions, and produces the full OpenAI tool schema.
+
+### Anthropic: `model_json_schema()`
+
+Anthropic's SDK doesn't have a `pydantic_function_tool()` equivalent, but Pydantic's built-in `model_json_schema()` gets you there:
+
+```python
+from anthropic import Anthropic
+from pydantic import BaseModel, Field
+from typing import Optional
+
+client = Anthropic()
+
+class SearchProducts(BaseModel):
+    """Search for products in the catalog."""
+    query: str = Field(description="Search query for products")
+    category: Optional[str] = Field(None, description="Filter by category")
+    max_price: Optional[float] = Field(None, description="Maximum price filter")
+    max_results: int = Field(10, description="Maximum results to return")
+
+# Generate Anthropic-format tool definition from the same Pydantic model
+tools = [
+    {
+        "name": "search_products",
+        "description": SearchProducts.__doc__,
+        "input_schema": SearchProducts.model_json_schema(),
     }
-  },
-  "required": ["query"]
+]
+
+response = client.messages.create(
+    model="claude-sonnet-4-5",
+    max_tokens=1024,
+    tools=tools,
+    messages=[{"role": "user", "content": "Find me running shoes under $100"}],
+)
+```
+
+### LangChain: `@tool` Decorator
+
+LangChain goes even further — it generates schemas directly from function signatures:
+
+```python
+from langchain_core.tools import tool
+
+@tool
+def search_products(query: str, category: str = None, max_price: float = None) -> list:
+    """Search for products in the catalog by name, category, or price range."""
+    # Your implementation here
+    return [{"name": "Running Shoe", "price": 89.99}]
+
+# Schema is auto-generated from the function signature + docstring
+print(search_products.name)          # "search_products"
+print(search_products.description)   # "Search for products in the catalog..."
+print(search_products.args_schema)   # Pydantic model generated from type hints
+```
+
+For more control, combine `@tool` with a Pydantic input model:
+
+```python
+from langchain_core.tools import tool
+from pydantic import BaseModel, Field
+
+class SearchInput(BaseModel):
+    query: str = Field(description="Search query for products")
+    category: str | None = Field(None, description="Filter by category")
+    max_price: float | None = Field(None, description="Maximum price filter")
+
+@tool(args_schema=SearchInput)
+def search_products(query: str, category: str = None, max_price: float = None) -> list:
+    """Search for products in the catalog."""
+    return [{"name": "Running Shoe", "price": 89.99}]
+```
+
+---
+
+## Under the Hood: What a Raw JSON Schema Looks Like
+
+You rarely write these by hand, but understanding the format helps when debugging tool-calling issues.
+
+```python
+# This is what pydantic_function_tool(SearchProducts) generates for OpenAI:
+{
+    "type": "function",
+    "function": {
+        "name": "SearchProducts",
+        "description": "Search for products in the catalog.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "query": {
+                    "type": "string",
+                    "description": "Search query for products"
+                },
+                "category": {
+                    "type": "string",
+                    "description": "Filter by category"
+                },
+                "max_price": {
+                    "type": "number",
+                    "description": "Maximum price filter"
+                },
+                "max_results": {
+                    "type": "integer",
+                    "default": 10,
+                    "description": "Maximum results to return"
+                }
+            },
+            "required": ["query"]
+        }
+    }
 }
 ```
 
-### Converting Pydantic to OpenAI Format
+Key things to notice:
+- **`name`** comes from the class name (OpenAI) or you set it explicitly (Anthropic)
+- **`description`** comes from the docstring
+- **`properties`** map to Pydantic fields with types auto-converted
+- **`required`** only includes fields without defaults
+- Anthropic uses `input_schema` instead of `parameters` — same content, different key
+
+---
+
+## Provider Format Differences
+
+The schema content is identical — only the wrapper differs:
 
 ```python
 from pydantic import BaseModel, Field
-from typing import Optional, List, get_type_hints
-import inspect
 
-def pydantic_to_openai_schema(model: type[BaseModel], func_name: str, description: str) -> dict:
-    """Convert a Pydantic model to OpenAI function schema format."""
-
-    schema = model.model_json_schema()
-
-    # Remove Pydantic-specific fields
-    schema.pop("title", None)
-
-    return {
-        "name": func_name,
-        "description": description,
-        "parameters": schema
-    }
-
-# Usage
-class WeatherParams(BaseModel):
+class GetWeather(BaseModel):
+    """Get current weather for a city."""
     city: str = Field(description="City name")
-    unit: str = Field("celsius", description="Temperature unit")
 
-openai_schema = pydantic_to_openai_schema(
-    WeatherParams,
-    "get_weather",
-    "Get current weather for a city"
-)
+# Helper to generate for any provider from one Pydantic model
+def to_openai(model: type[BaseModel]) -> dict:
+    """Convert Pydantic model to OpenAI tool format."""
+    from openai import pydantic_function_tool
+    return pydantic_function_tool(model)
 
-print(json.dumps(openai_schema, indent=2))
-```
-
----
-
-## Schema Generation from Function Signatures
-
-Automatically generate schemas by inspecting Python functions:
-
-```python
-import inspect
-from typing import get_type_hints, Optional, List, Dict, Any
-import json
-
-def generate_schema_from_function(func) -> dict:
-    """
-    Generate JSON schema from a Python function's signature and docstring.
-    """
-
-    # Get function name and docstring
-    name = func.__name__
-    description = func.__doc__ or f"Function {name}"
-
-    # Get type hints
-    hints = get_type_hints(func)
-
-    # Get signature for defaults
-    sig = inspect.signature(func)
-
-    # Map Python types to JSON Schema types
-    type_map = {
-        str: "string",
-        int: "integer",
-        float: "number",
-        bool: "boolean",
-        list: "array",
-        dict: "object",
-        List: "array",
-        Dict: "object",
-    }
-
-    properties = {}
-    required = []
-
-    for param_name, param in sig.parameters.items():
-        if param_name == "return":
-            continue
-
-        # Get type
-        param_type = hints.get(param_name, Any)
-        json_type = type_map.get(param_type, "string")
-
-        # Handle Optional types
-        if hasattr(param_type, "__origin__"):
-            if param_type.__origin__ is list:
-                json_type = "array"
-            elif param_type.__origin__ is dict:
-                json_type = "object"
-
-        properties[param_name] = {
-            "type": json_type,
-            "description": f"Parameter {param_name}"
-        }
-
-        # Check if required (no default value)
-        if param.default == inspect.Parameter.empty:
-            required.append(param_name)
-        else:
-            properties[param_name]["default"] = param.default
-
+def to_anthropic(model: type[BaseModel], name: str = None) -> dict:
+    """Convert Pydantic model to Anthropic tool format."""
+    tool_name = name or model.__name__.lower()
     return {
-        "name": name,
-        "description": description.strip(),
-        "parameters": {
-            "type": "object",
-            "properties": properties,
-            "required": required
-        }
+        "name": tool_name,
+        "description": model.__doc__ or "",
+        "input_schema": model.model_json_schema(),
     }
 
-# Example usage
-def send_email(to: str, subject: str, body: str, cc: List[str] = None) -> bool:
-    """Send an email to the specified recipient."""
-    pass
-
-schema = generate_schema_from_function(send_email)
-print(json.dumps(schema, indent=2))
+# Same model, both providers
+openai_tool = to_openai(GetWeather)
+anthropic_tool = to_anthropic(GetWeather, name="get_weather")
 ```
 
 ---
 
-## Advanced: Decorator-Based Schema Generation
+## Pydantic Features That Map to Schema Constraints
 
-Create a decorator that automatically registers schemas:
+Pydantic gives you rich schema control through field definitions:
 
 ```python
-from functools import wraps
-from typing import Callable, Dict, Any
+from pydantic import BaseModel, Field
+from typing import Literal, Optional
+from enum import Enum
+
+class Priority(str, Enum):
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+
+class CreateTicket(BaseModel):
+    """Create a support ticket."""
+    
+    # String with enum constraint — LLM will only output these values
+    priority: Priority = Field(description="Ticket priority level")
+    
+    # Literal type — alternative to enum for small fixed sets
+    category: Literal["bug", "feature", "question"] = Field(description="Ticket type")
+    
+    # String with length constraints
+    title: str = Field(description="Ticket title", min_length=5, max_length=200)
+    
+    # Optional field with default
+    assignee: Optional[str] = Field(None, description="Assign to a team member")
+    
+    # Number with range
+    severity: int = Field(description="Severity from 1 to 5", ge=1, le=5)
+    
+    # Array field
+    tags: list[str] = Field(default_factory=list, description="Tags for categorization")
+
+# See what schema Pydantic generates:
 import json
+print(json.dumps(CreateTicket.model_json_schema(), indent=2))
+```
 
-# Global registry of function schemas
-FUNCTION_REGISTRY: Dict[str, dict] = {}
+| Pydantic Feature | JSON Schema Result | LLM Behavior |
+|---|---|---|
+| `str` | `"type": "string"` | Free text |
+| `int` | `"type": "integer"` | Whole numbers |
+| `float` | `"type": "number"` | Any number |
+| `bool` | `"type": "boolean"` | true/false |
+| `list[str]` | `"type": "array", "items": {"type": "string"}` | Array of strings |
+| `Literal["a", "b"]` | `"enum": ["a", "b"]` | Constrained choices |
+| `Enum` | `"enum": [...]` | Constrained choices |
+| `Optional[str]` | Not in `required` | LLM may omit |
+| `Field(ge=1, le=5)` | `"minimum": 1, "maximum": 5` | Bounded range |
+| `Field(min_length=5)` | `"minLength": 5` | Minimum string length |
 
-def tool(description: str = None):
-    """
-    Decorator to register a function as an LLM tool.
+---
 
-    Usage:
-        @tool("Search for products in the catalog")
-        def search_products(query: str, limit: int = 10):
-            ...
-    """
-    def decorator(func: Callable) -> Callable:
-        # Generate schema
-        schema = generate_schema_from_function(func)
-        if description:
-            schema["description"] = description
+## Nested Models for Complex Tools
 
-        # Register the function
-        FUNCTION_REGISTRY[func.__name__] = {
-            "schema": schema,
-            "function": func
-        }
+```python
+from pydantic import BaseModel, Field
+from typing import Optional
 
-        @wraps(func)
-        def wrapper(*args, **kwargs):
-            return func(*args, **kwargs)
+class Location(BaseModel):
+    """Event location details."""
+    name: str = Field(description="Venue name")
+    address: Optional[str] = Field(None, description="Street address")
+    virtual: bool = Field(False, description="Whether this is a virtual event")
 
-        return wrapper
-    return decorator
+class CreateEvent(BaseModel):
+    """Create a calendar event."""
+    title: str = Field(description="Event title")
+    date: str = Field(description="Event date in ISO format (YYYY-MM-DD)")
+    attendees: list[str] = Field(default_factory=list, description="Attendee email addresses")
+    location: Optional[Location] = Field(None, description="Event location")
 
-def get_all_schemas() -> list:
-    """Get all registered function schemas."""
-    return [entry["schema"] for entry in FUNCTION_REGISTRY.values()]
-
-def get_function(name: str) -> Callable:
-    """Get a registered function by name."""
-    return FUNCTION_REGISTRY.get(name, {}).get("function")
-
-# Usage
-@tool("Get current weather for a location")
-def get_weather(city: str, unit: str = "celsius") -> dict:
-    """Fetch weather data."""
-    return {"city": city, "temp": 22, "unit": unit}
-
-@tool("Search for restaurants nearby")
-def find_restaurants(location: str, cuisine: str = None, max_results: int = 5) -> list:
-    """Find restaurants near a location."""
-    return [{"name": "Restaurant A", "cuisine": cuisine}]
-
-# Get all schemas for the API call
-all_tools = get_all_schemas()
-print(json.dumps(all_tools, indent=2))
+# Pydantic handles nested models automatically — the generated schema
+# includes the Location sub-schema within CreateEvent's properties
 ```
 
 ---
 
-## Provider-Specific Formats
-
-Different LLM providers use slightly different formats:
-
-### OpenAI Format
-
-```python
-openai_tools = [
-    {
-        "type": "function",
-        "function": {
-            "name": "get_weather",
-            "description": "Get weather for a city",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "city": {"type": "string"}
-                },
-                "required": ["city"]
-            }
-        }
-    }
-]
-```
-
-### Anthropic Format
-
-```python
-anthropic_tools = [
-    {
-        "name": "get_weather",
-        "description": "Get weather for a city",
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "city": {"type": "string", "description": "City name"}
-            },
-            "required": ["city"]
-        }
-    }
-]
-```
-
-### Conversion Helper
-
-```python
-def convert_schema(schema: dict, target: str) -> dict:
-    """Convert schema between provider formats."""
-
-    if target == "openai":
-        return {
-            "type": "function",
-            "function": {
-                "name": schema["name"],
-                "description": schema["description"],
-                "parameters": schema["parameters"]
-            }
-        }
-
-    elif target == "anthropic":
-        return {
-            "name": schema["name"],
-            "description": schema["description"],
-            "input_schema": schema["parameters"]
-        }
-
-    return schema
-
-# Usage
-base_schema = {
-    "name": "get_weather",
-    "description": "Get weather",
-    "parameters": {"type": "object", "properties": {"city": {"type": "string"}}}
-}
-
-openai_format = convert_schema(base_schema, "openai")
-anthropic_format = convert_schema(base_schema, "anthropic")
-```
-
----
-
-## Common JSON Schema Types
+## Best Practices for Tool Schema Design
 
 ```mermaid
-flowchart TB
-    subgraph "Basic Types"
-        A["string"]
-        B["integer"]
-        C["number"]
-        D["boolean"]
-    end
-
-    subgraph "Complex Types"
-        E["array"]
-        F["object"]
-    end
-
-    subgraph "Constraints"
-        G["enum"]
-        H["minimum/maximum"]
-        I["minLength/maxLength"]
-        J["pattern (regex)"]
-    end
+mindmap
+  root((Good Tool Schemas))
+    Descriptions Matter
+      Docstring = tool description
+      Field descriptions guide the LLM
+      Include examples in descriptions
+    Constrain the LLM
+      Use enums for fixed choices
+      Set min/max for numbers
+      Mark fields required only if needed
+    Keep Tools Focused
+      One action per tool
+      Prefer multiple simple tools
+      over one complex tool
+    Use Pydantic
+      Auto-generates schemas
+      Validates LLM output
+      Single source of truth
 ```
 
-### Type Examples
-
+**Good:** Descriptive fields that guide the LLM
 ```python
-schema_examples = {
-    # String with enum
-    "status": {
-        "type": "string",
-        "enum": ["pending", "active", "completed"],
-        "description": "Current status"
-    },
+class SearchProducts(BaseModel):
+    """Search for products in the catalog by name, category, or price range.
+    Use this when the user wants to find products to buy."""
+    query: str = Field(description="Search query, e.g., 'red shoes' or 'laptop'")
+    category: Literal["electronics", "clothing", "home", "sports"] | None = Field(
+        None, description="Product category to filter by"
+    )
+```
 
-    # Number with range
-    "rating": {
-        "type": "number",
-        "minimum": 0,
-        "maximum": 5,
-        "description": "Rating from 0 to 5"
-    },
-
-    # String with pattern
-    "email": {
-        "type": "string",
-        "pattern": "^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\\.[a-zA-Z0-9-.]+$",
-        "description": "Email address"
-    },
-
-    # Array with typed items
-    "tags": {
-        "type": "array",
-        "items": {"type": "string"},
-        "minItems": 1,
-        "maxItems": 10,
-        "description": "List of tags"
-    },
-
-    # Nested object
-    "address": {
-        "type": "object",
-        "properties": {
-            "street": {"type": "string"},
-            "city": {"type": "string"},
-            "zip": {"type": "string"}
-        },
-        "required": ["city"]
-    }
-}
+**Bad:** Vague names and no descriptions
+```python
+class DoStuff(BaseModel):
+    """Does stuff."""
+    x: str  # No description — LLM will guess what to put here
 ```
 
 ---
@@ -531,56 +317,24 @@ schema_examples = {
 ## Summary
 
 ```mermaid
-mindmap
-  root((JSON Schemas))
-    Manual
-      Write by hand
-      Full control
-      More work
-    Pydantic
-      Auto-generate
-      Type safe
-      Recommended
-    Inspection
-      From function signature
-      Dynamic
-      Less documentation
-    Providers
-      OpenAI format
-      Anthropic format
-      Convert between
+flowchart LR
+    A["Define Pydantic Model"] --> B["SDK generates schema"]
+    B --> C["OpenAI: pydantic_function_tool()"]
+    B --> D["Anthropic: model_json_schema()"]
+    B --> E["LangChain: @tool decorator"]
+    
+    style A fill:#90EE90
 ```
 
----
-
-## Quick Reference
-
-```python
-# Manual schema
-schema = {
-    "name": "func_name",
-    "description": "What it does",
-    "parameters": {
-        "type": "object",
-        "properties": {
-            "param": {"type": "string", "description": "..."}
-        },
-        "required": ["param"]
-    }
-}
-
-# Pydantic auto-generation
-class Params(BaseModel):
-    param: str = Field(description="...")
-
-schema = Params.model_json_schema()
-
-# Function inspection
-schema = generate_schema_from_function(my_func)
-```
+| Approach | When to Use |
+|---|---|
+| `pydantic_function_tool()` (OpenAI) | OpenAI SDK — one-liner, recommended |
+| `model_json_schema()` (Anthropic) | Anthropic SDK — generate input_schema from Pydantic |
+| `@tool` decorator (LangChain) | LangChain — auto-schema from function signature |
+| Raw JSON schema | Debugging, understanding what SDKs generate, edge cases |
 
 ---
 
 ## What's Next?
 
-Now that you can generate schemas, let's learn how to **execute tool calls and return results** back to the LLM!
+Now that your tools have proper schemas, let's learn how to **execute tool calls and return results** back to the LLM!

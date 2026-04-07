@@ -131,25 +131,24 @@ else:
 
 ## Anthropic Tool Calling
 
-Anthropic uses a slightly different format:
+Anthropic uses `input_schema` instead of `parameters`. Generate it from Pydantic:
 
 ```python
 from anthropic import Anthropic
+from pydantic import BaseModel, Field
 
 client = Anthropic()
 
-# Define tools in Anthropic format
+class GetWeather(BaseModel):
+    """Get current weather for a city."""
+    city: str = Field(description="City name")
+
+# Generate Anthropic tool definition from Pydantic model
 tools = [
     {
         "name": "get_weather",
-        "description": "Get current weather for a city",
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "city": {"type": "string", "description": "City name"}
-            },
-            "required": ["city"]
-        }
+        "description": GetWeather.__doc__,
+        "input_schema": GetWeather.model_json_schema(),
     }
 ]
 

@@ -55,11 +55,11 @@ ollama serve
 
 ```bash
 # Pull popular models
-ollama pull llama3           # Meta's Llama 3 (8B)
-ollama pull llama3:70b       # Larger version
+ollama pull llama3.2         # Meta's Llama 3.2 (8B)
+ollama pull llama3.2:70b     # Larger version
 ollama pull mistral          # Mistral 7B
-ollama pull codellama        # Code-specialized
-ollama pull phi3             # Microsoft's small model
+ollama pull qwen2.5-coder   # Code-specialized (modern alternative to codellama)
+ollama pull phi4             # Microsoft's small model
 
 # List downloaded models
 ollama list
@@ -74,7 +74,7 @@ ollama list
 ```python
 import requests
 
-def ollama_generate(prompt: str, model: str = "llama3") -> str:
+def ollama_generate(prompt: str, model: str = "llama3.2") -> str:
     """Generate text using Ollama."""
     response = requests.post(
         "http://localhost:11434/api/generate",
@@ -94,7 +94,7 @@ print(result)
 ### Chat API
 
 ```python
-def ollama_chat(messages: list, model: str = "llama3") -> str:
+def ollama_chat(messages: list, model: str = "llama3.2") -> str:
     """Chat using Ollama."""
     response = requests.post(
         "http://localhost:11434/api/chat",
@@ -124,18 +124,18 @@ pip install ollama
 import ollama
 
 # Simple generation
-response = ollama.generate(model='llama3', prompt='Why is the sky blue?')
+response = ollama.generate(model='llama3.2', prompt='Why is the sky blue?')
 print(response['response'])
 
 # Chat
-response = ollama.chat(model='llama3', messages=[
+response = ollama.chat(model='llama3.2', messages=[
     {'role': 'user', 'content': 'Hello!'}
 ])
 print(response['message']['content'])
 
 # Streaming
 for chunk in ollama.chat(
-    model='llama3',
+    model='llama3.2',
     messages=[{'role': 'user', 'content': 'Tell me a joke'}],
     stream=True
 ):
@@ -159,7 +159,7 @@ client = OpenAI(
 
 # Use exactly like OpenAI!
 response = client.chat.completions.create(
-    model="llama3",
+    model="llama3.2",
     messages=[
         {"role": "system", "content": "You are a helpful assistant."},
         {"role": "user", "content": "What is Python?"}
@@ -181,7 +181,7 @@ def get_llm_client(use_local: bool = False):
         return OpenAI(
             base_url="http://localhost:11434/v1",
             api_key="ollama"
-        ), "llama3"
+        ), "llama3.2"
     else:
         return OpenAI(), "gpt-4o-mini"
 
@@ -224,13 +224,13 @@ flowchart LR
 def recommend_model(available_ram_gb: int) -> str:
     """Recommend model based on available RAM."""
     if available_ram_gb >= 64:
-        return "llama3:70b"      # Best quality
+        return "llama3.2:70b"    # Best quality
     elif available_ram_gb >= 32:
-        return "llama3:70b-q4"   # Good quality, fits in RAM
+        return "llama3.2:70b-q4" # Good quality, fits in RAM
     elif available_ram_gb >= 16:
-        return "llama3"          # 8B model
+        return "llama3.2"        # 8B model
     elif available_ram_gb >= 8:
-        return "phi3"            # Small but capable
+        return "phi4"            # Small but capable
     else:
         return "tinyllama"       # Minimal requirements
 ```
@@ -265,7 +265,7 @@ def benchmark_models(prompt: str, models: list) -> dict:
 
 # Compare
 prompt = "Explain recursion in programming"
-models = ["llama3", "mistral", "phi3"]
+models = ["llama3.2", "mistral", "phi4"]
 
 results = benchmark_models(prompt, models)
 for model, data in results.items():
@@ -292,7 +292,7 @@ class LLMProvider:
                 base_url="http://localhost:11434/v1",
                 api_key="ollama"
             )
-            self.default_model = "llama3"
+            self.default_model = "llama3.2"
         elif provider == "openai":
             self.client = OpenAI()
             self.default_model = "gpt-4o-mini"
@@ -359,7 +359,7 @@ print(f"Got {len(embeddings)} embeddings of dimension {len(embeddings[0])}")
 
 ```bash
 # Check if GPU is being used
-ollama run llama3 --verbose
+ollama run llama3.2 --verbose
 
 # For NVIDIA GPUs, install CUDA drivers
 # Models automatically use GPU if available
@@ -371,7 +371,7 @@ ollama run llama3 --verbose
 import ollama
 import asyncio
 
-async def process_batch(prompts: list, model: str = "llama3"):
+async def process_batch(prompts: list, model: str = "llama3.2"):
     """Process multiple prompts (note: Ollama processes sequentially)."""
     results = []
     for prompt in prompts:
@@ -414,16 +414,16 @@ mindmap
 
 ```bash
 # Ollama commands
-ollama pull llama3        # Download model
-ollama run llama3         # Interactive chat
+ollama pull llama3.2      # Download model
+ollama run llama3.2       # Interactive chat
 ollama list               # Show models
-ollama rm llama3          # Delete model
+ollama rm llama3.2        # Delete model
 ```
 
 ```python
 # Python usage
 import ollama
-response = ollama.chat(model='llama3', messages=[...])
+response = ollama.chat(model='llama3.2', messages=[...])
 
 # OpenAI-compatible
 from openai import OpenAI

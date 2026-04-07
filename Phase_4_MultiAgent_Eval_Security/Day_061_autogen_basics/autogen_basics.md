@@ -1,5 +1,7 @@
 # Code-Execution Frameworks: AG2 (formerly Microsoft AutoGen)
 
+> **Naming Note:** Microsoft's AutoGen framework was forked and continued as **AG2** (AutoGen 0.4+). This course uses the AG2 packages (`autogen-agentchat`, `autogen-ext`). If you see references to "AutoGen" in other resources, they may refer to the older 0.2.x API which is incompatible.
+
 AG2 (the community-driven rewrite of AutoGen) is a framework for building **conversational AI agents** that can write and execute code. It excels at programming tasks and collaborative problem-solving.
 
 > **Coming from Software Engineering?** AG2's agent conversations work like inter-process communication (IPC) — agents send messages back and forth in a structured protocol, each processing the other's output. If you've built chatbot systems, pub/sub architectures, or even actors (Akka, Erlang), the communication model will be familiar. The key difference: the "processing logic" inside each agent is an LLM call rather than deterministic code.

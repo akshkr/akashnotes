@@ -30,29 +30,19 @@ sequenceDiagram
 When the LLM wants to call a function, it returns a special response:
 
 ```python
-from openai import OpenAI
+from openai import OpenAI, pydantic_function_tool
+from pydantic import BaseModel, Field
 import json
 
 client = OpenAI()
 
-# Define your tools
-tools = [
-    {
-        "type": "function",
-        "function": {
-            "name": "get_weather",
-            "description": "Get current weather for a city",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "city": {"type": "string", "description": "City name"},
-                    "unit": {"type": "string", "enum": ["celsius", "fahrenheit"]}
-                },
-                "required": ["city"]
-            }
-        }
-    }
-]
+# Define tool schema as a Pydantic model
+class GetWeather(BaseModel):
+    """Get current weather for a city."""
+    city: str = Field(description="City name")
+    unit: str = Field(default="celsius", description="Temperature unit", json_schema_extra={"enum": ["celsius", "fahrenheit"]})
+
+tools = [pydantic_function_tool(GetWeather)]
 
 # Make the API call
 response = client.chat.completions.create(
@@ -220,13 +210,27 @@ print(answer)  # "The current weather in Tokyo is 22°C and sunny!"
 ## Complete Example: Multi-Tool Agent
 
 ```python
-from openai import OpenAI
+from openai import OpenAI, pydantic_function_tool
+from pydantic import BaseModel, Field
 import json
 from datetime import datetime
 
 client = OpenAI()
 
-# Define multiple tools
+# Define tool schemas as Pydantic models
+class GetWeatherSchema(BaseModel):
+    """Get current weather for a city."""
+    city: str = Field(description="City name")
+
+class GetTimeSchema(BaseModel):
+    """Get current time in a timezone."""
+    timezone: str = Field(default="UTC", description="Timezone name")
+
+class CalculateSchema(BaseModel):
+    """Evaluate a mathematical expression."""
+    expression: str = Field(description="Math expression")
+
+# Function implementations
 def get_weather(city: str) -> dict:
     """Get weather for a city."""
     return {"city": city, "temp": 22, "condition": "sunny"}
@@ -253,57 +257,18 @@ def calculate(expression: str) -> dict:
     except Exception as e:
         return {"error": str(e)}
 
-# Tool registry
+# Map schema class names to function implementations
 TOOLS = {
-    "get_weather": get_weather,
-    "get_time": get_time,
-    "calculate": calculate
+    "GetWeatherSchema": get_weather,
+    "GetTimeSchema": get_time,
+    "CalculateSchema": calculate,
 }
 
-# Tool schemas
+# Generate tool schemas from Pydantic models
 TOOL_SCHEMAS = [
-    {
-        "type": "function",
-        "function": {
-            "name": "get_weather",
-            "description": "Get current weather for a city",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "city": {"type": "string", "description": "City name"}
-                },
-                "required": ["city"]
-            }
-        }
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "get_time",
-            "description": "Get current time in a timezone",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "timezone": {"type": "string", "description": "Timezone name"}
-                },
-                "required": []
-            }
-        }
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "calculate",
-            "description": "Evaluate a mathematical expression",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "expression": {"type": "string", "description": "Math expression"}
-                },
-                "required": ["expression"]
-            }
-        }
-    }
+    pydantic_function_tool(GetWeatherSchema),
+    pydantic_function_tool(GetTimeSchema),
+    pydantic_function_tool(CalculateSchema),
 ]
 
 class ToolAgent:

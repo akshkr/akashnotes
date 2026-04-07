@@ -1,8 +1,8 @@
-# NeMo Guardrails & Guardrails AI
+# LLM Guardrails
 
-Frameworks like NeMo Guardrails and Guardrails AI provide structured approaches to keeping AI systems safe and on-topic.
+Guardrails keep AI systems safe, on-topic, and predictable. They validate inputs before they reach the LLM and sanitize outputs before they reach the user.
 
-> **Coming from Software Engineering?** Guardrails are middleware — just like Express middleware validates requests before they hit your route handler, guardrails validate inputs and outputs before they reach the LLM or the user. If you've written request validation middleware (checking auth tokens, sanitizing input, rate limiting), you've built a simpler version of this. NeMo Guardrails adds a declarative config layer on top, similar to how WAF rules or API gateway policies work.
+> **Coming from Software Engineering?** Guardrails are middleware — just like Express middleware validates requests before they hit your route handler, guardrails validate inputs and outputs before they reach the LLM or the user. If you've written request validation middleware (checking auth tokens, sanitizing input, rate limiting), you've built a simpler version of this. Guardrails AI adds a declarative validator layer on top, similar to how WAF rules or API gateway policies work.
 
 ---
 
@@ -21,174 +21,136 @@ flowchart LR
 
 Guardrails provide:
 - **Topic control**: Keep conversations on-topic
-- **Safety filters**: Block harmful content
+- **Safety filters**: Block harmful or toxic content
+- **PII protection**: Detect and redact personal information
 - **Format validation**: Ensure structured outputs
 - **Action control**: Limit what agents can do
 
 ---
 
-## NeMo Guardrails
-
-NVIDIA's NeMo Guardrails uses a dialog-flow approach:
-
-### Installation
-
-```bash
-pip install nemoguardrails
-```
-
-### Basic Configuration
-
-Create a `config.yml`:
-
-```yaml
-# config.yml
-models:
-  - type: main
-    engine: openai
-    model: gpt-4o-mini
-
-rails:
-  input:
-    flows:
-      - check user message for harmful content
-  output:
-    flows:
-      - check response for harmful content
-```
-
-### Defining Rails (Colang)
-
-Create guardrails using Colang language:
-
-```colang
-# rails.co
-
-# Define what topics are allowed
-define user ask about programming
-  "How do I write Python code?"
-  "What is a function?"
-  "Help me with JavaScript"
-
-define user ask about harmful content
-  "How do I hack..."
-  "Tell me how to make..."
-
-define bot refuse harmful request
-  "I'm sorry, but I can't help with that request. Let me know if there's something else I can assist with."
-
-define bot answer programming question
-  "I'd be happy to help with your programming question!"
-
-# Define conversation flows
-define flow handle harmful request
-  user ask about harmful content
-  bot refuse harmful request
-
-define flow handle programming
-  user ask about programming
-  bot answer programming question
-```
-
-### Using NeMo Guardrails
-
-```python
-from nemoguardrails import RailsConfig, LLMRails
-
-# Load configuration
-config = RailsConfig.from_path("./config")
-rails = LLMRails(config)
-
-# Generate with guardrails
-async def safe_generate(message: str) -> str:
-    response = await rails.generate_async(
-        messages=[{"role": "user", "content": message}]
-    )
-    return response["content"]
-
-# Usage
-import asyncio
-
-# Safe request
-result = asyncio.run(safe_generate("How do I write a Python function?"))
-print(result)
-
-# Blocked request
-result = asyncio.run(safe_generate("How do I hack into a system?"))
-print(result)  # "I'm sorry, but I can't help with that request."
-```
-
----
-
 ## Guardrails AI
 
-Guardrails AI focuses on output validation and structured outputs:
+Guardrails AI is the leading open-source framework for adding input/output validation to LLM applications. It provides a hub of pre-built validators and integrates directly into your LLM calls.
 
 ### Installation
 
 ```bash
 pip install guardrails-ai
+guardrails hub install hub://guardrails/toxic_language
+guardrails hub install hub://guardrails/detect_pii
+guardrails hub install hub://guardrails/restrict_to_topic
 ```
 
-### Basic Usage
+### Core Concept: Guards and Validators
+
+A `Guard` wraps your LLM call and runs validators on input and output. Validators come from the Guardrails Hub — a registry of community and official validators.
+
+```mermaid
+flowchart LR
+    U["User Input"] --> G["Guard"]
+    G --> V1["Toxic Language<br/>Validator"]
+    V1 --> V2["PII<br/>Validator"]
+    V2 --> LLM["LLM Call"]
+    LLM --> V3["Output<br/>Validators"]
+    V3 --> R["Validated<br/>Response"]
+
+    style G fill:#FFD700
+    style V1 fill:#87CEEB
+    style V2 fill:#87CEEB
+    style V3 fill:#87CEEB
+```
+
+### Basic Input/Output Validation
 
 ```python
+import openai
 from guardrails import Guard
-from guardrails.validators import (
-    ValidLength,
-    ToxicLanguage,
-    PIIFilter,
-    ReadingLevel
+from guardrails.hub import ToxicLanguage, DetectPII, RestrictToTopic
+
+# Input validation guard
+input_guard = Guard().use_many(
+    ToxicLanguage(on_fail="exception"),
+    DetectPII(["EMAIL", "PHONE"], on_fail="fix"),
 )
 
-# Create a guard with validators
-guard = Guard().use_many(
-    ValidLength(min=10, max=500),
-    ToxicLanguage(on_fail="fix"),
-    PIIFilter(on_fail="fix")
+# Use with LLM — the guard wraps the API call
+result = input_guard(
+    llm_api=openai.chat.completions.create,
+    model="gpt-4o-mini",
+    messages=[{"role": "user", "content": user_input}],
 )
 
-# Validate output
-result = guard.validate("This is a safe response about Python programming.")
-print(f"Valid: {result.validation_passed}")
-print(f"Output: {result.validated_output}")
+print(result.validated_output)
 ```
 
+**`on_fail` strategies:**
+
+| Strategy    | Behavior                                  |
+|-------------|-------------------------------------------|
+| `exception` | Raise an error, block the request         |
+| `fix`       | Attempt to fix the issue automatically    |
+| `reask`     | Ask the LLM to regenerate its response    |
+| `noop`      | Log but allow through                     |
+| `filter`    | Remove the failing content                |
+
 ### Structured Output Validation
+
+Guardrails AI works with Pydantic models to enforce structured outputs:
 
 ```python
 from guardrails import Guard
 from pydantic import BaseModel, Field
 from typing import List
 
-class ProductInfo(BaseModel):
-    name: str = Field(description="Product name")
-    price: float = Field(ge=0, description="Price in dollars")
-    features: List[str] = Field(min_items=1, description="Product features")
+class ProductReview(BaseModel):
+    product_name: str = Field(description="Name of the product")
+    rating: float = Field(ge=1, le=5, description="Rating from 1 to 5")
+    pros: List[str] = Field(min_length=1, description="List of pros")
+    cons: List[str] = Field(description="List of cons")
+    summary: str = Field(max_length=200, description="Brief summary")
 
-# Create guard from Pydantic model
-guard = Guard.from_pydantic(ProductInfo)
+guard = Guard.from_pydantic(ProductReview)
 
-# Validate LLM output
-raw_output = """
-{
-    "name": "Widget Pro",
-    "price": 29.99,
-    "features": ["Durable", "Lightweight", "Easy to use"]
-}
-"""
+result = guard(
+    llm_api=openai.chat.completions.create,
+    model="gpt-4o-mini",
+    messages=[{
+        "role": "user",
+        "content": "Review the Sony WH-1000XM5 headphones."
+    }],
+)
 
-result = guard.validate(raw_output)
-if result.validation_passed:
-    product = result.validated_output
-    print(f"Product: {product['name']}")
+# result.validated_output is a validated dict matching ProductReview
+print(result.validated_output["rating"])
+print(result.validated_output["pros"])
+```
+
+### Topic Restriction
+
+```python
+from guardrails import Guard
+from guardrails.hub import RestrictToTopic
+
+guard = Guard().use(
+    RestrictToTopic(
+        valid_topics=["programming", "technology", "software engineering"],
+        invalid_topics=["politics", "religion", "medical advice"],
+        on_fail="exception",
+    )
+)
+
+# This passes
+result = guard.validate("How do I implement a binary search tree?")
+
+# This raises an exception
+result = guard.validate("What's your opinion on the election?")
 ```
 
 ### Custom Validators
 
 ```python
 from guardrails.validators import Validator, register_validator
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 @register_validator("no-competitor-mention", data_type="string")
 class NoCompetitorMention(Validator):
@@ -200,11 +162,9 @@ class NoCompetitorMention(Validator):
 
     def validate(self, value: Any, metadata: Dict) -> Any:
         lower_value = value.lower()
-
         for competitor in self.competitors:
             if competitor in lower_value:
                 raise ValueError(f"Competitor '{competitor}' mentioned in output")
-
         return value
 
     def fix(self, value: Any, metadata: Dict) -> Any:
@@ -216,200 +176,143 @@ class NoCompetitorMention(Validator):
 
 # Usage
 guard = Guard().use(
-    NoCompetitorMention(competitors=["microsoft", "google", "amazon"], on_fail="fix")
+    NoCompetitorMention(
+        competitors=["microsoft", "google", "amazon"],
+        on_fail="fix"
+    )
 )
 
 result = guard.validate("Our product is better than Microsoft's solution")
-print(result.validated_output)  # "Our product is better than [Competitor]'s solution"
+print(result.validated_output)
+# "Our product is better than [Competitor]'s solution"
 ```
 
 ---
 
-## Building Custom Guardrails
+## Built-in Model Safety APIs
 
-Create your own guardrail system:
+Before reaching for a framework, consider the safety features already built into major LLM providers. These are lightweight, require no extra dependencies, and handle common moderation needs.
 
-```python
-from dataclasses import dataclass
-from typing import List, Callable, Optional
-from enum import Enum
+### OpenAI Moderation API
 
-class GuardrailAction(Enum):
-    ALLOW = "allow"
-    BLOCK = "block"
-    MODIFY = "modify"
-
-@dataclass
-class GuardrailResult:
-    action: GuardrailAction
-    output: str
-    triggered_rules: List[str]
-    original: str
-
-class Guardrail:
-    """Base class for guardrails."""
-
-    def __init__(self, name: str):
-        self.name = name
-
-    def check(self, text: str) -> tuple[bool, str]:
-        """Check if text passes the guardrail.
-
-        Returns:
-            (passed, modified_text_or_message)
-        """
-        raise NotImplementedError
-
-class TopicGuardrail(Guardrail):
-    """Keep conversation on allowed topics."""
-
-    def __init__(self, allowed_topics: List[str], blocked_topics: List[str]):
-        super().__init__("topic_control")
-        self.allowed_topics = allowed_topics
-        self.blocked_topics = blocked_topics
-
-    def check(self, text: str) -> tuple[bool, str]:
-        lower_text = text.lower()
-
-        for topic in self.blocked_topics:
-            if topic.lower() in lower_text:
-                return False, f"Topic '{topic}' is not allowed"
-
-        return True, text
-
-class LengthGuardrail(Guardrail):
-    """Control response length."""
-
-    def __init__(self, max_length: int):
-        super().__init__("length_control")
-        self.max_length = max_length
-
-    def check(self, text: str) -> tuple[bool, str]:
-        if len(text) > self.max_length:
-            return True, text[:self.max_length] + "..."
-        return True, text
-
-class ToxicityGuardrail(Guardrail):
-    """Filter toxic content."""
-
-    def __init__(self, toxic_words: List[str]):
-        super().__init__("toxicity_filter")
-        self.toxic_words = [w.lower() for w in toxic_words]
-
-    def check(self, text: str) -> tuple[bool, str]:
-        lower_text = text.lower()
-        for word in self.toxic_words:
-            if word in lower_text:
-                return False, "Content flagged as potentially toxic"
-        return True, text
-
-class GuardrailPipeline:
-    """Pipeline of guardrails."""
-
-    def __init__(self):
-        self.guardrails: List[Guardrail] = []
-
-    def add(self, guardrail: Guardrail) -> "GuardrailPipeline":
-        self.guardrails.append(guardrail)
-        return self
-
-    def process(self, text: str) -> GuardrailResult:
-        """Process text through all guardrails."""
-
-        current_text = text
-        triggered = []
-
-        for guardrail in self.guardrails:
-            passed, result = guardrail.check(current_text)
-
-            if not passed:
-                return GuardrailResult(
-                    action=GuardrailAction.BLOCK,
-                    output=result,
-                    triggered_rules=[guardrail.name],
-                    original=text
-                )
-
-            if result != current_text:
-                triggered.append(guardrail.name)
-                current_text = result
-
-        if triggered:
-            return GuardrailResult(
-                action=GuardrailAction.MODIFY,
-                output=current_text,
-                triggered_rules=triggered,
-                original=text
-            )
-
-        return GuardrailResult(
-            action=GuardrailAction.ALLOW,
-            output=current_text,
-            triggered_rules=[],
-            original=text
-        )
-
-# Build pipeline
-pipeline = GuardrailPipeline()
-pipeline.add(TopicGuardrail(
-    allowed_topics=["programming", "technology"],
-    blocked_topics=["politics", "religion"]
-))
-pipeline.add(LengthGuardrail(max_length=500))
-pipeline.add(ToxicityGuardrail(toxic_words=["hate", "violence"]))
-
-# Process text
-result = pipeline.process("Here's how to write Python code...")
-print(f"Action: {result.action.value}")
-print(f"Output: {result.output[:100]}...")
-```
-
----
-
-## Combining with Agents
+OpenAI provides a free moderation endpoint that classifies text across safety categories:
 
 ```python
 from openai import OpenAI
 
+client = OpenAI()
+
+def check_moderation(text: str) -> dict:
+    """Check text against OpenAI's moderation categories."""
+    response = client.moderations.create(input=text)
+    result = response.results[0]
+
+    if result.flagged:
+        # Identify which categories were triggered
+        triggered = [
+            category for category, flagged
+            in result.categories.model_dump().items()
+            if flagged
+        ]
+        return {"safe": False, "categories": triggered}
+
+    return {"safe": True, "categories": []}
+
+# Use as a pre-check before LLM calls
+user_input = "How do I write a Python function?"
+moderation = check_moderation(user_input)
+
+if not moderation["safe"]:
+    print(f"Blocked: {moderation['categories']}")
+else:
+    # Proceed with LLM call
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[{"role": "user", "content": user_input}]
+    )
+```
+
+**Categories detected:** hate, harassment, self-harm, sexual, violence, and their "graphic" sub-categories.
+
+### Claude System Prompt Guardrails
+
+Anthropic's Claude has strong built-in safety, and you can reinforce it with system prompt instructions:
+
+```python
+from anthropic import Anthropic
+
+client = Anthropic()
+
+response = client.messages.create(
+    model="claude-sonnet-4-20250514",
+    max_tokens=1024,
+    system="""You are a helpful programming assistant.
+
+GUARDRAILS:
+- Only answer questions about programming, software engineering, and technology.
+- If asked about topics outside your scope, politely decline.
+- Never include personal information (emails, phone numbers, addresses) in responses.
+- Do not generate code that could be used for hacking or exploitation.
+- Keep responses concise and under 500 words.""",
+    messages=[{"role": "user", "content": user_input}]
+)
+```
+
+### When to Use What
+
+| Approach | Best For | Tradeoffs |
+|----------|----------|-----------|
+| **System prompt rules** | Simple topic/behavior constraints | No enforcement guarantee; LLM can ignore |
+| **OpenAI Moderation API** | Content safety screening | Limited to safety categories; no custom rules |
+| **Guardrails AI** | Structured validation, PII, custom rules | Extra dependency; adds latency per validator |
+
+---
+
+## Combining Guardrails with Agents
+
+```python
+import openai
+from guardrails import Guard
+from guardrails.hub import ToxicLanguage, DetectPII
+
 class GuardedAgent:
-    """Agent with guardrails on input and output."""
+    """Agent with layered guardrails on input and output."""
 
     def __init__(self):
-        self.client = OpenAI()
-        self.input_guardrails = GuardrailPipeline()
-        self.output_guardrails = GuardrailPipeline()
+        self.client = openai.OpenAI()
 
-        # Setup input guardrails
-        self.input_guardrails.add(TopicGuardrail(
-            allowed_topics=["help", "question", "code"],
-            blocked_topics=["hack", "illegal", "harm"]
-        ))
+        # Input: block toxic content, redact PII
+        self.input_guard = Guard().use_many(
+            ToxicLanguage(on_fail="exception"),
+            DetectPII(["EMAIL", "PHONE", "SSN"], on_fail="fix"),
+        )
 
-        # Setup output guardrails
-        self.output_guardrails.add(LengthGuardrail(max_length=1000))
-        self.output_guardrails.add(ToxicityGuardrail(toxic_words=["dangerous"]))
+        # Output: clean PII leaks, enforce length
+        self.output_guard = Guard().use_many(
+            DetectPII(["EMAIL", "PHONE", "SSN"], on_fail="fix"),
+            ToxicLanguage(on_fail="fix"),
+        )
 
     def generate(self, user_input: str) -> str:
-        """Generate guarded response."""
+        """Generate a guarded response."""
 
-        # Check input
-        input_result = self.input_guardrails.process(user_input)
-        if input_result.action == GuardrailAction.BLOCK:
-            return f"I can't help with that: {input_result.output}"
+        # Validate input
+        try:
+            input_result = self.input_guard.validate(user_input)
+            clean_input = input_result.validated_output
+        except Exception as e:
+            return f"I can't process that request: {e}"
 
-        # Generate response
+        # Call LLM
         response = self.client.chat.completions.create(
             model="gpt-4o-mini",
-            messages=[{"role": "user", "content": input_result.output}]
+            messages=[{"role": "user", "content": clean_input}]
         )
         raw_output = response.choices[0].message.content
 
-        # Check output
-        output_result = self.output_guardrails.process(raw_output)
-        if output_result.action == GuardrailAction.BLOCK:
-            return "I apologize, but I couldn't generate an appropriate response."
-
-        return output_result.output
+        # Validate output
+        output_result = self.output_guard.validate(raw_output)
+        return output_result.validated_output
 
 # Usage
 agent = GuardedAgent()
@@ -418,42 +321,64 @@ print(agent.generate("How do I write a Python function?"))
 
 ---
 
+## Historical Context: NeMo Guardrails
+
+NVIDIA developed NeMo Guardrails as an early framework for adding programmable guardrails to LLM applications. It used a custom language called **Colang** to define conversational flows and rules declaratively -- you would write dialog patterns specifying how the bot should respond to certain user intents, and the framework would enforce those flows at runtime.
+
+NeMo Guardrails was notable for its dialog-flow approach to safety: rather than validating individual strings, it modeled entire conversation trajectories. This made it powerful for complex multi-turn guardrail scenarios. However, the Colang language had a steep learning curve and the framework required significant configuration overhead compared to simpler validation-based approaches.
+
+As of 2025, NeMo Guardrails and Colang are in **maintenance mode** and are not recommended for new projects. The ecosystem has moved toward validator-based frameworks like Guardrails AI, which offer a more composable and Pythonic approach. If you encounter NeMo Guardrails in existing codebases, consider migrating to Guardrails AI or built-in provider safety APIs.
+
+---
+
 ## Summary
 
 ```mermaid
 mindmap
   root((Guardrails))
-    NeMo
-      Colang rules
-      Dialog flows
-      Topic control
     Guardrails AI
-      Validators
+      Hub validators
       Pydantic models
-      Output structure
+      on_fail strategies
+      Custom validators
+    Built-in Safety
+      OpenAI Moderation API
+      Claude system prompts
+      Provider safety layers
     Custom
       Pipeline approach
       Modular rules
       Easy to extend
 ```
 
+**Key takeaways:**
+- **Guardrails AI** is the go-to framework -- use Hub validators for common checks (toxicity, PII, topic) and Pydantic models for structured output
+- **Built-in model safety** (OpenAI Moderation API, Claude system prompts) covers basic content moderation with zero extra dependencies
+- Layer your guardrails: system prompt constraints + moderation API + framework validators for defense in depth
+- Always validate both **input** (what the user sends) and **output** (what the LLM returns)
+
 ---
 
 ## Quick Reference
 
 ```python
-# NeMo Guardrails
-rails = LLMRails(config)
-response = await rails.generate_async(messages=[...])
+# Guardrails AI — input/output validation
+from guardrails import Guard
+from guardrails.hub import ToxicLanguage, DetectPII
 
-# Guardrails AI
-guard = Guard().use(ValidLength(), ToxicLanguage())
-result = guard.validate(text)
+guard = Guard().use_many(ToxicLanguage(on_fail="exception"), DetectPII(on_fail="fix"))
+result = guard(llm_api=openai.chat.completions.create, model="gpt-4o-mini", messages=[...])
 
-# Custom pipeline
-pipeline = GuardrailPipeline()
-pipeline.add(MyGuardrail())
-result = pipeline.process(text)
+# Guardrails AI — structured output
+guard = Guard.from_pydantic(MyModel)
+result = guard(llm_api=..., messages=[...])
+
+# OpenAI Moderation API
+response = client.moderations.create(input=text)
+flagged = response.results[0].flagged
+
+# Claude system prompt guardrails
+response = client.messages.create(model="claude-sonnet-4-20250514", system="GUARDRAILS: ...", ...)
 ```
 
 ---
