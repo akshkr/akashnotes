@@ -1,5 +1,5 @@
 # Phase 4: Multi-Agent Systems, Evaluation, and Security
-# Covers: multi-agent orchestration, CrewAI, AutoGen, eval frameworks, guardrails, observability
+# Covers: multi-agent orchestration, CrewAI, eval frameworks, guardrails, observability
 # Install with: pip install -r requirements.txt
 
 openai>=1.30.0
@@ -8,8 +8,6 @@ pydantic>=2.0.0
 langgraph>=0.4.0
 crewai>=0.70.0
 crewai-tools>=0.10.0
-autogen-agentchat>=0.4.0
-autogen-ext>=0.4.0
 ragas>=0.3.0
 datasets>=2.18.0
 guardrails-ai>=0.5.0

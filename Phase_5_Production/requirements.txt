@@ -1,5 +1,5 @@
-# Phase 5: Production Deployment
-# Covers: FastAPI, UIs, WebSockets, local models, MCP, cloud deployment, rate limiting
+# Phase 5: Production & Model Adaptation
+# Covers: FastAPI, UIs, WebSockets, local models, vLLM, fine-tuning, MCP, cloud deployment
 # Install with: pip install -r requirements.txt
 
 openai>=1.30.0
@@ -24,4 +24,12 @@ langchain-community>=0.4.0
 mangum>=0.17.0
 psutil>=5.9.0
 pyjwt>=2.8.0
-chromadb>=0.6.0
+# vLLM (GPU required)
+vllm>=0.6.0
+# Fine-tuning
+unsloth>=2024.12.0
+transformers>=4.45.0
+datasets>=2.18.0
+peft>=0.13.0
+trl>=0.12.0
+wandb>=0.18.0

@@ -443,7 +443,7 @@ mindmap
       Fast but limited
     Semantic Match
       Embedding similarity
-      ChromaDB / FAISS
+      pgvector / ChromaDB
       Catches paraphrases
     Thresholds
       0.97 factual

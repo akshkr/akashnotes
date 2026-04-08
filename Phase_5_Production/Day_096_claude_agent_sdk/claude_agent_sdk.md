@@ -1,4 +1,4 @@
-# Day 95: Claude Agent SDK
+# Claude Agent SDK
 
 You have built agents in three different ways over this journey: raw API calls with a ReAct loop, LangGraph state machines, and CrewAI multi-agent pipelines. Each had trade-offs. Now meet Anthropic's own answer to the question: what is the right way to build Claude-powered agents?
 
@@ -535,4 +535,4 @@ async def chat(user_id: str, message: str):
 
 ---
 
-**Next up:** Day 96 - Prompt Engineering as a Discipline, where we move beyond ad-hoc prompting to systematic, measurable prompt management.
+**Next up:** Model Context Protocol (MCP), where we move beyond ad-hoc prompting to systematic, measurable prompt management.

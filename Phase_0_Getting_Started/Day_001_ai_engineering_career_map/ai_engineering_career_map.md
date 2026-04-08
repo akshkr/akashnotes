@@ -1,4 +1,4 @@
-# Day 1: The AI Engineering Career Map
+# The AI Engineering Career Map
 
 Welcome. You're here because you've been watching the AI space explode and you're wondering: "Is this for me? Can I make this transition?" The answer is yes — and you're closer than you think.
 
@@ -283,4 +283,4 @@ See you on Day 2.
 
 ---
 
-*Next up: Day 2 — Setting Up Your AI Engineering Environment (API keys, SDKs, local models, and your first API call)*
+*Next up: Understanding Transformers — How LLMs Actually Work (API keys, SDKs, local models, and your first API call)*

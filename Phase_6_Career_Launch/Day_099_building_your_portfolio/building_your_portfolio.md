@@ -1,4 +1,4 @@
-# Day 99: Building Your AI Portfolio
+# Building Your AI Portfolio
 
 Certifications say you watched videos. A portfolio says you built things. For AI engineering specifically, the gap between candidates who can talk about AI and candidates who have shipped AI is enormous — and a strong portfolio is how you prove which side you're on.
 
@@ -402,4 +402,4 @@ Interview ready:
 
 ---
 
-**Next up:** Day 100 - Career Launch. You have built the skills, the projects, and the portfolio. Tomorrow is about going out and using them.
+**Next up:** Career Launch — What's Next. You have built the skills, the projects, and the portfolio. Tomorrow is about going out and using them.

@@ -503,4 +503,4 @@ Find them at: `github.com/modelcontextprotocol/servers`
 
 ---
 
-**Next up:** Day 95 - Claude Agent SDK, Anthropic's native framework for building production agents.
+**Next up:** Claude Agent SDK, Anthropic's native framework for building production agents.

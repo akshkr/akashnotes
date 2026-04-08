@@ -1,5 +1,5 @@
 # Phase 3: Single Agent Development
-# Covers: ReAct loop, LangChain, LangGraph, LlamaIndex, state machines, persistence
+# Covers: ReAct loop, LangChain, LangGraph, LlamaIndex, PydanticAI, state machines, persistence
 # Install with: pip install -r requirements.txt
 
 openai>=1.30.0
@@ -17,3 +17,4 @@ llama-index-readers-web>=0.3.0
 chromadb>=0.6.0
 tiktoken>=0.8.0
 psycopg2-binary>=2.9.0
+pydantic-ai>=0.0.30

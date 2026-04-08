@@ -1,4 +1,4 @@
-# Day 100: Your 100-Day Journey is Complete — What's Next
+# Your 100-Day Journey is Complete — What's Next
 
 You made it.
 

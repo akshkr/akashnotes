@@ -567,4 +567,4 @@ In practice, 80% of use cases are solved by better prompting + RAG. Fine-tuning 
 
 ---
 
-**Next up:** Day 97 - Capstone: Deploy to Production, where you will ship your complete AI system with prompt management, cost tracking, and production hardening.
+**Next up:** Capstone — Deploy to Production, where you will ship your complete AI system with prompt management, cost tracking, and production hardening.

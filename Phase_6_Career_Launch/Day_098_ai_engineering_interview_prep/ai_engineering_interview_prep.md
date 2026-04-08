@@ -1,4 +1,4 @@
-# Day 98: AI Engineering Interview Prep
+# AI Engineering Interview Prep
 
 You have spent 97 days building real skills. Now you need to demonstrate them to someone who has 45 minutes and a rubric. The interview is a different skill from the engineering — but if you have done the work, it is learnable.
 
@@ -411,4 +411,4 @@ Your SWE background is an advantage, not a liability. Here is how to frame it:
 
 ---
 
-**Next up:** Day 99 - Building Your AI Portfolio, where you will package everything you have built into a professional presence that gets you hired.
+**Next up:** Building Your AI Portfolio, where you will package everything you have built into a professional presence that gets you hired.

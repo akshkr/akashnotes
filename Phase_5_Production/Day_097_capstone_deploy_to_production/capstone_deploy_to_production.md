@@ -1,4 +1,4 @@
-# Day 97: Capstone — Deploy an AI Agent to Production
+# Capstone — Deploy an AI Agent to Production
 
 You've built real systems. Now it's time to put them on the internet.
 
@@ -727,4 +727,4 @@ You're almost there.
 
 ---
 
-*Next up: Day 98 — Portfolio Polish: Making Your Projects Interview-Ready*
+*Next up: AI Engineering Interview Prep*
