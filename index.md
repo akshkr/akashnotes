@@ -64,7 +64,7 @@ Building a real ETL pipeline with LLMs: parsing unstructured text (job postings,
 
 ---
 
-## Phase 2: External Knowledge & Tool Calling (Days 19-34)
+## Phase 2: RAG & Tool Calling (Days 19-34)
 
 **Day 019: What Are Embeddings**
 Text represented as vectors capturing semantic meaning, similarity metrics, generating embeddings via API, batch processing, and finding similar content programmatically.
@@ -165,7 +165,7 @@ Mid-journey career review: skills comparison (Day 1 vs Day 49), mapping projects
 
 ---
 
-## Phase 4: Multi-Agent Systems, Evaluation & Security (Days 50-73)
+## Phase 4: Multi-Agent Systems (Days 50-55)
 
 **Day 050: Agent Topologies**
 Three multi-agent topologies: Hierarchical (supervisor delegates), Networked (peer-to-peer), and Adversarial (generator vs critic). Decision matrix for choosing topology.
@@ -184,6 +184,10 @@ Task properties (description, expected_output, agent, context), dependency chain
 
 **Day 055: Sequential and Parallel Processes**
 Sequential process (one after another), hierarchical process (manager delegates), async task execution, and hybrid approaches mixing sequential and parallel phases.
+
+---
+
+## Phase 5: Evaluation & Security (Days 56-73)
 
 **Day 056: LangSmith and Phoenix**
 LangSmith for production tracing with @traceable decorators, Phoenix for open-source tracing with OpenTelemetry, custom spans, metrics collection, and Streamlit dashboards.
@@ -241,7 +245,7 @@ Production content creation pipeline with research agent, writer, reviewer, LLM-
 
 ---
 
-## Phase 5: Production & Model Adaptation (Days 74-97)
+## Phase 6: Advanced — Fine-tuning & Optimization (Days 74-82)
 
 **Day 074: Ollama and Local Models**
 Ollama installation, model pulling (llama3.2, phi4, qwen2.5-coder), quantization concepts (F16/Q8/Q4), local API usage with OpenAI-compatible interface, and GPU acceleration.
@@ -269,6 +273,10 @@ Automated metrics (perplexity, exact match), task-specific benchmarks, A/B testi
 
 **Day 082: Model Distillation and Routing**
 Distilling frontier model behavior into SLMs, building routers (cheap model for easy tasks, expensive for hard), cost savings analysis (5-10x), and production routing patterns.
+
+---
+
+## Phase 7: Production Deployment (Days 83-97)
 
 **Day 083: FastAPI for AI Agents**
 FastAPI setup for agents with conversation endpoints, background tasks, SSE streaming responses, WebSocket support, authentication, rate limiting, and health checks.
@@ -317,7 +325,7 @@ Deploying the content pipeline with FastAPI backend, Streamlit UI, Docker contai
 
 ---
 
-## Phase 6: Career Launch (Days 98-100)
+## Phase 8: Career Launch (Days 98-100)
 
 **Day 098: AI Engineering Interview Prep**
 System design questions (RAG, multi-agent, eval frameworks), coding patterns (structured output, tool calling), take-home projects, behavioral questions, and SWE-to-AI skill mapping.
