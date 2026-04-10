@@ -61,6 +61,7 @@ pip install wandb
 ## Step 1: Load the Base Model
 
 ```python
+# script_id: day_079_handson_finetuning/finetune_workflow
 from unsloth import FastLanguageModel
 import torch
 
@@ -92,6 +93,7 @@ Unsloth provides pre-optimized model downloads that are faster to load:
 ## Step 2: Configure LoRA
 
 ```python
+# script_id: day_079_handson_finetuning/finetune_workflow
 model = FastLanguageModel.get_peft_model(
     model,
     r=16,                          # LoRA rank
@@ -154,6 +156,7 @@ flowchart TB
 ## Step 3: Prepare the Dataset
 
 ```python
+# script_id: day_079_handson_finetuning/finetune_workflow
 from datasets import load_dataset
 
 # Load a dataset (or use your synthetic data from Day 77)
@@ -183,6 +186,7 @@ print(dataset[0]["text"][:500])
 ### If Your Data Is in Alpaca Format
 
 ```python
+# script_id: day_079_handson_finetuning/format_alpaca
 # Convert Alpaca format to chat format
 alpaca_prompt = """Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request.
 
@@ -210,6 +214,7 @@ dataset = dataset.map(format_alpaca)
 ### If Your Data Is in ShareGPT Format
 
 ```python
+# script_id: day_079_handson_finetuning/format_sharegpt
 from unsloth.chat_templates import get_chat_template
 
 # Unsloth has built-in support for ShareGPT format
@@ -237,6 +242,7 @@ dataset = dataset.map(format_sharegpt)
 ## Step 4: Train
 
 ```python
+# script_id: day_079_handson_finetuning/finetune_workflow
 from trl import SFTTrainer
 from transformers import TrainingArguments
 
@@ -320,6 +326,7 @@ sequenceDiagram
 ## Step 5: Monitor with Weights & Biases
 
 ```python
+# script_id: day_079_handson_finetuning/finetune_workflow
 import wandb
 
 # Initialize W&B (run before training)
@@ -357,6 +364,7 @@ What to watch in W&B:
 ## Step 6: Test the Fine-tuned Model
 
 ```python
+# script_id: day_079_handson_finetuning/finetune_workflow
 # Switch to inference mode
 FastLanguageModel.for_inference(model)
 
@@ -388,6 +396,7 @@ print(response)
 ### Batch Testing
 
 ```python
+# script_id: day_079_handson_finetuning/finetune_workflow
 test_prompts = [
     "Explain what a decorator is in Python.",
     "Write a SQL query to find duplicate emails in a users table.",
@@ -414,6 +423,7 @@ for prompt in test_prompts:
 ## Step 7: Save the LoRA Adapter
 
 ```python
+# script_id: day_079_handson_finetuning/finetune_workflow
 # Save just the LoRA adapter (small, ~50-100 MB)
 model.save_pretrained("./lora-adapter")
 tokenizer.save_pretrained("./lora-adapter")
@@ -432,6 +442,7 @@ for f in os.listdir("./lora-adapter"):
 For deployment, you can merge the LoRA adapter back into the base model.
 
 ```python
+# script_id: day_079_handson_finetuning/finetune_workflow
 # Option 1: Save merged model in HuggingFace format (for vLLM, TGI)
 model.save_pretrained_merged(
     "./merged-model",
@@ -539,6 +550,7 @@ mindmap
 ## Quick Reference
 
 ```python
+# script_id: day_079_handson_finetuning/quick_reference
 # Load model
 from unsloth import FastLanguageModel
 model, tokenizer = FastLanguageModel.from_pretrained(

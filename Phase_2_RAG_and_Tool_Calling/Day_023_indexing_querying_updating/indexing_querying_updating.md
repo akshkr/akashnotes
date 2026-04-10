@@ -28,6 +28,7 @@ flowchart LR
 ### Batch Indexing for Performance
 
 ```python
+# script_id: day_023_indexing_querying_updating/core_operations
 import chromadb
 from openai import OpenAI
 
@@ -74,6 +75,7 @@ batch_index(documents, metadatas)
 ### Handling Duplicates
 
 ```python
+# script_id: day_023_indexing_querying_updating/core_operations
 import hashlib
 
 def generate_doc_id(content: str) -> str:
@@ -122,6 +124,7 @@ def index_with_dedup(documents: list[str], collection):
 ### Basic Semantic Search
 
 ```python
+# script_id: day_023_indexing_querying_updating/core_operations
 def semantic_search(query: str, n_results: int = 5) -> list[dict]:
     """Perform basic semantic search."""
     # Get query embedding
@@ -152,6 +155,7 @@ def semantic_search(query: str, n_results: int = 5) -> list[dict]:
 ### Filtered Search
 
 ```python
+# script_id: day_023_indexing_querying_updating/core_operations
 def filtered_search(
     query: str,
     filters: dict,
@@ -192,6 +196,7 @@ results = filtered_search(
 ### Hybrid Search (Keyword + Semantic)
 
 ```python
+# script_id: day_023_indexing_querying_updating/core_operations
 def hybrid_search(
     query: str,
     collection,
@@ -250,6 +255,7 @@ def hybrid_search(
 ### Update Existing Documents
 
 ```python
+# script_id: day_023_indexing_querying_updating/core_operations
 def update_document(doc_id: str, new_content: str, new_metadata: dict = None):
     """Update an existing document."""
 
@@ -281,6 +287,7 @@ update_document(
 ### Upsert: Add or Update
 
 ```python
+# script_id: day_023_indexing_querying_updating/core_operations
 def upsert_documents(
     documents: list[str],
     ids: list[str],
@@ -316,6 +323,7 @@ upsert_documents(
 ### Delete Documents
 
 ```python
+# script_id: day_023_indexing_querying_updating/core_operations
 def delete_documents(ids: list[str]):
     """Delete documents by ID."""
     collection.delete(ids=ids)
@@ -353,6 +361,7 @@ flowchart TB
 ### Multi-Query Search
 
 ```python
+# script_id: day_023_indexing_querying_updating/core_operations
 def multi_query_search(
     queries: list[str],
     n_results_per_query: int = 5
@@ -404,6 +413,7 @@ results = multi_query_search([
 ## Performance Optimization
 
 ```python
+# script_id: day_023_indexing_querying_updating/optimized_vector_store
 class OptimizedVectorStore:
     """Vector store with caching and batching."""
 
@@ -468,6 +478,7 @@ How do you know your search is actually returning good results? Before we get to
 If you return 10 chunks and only 6 are actually useful, your precision is 60%. High precision means less noise in your context window.
 
 ```python
+# script_id: day_023_indexing_querying_updating/precision_metric
 def calculate_precision(retrieved_docs: list[str], relevant_docs: set[str]) -> float:
     """What fraction of retrieved docs are actually relevant?"""
     if not retrieved_docs:
@@ -483,6 +494,7 @@ def calculate_precision(retrieved_docs: list[str], relevant_docs: set[str]) -> f
 If your knowledge base has 5 documents that answer a question but your search only finds 3, your recall is 60%. High recall means you're not missing important context.
 
 ```python
+# script_id: day_023_indexing_querying_updating/recall_metric
 def calculate_recall(retrieved_docs: list[str], relevant_docs: set[str]) -> float:
     """What fraction of all relevant docs did we find?"""
     if not relevant_docs:
@@ -496,6 +508,7 @@ def calculate_recall(retrieved_docs: list[str], relevant_docs: set[str]) -> floa
 **Normalized Discounted Cumulative Gain** measures whether the most relevant results appear at the top. A search that returns the best chunk at position 1 scores higher than one that buries it at position 5.
 
 ```python
+# script_id: day_023_indexing_querying_updating/ndcg_metric
 import math
 
 def calculate_dcg(relevance_scores: list[float]) -> float:
@@ -555,6 +568,7 @@ mindmap
 ## Quick Reference
 
 ```python
+# script_id: day_023_indexing_querying_updating/quick_reference
 # Add documents
 collection.add(ids=["1"], documents=["text"], embeddings=[[...]])
 

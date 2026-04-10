@@ -34,6 +34,7 @@ The supervisor:
 ## Basic Supervisor Implementation
 
 ```python
+# script_id: day_051_supervisor_worker/supervisor_system
 from openai import OpenAI
 import json
 from typing import Literal
@@ -125,6 +126,7 @@ print(result)
 Sometimes a task needs multiple workers:
 
 ```python
+# script_id: day_051_supervisor_worker/supervisor_system
 def supervisor_multi(user_request: str) -> str:
     """Supervisor that can delegate to multiple workers."""
 
@@ -192,6 +194,7 @@ print(result)
 ## LangGraph Supervisor Implementation
 
 ```python
+# script_id: day_051_supervisor_worker/supervisor_system
 from langgraph.graph import StateGraph, END
 from typing import TypedDict, Annotated, Literal, List
 from operator import add
@@ -298,6 +301,7 @@ flowchart TB
 Run workers in parallel for speed:
 
 ```python
+# script_id: day_051_supervisor_worker/parallel_workers
 import asyncio
 from typing import List, Dict
 
@@ -349,6 +353,7 @@ print(result)
 Route to domain-specific experts:
 
 ```python
+# script_id: day_051_supervisor_worker/supervisor_system
 EXPERTS = {
     "legal": "You are a legal expert. Provide legally-sound advice.",
     "medical": "You are a medical professional. Provide health information.",
@@ -388,6 +393,7 @@ def expert_router(query: str) -> str:
 Handle complex tasks by breaking them down:
 
 ```python
+# script_id: day_051_supervisor_worker/supervisor_system
 def recursive_supervisor(task: str, depth: int = 0, max_depth: int = 3) -> str:
     """Break down complex tasks recursively."""
 
@@ -428,6 +434,7 @@ If complex, respond: {"simple": false, "subtasks": ["subtask1", "subtask2"]}"""}
 ### 1. Clear Worker Responsibilities
 
 ```python
+# script_id: day_051_supervisor_worker/clear_responsibilities
 # Good: Specific, focused workers
 research_worker = "Find factual information from reliable sources"
 writing_worker = "Create engaging written content"
@@ -441,6 +448,7 @@ helper2 = "Also help with things"
 ### 2. Supervisor Context
 
 ```python
+# script_id: day_051_supervisor_worker/supervisor_context
 # Include context in supervisor decisions
 supervisor_prompt = f"""
 Current task: {task}
@@ -455,6 +463,7 @@ Decide next action...
 ### 3. Error Handling
 
 ```python
+# script_id: day_051_supervisor_worker/error_handling
 def safe_worker_call(worker_fn, task: str, max_retries: int = 2) -> str:
     """Call worker with retry logic."""
     for attempt in range(max_retries + 1):
@@ -493,6 +502,7 @@ mindmap
 ## Quick Reference
 
 ```python
+# script_id: day_051_supervisor_worker/quick_reference
 # Basic supervisor
 def supervisor(task):
     worker = decide_worker(task)

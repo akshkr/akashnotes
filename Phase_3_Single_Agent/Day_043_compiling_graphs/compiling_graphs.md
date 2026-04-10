@@ -28,6 +28,7 @@ Compilation:
 ## Basic Compilation
 
 ```python
+# script_id: day_043_compiling_graphs/basic_compilation
 from langgraph.graph import StateGraph, END
 from typing import TypedDict, Annotated
 from operator import add
@@ -62,6 +63,7 @@ app = workflow.compile()
 Run the entire graph and get the final result:
 
 ```python
+# script_id: day_043_compiling_graphs/basic_compilation
 # Invoke with initial state
 result = app.invoke({
     "messages": ["Hello!"],
@@ -77,6 +79,7 @@ print(result)
 Watch each step as it executes:
 
 ```python
+# script_id: day_043_compiling_graphs/stream_execution
 # Stream execution
 for step in app.stream({"messages": ["Hello!"], "result": ""}):
     print(f"Step: {step}")
@@ -95,6 +98,7 @@ for step in app.stream({"messages": ["Hello!"], "result": ""}):
 Get detailed updates during execution:
 
 ```python
+# script_id: day_043_compiling_graphs/stream_modes
 # Stream mode options
 for event in app.stream(
     {"messages": ["Start"], "result": ""},
@@ -115,6 +119,7 @@ for event in app.stream(
 ## Complete Example: Multi-Step Agent
 
 ```python
+# script_id: day_043_compiling_graphs/multi_step_agent
 from langgraph.graph import StateGraph, END
 from typing import TypedDict, Annotated, Literal
 from operator import add
@@ -234,6 +239,7 @@ print(result["result"])
 ### Add Checkpointing
 
 ```python
+# script_id: day_043_compiling_graphs/checkpointing
 from langgraph.checkpoint.memory import MemorySaver  # or: pip install langgraph-checkpoint-sqlite
 
 # Create a checkpointer
@@ -253,6 +259,7 @@ result2 = app.invoke({"messages": ["Continue"]}, config=config)
 ### Add Interrupts (Human-in-the-Loop)
 
 ```python
+# script_id: day_043_compiling_graphs/checkpointing
 # Compile with interrupt points
 app = workflow.compile(
     checkpointer=checkpointer,
@@ -278,6 +285,7 @@ final = app.invoke(None, config=config)  # Continue from checkpoint
 ### Visualize the Graph
 
 ```python
+# script_id: day_043_compiling_graphs/visualize_graph
 # Get graph structure
 print(app.get_graph().draw_ascii())
 
@@ -288,6 +296,7 @@ app.get_graph().draw_png("my_graph.png")
 ### Print Each Step
 
 ```python
+# script_id: day_043_compiling_graphs/debug_stream
 def debug_stream(app, initial_state):
     """Run with detailed debugging."""
     print("=" * 50)
@@ -312,6 +321,7 @@ debug_stream(agent, {"task": "Test", "messages": [], ...})
 ### Error Handling
 
 ```python
+# script_id: day_043_compiling_graphs/error_handling
 from langgraph.errors import GraphRecursionError
 
 try:
@@ -329,6 +339,7 @@ except Exception as e:
 Run graphs asynchronously:
 
 ```python
+# script_id: day_043_compiling_graphs/async_execution
 import asyncio
 
 # Async invoke
@@ -350,6 +361,7 @@ result = asyncio.run(run_async())
 ## Configuration Options
 
 ```python
+# script_id: day_043_compiling_graphs/config_options
 # Compile with options
 app = workflow.compile(
     checkpointer=checkpointer,       # Enable persistence
@@ -378,6 +390,7 @@ result = app.invoke(
 For large state objects, be mindful of memory:
 
 ```python
+# script_id: day_043_compiling_graphs/handling_large_states
 class LargeState(TypedDict):
     messages: Annotated[list, add]
     documents: list  # Could be large!
@@ -400,6 +413,7 @@ def summarize_node(state: LargeState) -> dict:
 ## Testing Your Agent
 
 ```python
+# script_id: day_043_compiling_graphs/testing_agent
 import pytest
 
 def test_agent_basic_flow():
@@ -472,6 +486,7 @@ mindmap
 ## Quick Reference
 
 ```python
+# script_id: day_043_compiling_graphs/quick_reference
 # Compile
 app = workflow.compile()
 

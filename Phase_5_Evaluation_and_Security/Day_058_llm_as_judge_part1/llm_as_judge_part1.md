@@ -42,6 +42,7 @@ Benefits of automated evaluation:
 Use one LLM to evaluate another's output:
 
 ```python
+# script_id: day_058_llm_as_judge_part1/evaluate_response
 from openai import OpenAI
 
 client = OpenAI()
@@ -110,6 +111,7 @@ print(evaluation)
 Get numerical scores for easy comparison:
 
 ```python
+# script_id: day_058_llm_as_judge_part1/evaluate_with_scores
 from openai import OpenAI
 import json
 
@@ -165,6 +167,7 @@ print(f"Feedback: {scores['feedback']}")
 Compare two responses to find the better one:
 
 ```python
+# script_id: day_058_llm_as_judge_part1/compare_responses
 from openai import OpenAI
 import json
 
@@ -246,6 +249,7 @@ pip install ragas
 ### Key Ragas Metrics
 
 ```python
+# script_id: day_058_llm_as_judge_part1/ragas_basic_eval
 from ragas import evaluate
 from ragas.metrics import (
     faithfulness,
@@ -311,6 +315,7 @@ flowchart TB
 ### Custom RAG Evaluator
 
 ```python
+# script_id: day_058_llm_as_judge_part1/custom_rag_evaluator
 from openai import OpenAI
 import json
 

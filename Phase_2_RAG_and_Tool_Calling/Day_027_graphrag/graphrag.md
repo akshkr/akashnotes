@@ -57,6 +57,7 @@ graph LR
 ### Triples in Practice
 
 ```python
+# script_id: day_027_graphrag/triples_example
 # A triple is simply (subject, predicate, object)
 triples = [
     ("Globex Corp", "ACQUIRED", "Acme Inc"),
@@ -84,6 +85,7 @@ triples = [
 The first step in building a knowledge graph is extracting entities and relationships from unstructured text. LLMs are remarkably good at this.
 
 ```python
+# script_id: day_027_graphrag/entity_extraction_pipeline
 from openai import OpenAI
 from pydantic import BaseModel
 import json
@@ -171,6 +173,7 @@ Neo4j is the most popular graph database. Its query language, **Cypher**, reads 
 ### Setting Up Neo4j with Python
 
 ```python
+# script_id: day_027_graphrag/neo4j_crud
 # pip install neo4j
 from neo4j import GraphDatabase
 
@@ -189,6 +192,7 @@ def run_query(query: str, parameters: dict = None) -> list:
 ### Creating Nodes and Relationships
 
 ```python
+# script_id: day_027_graphrag/neo4j_crud
 # Create entities as nodes
 def create_entity(name: str, entity_type: str, properties: dict = None):
     """Create a node in Neo4j."""
@@ -227,6 +231,7 @@ create_relationship("Acme Inc", "FOUNDED_BY", "Bob Johnson")
 ### Cypher Query Patterns
 
 ```python
+# script_id: day_027_graphrag/neo4j_crud
 # 1. Simple match: Find a company's CEO
 results = run_query("""
     MATCH (c:Company {name: "Globex Corporation"})-[:HAS_CEO]->(p:Person)
@@ -291,6 +296,7 @@ flowchart TD
 ### Full Implementation
 
 ```python
+# script_id: day_027_graphrag/entity_extraction_pipeline
 from openai import OpenAI
 from neo4j import GraphDatabase
 import chromadb
@@ -471,6 +477,7 @@ flowchart TD
 **Entity resolution** is the hardest part. "Globex Corp", "Globex Corporation", and "Globex" are the same entity. Strategies:
 
 ```python
+# script_id: day_027_graphrag/entity_extraction_pipeline
 def normalize_entity(name: str) -> str:
     """Basic entity normalization."""
     # Strip common suffixes
@@ -501,6 +508,7 @@ mapping = resolve_entities(["Globex Corp", "Globex Corporation", "Globex"])
 **Keep your schema tight.** Don't let the LLM invent arbitrary relationship types -- constrain extraction to a predefined set:
 
 ```python
+# script_id: day_027_graphrag/allowed_relations
 ALLOWED_RELATIONS = [
     "ACQUIRED", "HAS_CEO", "WORKS_AT", "REPORTS_TO",
     "FOUNDED_BY", "LOCATED_IN", "PRODUCES", "PARTNERS_WITH"
@@ -551,6 +559,7 @@ mindmap
 ## Quick Reference
 
 ```python
+# script_id: day_027_graphrag/quick_reference
 # Extract entities with LLM
 result = extract_entities("Globex acquired Acme. Jane Smith is Globex CEO.")
 

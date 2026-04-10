@@ -7,6 +7,7 @@
 The LLM might want to call multiple tools at once:
 
 ```python
+# script_id: day_031_tool_execution_handling_part2/parallel_tool_calls
 def handle_parallel_tool_calls(message, functions: dict) -> list:
     """
     Handle multiple tool calls from a single LLM response.
@@ -67,6 +68,7 @@ flowchart TB
 Always handle errors gracefully:
 
 ```python
+# script_id: day_031_tool_execution_handling_part2/safe_execute_tool
 def safe_execute_tool(name: str, args: dict, functions: dict) -> dict:
     """
     Safely execute a tool with comprehensive error handling.
@@ -134,6 +136,7 @@ else:
 Anthropic uses `input_schema` instead of `parameters`. Generate it from Pydantic:
 
 ```python
+# script_id: day_031_tool_execution_handling_part2/anthropic_tool_calling
 from anthropic import Anthropic
 from pydantic import BaseModel, Field
 
@@ -223,6 +226,7 @@ mindmap
 ## Quick Reference
 
 ```python
+# script_id: day_031_tool_execution_handling_part2/quick_reference
 # Parse tool call
 name = tool_call.function.name
 args = json.loads(tool_call.function.arguments)
@@ -252,6 +256,7 @@ response = client.chat.completions.create(
 Tools can hang — a web request times out, a database query runs forever. Always wrap tool execution with timeouts:
 
 ```python
+# script_id: day_031_tool_execution_handling_part2/timeout_handling
 import asyncio
 import concurrent.futures
 from typing import Any
@@ -301,6 +306,7 @@ def dispatch_tool_call(tool_name: str, arguments: dict, functions: dict) -> str:
 Not all errors are equal. Transient errors (rate limits, network timeouts) should be retried. Permanent errors (invalid arguments, missing resources) should not.
 
 ```python
+# script_id: day_031_tool_execution_handling_part2/error_categorization
 from enum import Enum
 
 class ErrorType(Enum):

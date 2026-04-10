@@ -58,6 +58,7 @@ research_agent/
 LangGraph is a state machine. Everything the agent knows lives in the state. Define it clearly upfront.
 
 ```python
+# script_id: day_048_capstone_autonomous_research_agent/research_agent
 # state.py
 from typing import TypedDict, List, Optional, Annotated
 from langgraph.graph.message import add_messages
@@ -94,6 +95,7 @@ class ResearchState(TypedDict):
 The agent needs tools to actually do research. We'll mock the web search (swap in a real API like Tavily or SerpAPI for production):
 
 ```python
+# script_id: day_048_capstone_autonomous_research_agent/research_agent
 # tools.py
 import json
 import random
@@ -193,6 +195,7 @@ RESEARCH_TOOLS = [web_search, fetch_article, analyze_findings, save_note]
 ## Step 3: The LangGraph Agent
 
 ```python
+# script_id: day_048_capstone_autonomous_research_agent/research_agent
 # agent.py
 import json
 import os
@@ -360,6 +363,7 @@ def build_graph() -> StateGraph:
 Research sessions should survive crashes and be resumable:
 
 ```python
+# script_id: day_048_capstone_autonomous_research_agent/research_agent
 # persistence.py
 import sqlite3
 import json
@@ -448,6 +452,7 @@ def list_sessions() -> list:
 ## Step 5: Main Entry Point
 
 ```python
+# script_id: day_048_capstone_autonomous_research_agent/research_agent
 # main.py
 import uuid
 from langchain_core.messages import HumanMessage

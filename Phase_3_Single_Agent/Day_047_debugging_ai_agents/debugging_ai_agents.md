@@ -51,6 +51,7 @@ flowchart TD
 You cannot debug what you cannot see. Add logging to your agent loop before you do anything else.
 
 ```python
+# script_id: day_047_debugging_ai_agents/traceable_agent_debug
 import json
 import logging
 import time
@@ -127,6 +128,7 @@ class AgentTrace:
 Here is a ReAct agent with full tracing built in:
 
 ```python
+# script_id: day_047_debugging_ai_agents/traceable_agent_debug
 import json
 from openai import OpenAI
 
@@ -251,6 +253,7 @@ class TraceableAgent:
 LangGraph gives you visibility into state at each node — but you have to ask for it.
 
 ```python
+# script_id: day_047_debugging_ai_agents/langgraph_debugging
 from langgraph.graph import StateGraph, END
 from langgraph.checkpoint.memory import MemorySaver
 from typing import TypedDict, Annotated
@@ -327,6 +330,7 @@ def rewind_and_replay(app, thread_id: str, steps_back: int = 2):
 When your agent does something weird, go through this checklist:
 
 ```python
+# script_id: day_047_debugging_ai_agents/traceable_agent_debug
 from collections import Counter
 
 
@@ -379,6 +383,7 @@ def agent_debugging_checklist(trace: AgentTrace) -> list[str]:
 ### Mistake 1: Infinite Loop — Missing Stop Condition
 
 ```python
+# script_id: day_047_debugging_ai_agents/stop_condition_fix
 # PROBLEM: no stopping condition
 bad_system_prompt = "You have access to web_search. Use it to research topics."
 
@@ -393,6 +398,7 @@ a reasonable answer."""
 ### Mistake 2: Error Retry Loop — No Circuit Breaker
 
 ```python
+# script_id: day_047_debugging_ai_agents/circuit_breaker
 # PROBLEM: agent retries failed tool indefinitely
 def bad_execute(tool_name, tool_input):
     try:
@@ -426,6 +432,7 @@ class CircuitBreakerAgent:
 ### Mistake 3: Context Overflow — Unbounded History
 
 ```python
+# script_id: day_047_debugging_ai_agents/traceable_agent_debug
 import tiktoken
 
 
@@ -467,6 +474,7 @@ def trim_messages(
 ## Pretty-Printing Traces
 
 ```python
+# script_id: day_047_debugging_ai_agents/traceable_agent_debug
 def print_trace(trace: AgentTrace):
     """Pretty-print an agent execution trace for debugging."""
     print(f"\n{'='*60}")

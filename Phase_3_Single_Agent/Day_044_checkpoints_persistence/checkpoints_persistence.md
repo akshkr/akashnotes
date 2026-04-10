@@ -41,6 +41,7 @@ Types of memory:
 ### Simple In-Memory Storage
 
 ```python
+# script_id: day_044_checkpoints_persistence/conversation_memory
 from openai import OpenAI
 from collections import deque
 
@@ -86,6 +87,7 @@ print(memory.chat("What's my name?"))  # Remembers!
 For long conversations, summarize old messages:
 
 ```python
+# script_id: day_044_checkpoints_persistence/summary_memory
 class SummaryMemory:
     """Memory that summarizes old conversations."""
 
@@ -149,6 +151,7 @@ Provide a brief summary of key points and facts mentioned."""
 LangGraph provides built-in checkpointing:
 
 ```python
+# script_id: day_044_checkpoints_persistence/langgraph_checkpoints
 from langgraph.graph import StateGraph, END
 from langgraph.checkpoint.memory import MemorySaver  # or: pip install langgraph-checkpoint-sqlite
 from typing import TypedDict, Annotated
@@ -198,6 +201,7 @@ result2 = app.invoke(
 ### Time-Travel Debugging
 
 ```python
+# script_id: day_044_checkpoints_persistence/langgraph_checkpoints
 from langgraph.checkpoint.memory import MemorySaver  # or: pip install langgraph-checkpoint-sqlite
 
 checkpointer = MemorySaver()  # For production, use PostgresSaver or SqliteSaver
@@ -255,6 +259,7 @@ Now that you can save and restore agent state in memory, let's make it durable. 
 ### SQLite Storage
 
 ```python
+# script_id: day_044_checkpoints_persistence/sqlite_conversation_store
 import sqlite3
 import json
 from datetime import datetime
@@ -348,6 +353,7 @@ print(conversation)
 ### PostgreSQL for Production
 
 ```python
+# script_id: day_044_checkpoints_persistence/postgres_conversation_store
 import psycopg2
 from psycopg2.extras import RealDictCursor
 import json
@@ -418,6 +424,7 @@ class PostgresConversationStore:
 Remember facts about entities:
 
 ```python
+# script_id: day_044_checkpoints_persistence/entity_memory
 from openai import OpenAI
 import json
 
@@ -486,6 +493,7 @@ print(memory.get_context())
 ## Complete Persistent Agent
 
 ```python
+# script_id: day_044_checkpoints_persistence/persistent_agent
 from openai import OpenAI
 import sqlite3
 import json

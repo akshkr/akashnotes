@@ -42,6 +42,7 @@ Both OpenAI and Anthropic support vision through their chat APIs. You send image
 Encode the image bytes as a base64 string and embed them directly in the API request. This is the most reliable method — no public URL required.
 
 ```python
+# script_id: day_032_multimodal_inputs/vision_api_examples
 import base64
 from pathlib import Path
 from openai import OpenAI
@@ -97,6 +98,7 @@ print(result)
 If your image is already hosted at a public URL, skip the encoding step entirely:
 
 ```python
+# script_id: day_032_multimodal_inputs/vision_api_examples
 def analyze_image_url(image_url: str, question: str) -> str:
     """Analyze an image from a URL."""
     response = client.chat.completions.create(
@@ -135,6 +137,7 @@ result = analyze_image_url(
 Claude uses a slightly different content block format — `image` type with `source` instead of `image_url`:
 
 ```python
+# script_id: day_032_multimodal_inputs/vision_claude
 from anthropic import Anthropic
 
 client = Anthropic()
@@ -205,6 +208,7 @@ Vision is not free. The API tiles your image into chunks and each tile costs tok
 A 2048x2048 image on `high` detail gets split into 16 tiles: `(16 * 85) + 85 = 1,445 tokens`. At GPT-4o input pricing ($2.50 per 1M tokens), that is about $0.0036 per image. Sounds cheap until you process 10,000 receipts.
 
 ```python
+# script_id: day_032_multimodal_inputs/estimate_image_tokens
 def estimate_image_tokens(width: int, height: int, detail: str = "high") -> int:
     """Estimate token cost for an image based on dimensions and detail level."""
     if detail == "low":
@@ -237,6 +241,7 @@ print(estimate_image_tokens(512, 512, "low"))      # 85 tokens
 For audio inputs, the standard approach is a two-step pipeline: transcribe the audio to text with Whisper, then pass the text to your LLM.
 
 ```python
+# script_id: day_032_multimodal_inputs/whisper_transcription
 from openai import OpenAI
 from pathlib import Path
 
@@ -303,6 +308,7 @@ Whisper supports mp3, mp4, mpeg, mpga, m4a, wav, and webm files up to 25 MB. For
 Now let us combine everything into an agent that handles text, images, and audio in a single conversation:
 
 ```python
+# script_id: day_032_multimodal_inputs/multimodal_agent
 import base64
 import json
 from pathlib import Path
@@ -438,6 +444,7 @@ flowchart TB
 Here is a focused agent that analyzes UI screenshots for a QA workflow:
 
 ```python
+# script_id: day_032_multimodal_inputs/screenshot_analyzer
 class ScreenshotAnalyzer:
     """Analyze UI screenshots for bugs, layout issues, and accessibility."""
 

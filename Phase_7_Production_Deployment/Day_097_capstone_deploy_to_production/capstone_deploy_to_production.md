@@ -78,6 +78,7 @@ deploy/
 ## Step 1: FastAPI Backend with Streaming
 
 ```python
+# script_id: day_097_capstone_deploy_to_production/api_main
 # api/main.py
 import os
 import logging
@@ -139,6 +140,7 @@ app.include_router(health_router)
 ```
 
 ```python
+# script_id: day_097_capstone_deploy_to_production/api_models
 # api/models.py
 from pydantic import BaseModel, Field
 from typing import Optional, Literal
@@ -186,6 +188,7 @@ class PipelineResponse(BaseModel):
 ```
 
 ```python
+# script_id: day_097_capstone_deploy_to_production/api_router_pipeline
 # api/routers/pipeline.py
 import asyncio
 import json
@@ -282,6 +285,7 @@ async def stream_pipeline(request: PipelineRequest):
 ```
 
 ```python
+# script_id: day_097_capstone_deploy_to_production/api_router_health
 # api/routers/health.py
 import os
 from fastapi import APIRouter
@@ -316,6 +320,7 @@ async def root():
 ## Step 2: Rate Limiting and Cost Tracking
 
 ```python
+# script_id: day_097_capstone_deploy_to_production/api_middleware_rate_limit
 # api/middleware/rate_limit.py
 import time
 from collections import defaultdict
@@ -349,6 +354,7 @@ async def check_rate_limit(request: Request):
 ```
 
 ```python
+# script_id: day_097_capstone_deploy_to_production/api_middleware_cost_tracker
 # api/middleware/cost_tracker.py
 import sqlite3
 import logging
@@ -405,6 +411,7 @@ async def track_cost(run_id: str, result: dict, content_type: str):
 ## Step 3: Streamlit UI
 
 ```python
+# script_id: day_097_capstone_deploy_to_production/streamlit_ui
 # ui/app.py
 import streamlit as st
 import requests
@@ -649,6 +656,7 @@ railway variables set OPENAI_API_KEY=sk-...
 Your service is live. Now you need to know when it breaks.
 
 ```python
+# script_id: day_097_capstone_deploy_to_production/api_router_health_detailed
 # api/routers/health.py (expanded)
 import os
 import time

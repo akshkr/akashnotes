@@ -67,6 +67,7 @@ The foundation. Replace LLM calls with predictable responses and test everything
 ### Setting Up pytest Fixtures
 
 ```python
+# script_id: day_015_testing_llm_applications/unit_tests_with_mocks
 # conftest.py
 import pytest
 from unittest.mock import MagicMock, AsyncMock, patch
@@ -122,6 +123,7 @@ def mock_json_response():
 ### Testing Your Extraction Logic
 
 ```python
+# script_id: day_015_testing_llm_applications/unit_tests_with_mocks
 # test_extraction.py
 import pytest
 import json
@@ -210,6 +212,7 @@ class TestExtractUser:
 Your schemas are contracts. Test them independently from the LLM.
 
 ```python
+# script_id: day_015_testing_llm_applications/test_pydantic_schemas
 # test_schemas.py
 import pytest
 from pydantic import BaseModel, field_validator, ValidationError
@@ -292,6 +295,7 @@ class TestSentimentSchema:
 You built retry loops in Days 23-24. Now test them.
 
 ```python
+# script_id: day_015_testing_llm_applications/unit_tests_with_mocks
 # test_retry.py
 import pytest
 from unittest.mock import MagicMock, call
@@ -373,6 +377,7 @@ class TestRetryLogic:
 Prompts change. You need to know when they change and whether the change was intentional.
 
 ```python
+# script_id: day_015_testing_llm_applications/test_prompt_snapshots
 # test_prompts.py
 import pytest
 import json
@@ -437,6 +442,7 @@ class TestPromptSnapshots:
 These tests hit real APIs. They are slow, expensive, and essential.
 
 ```python
+# script_id: day_015_testing_llm_applications/test_llm_integration
 # test_integration.py
 import pytest
 import json
@@ -629,6 +635,7 @@ jobs:
 ### 1. Testing Exact LLM Output
 
 ```python
+# script_id: day_015_testing_llm_applications/antipattern_exact_output
 # BAD - This will break constantly
 def test_summary():
     result = summarize("Long article about Python...")
@@ -645,6 +652,7 @@ def test_summary():
 ### 2. No Mocking at All
 
 ```python
+# script_id: day_015_testing_llm_applications/antipattern_no_mocking
 # BAD - Every test hits the API
 def test_extraction():
     client = OpenAI()  # Real API call, slow, costs money
@@ -660,6 +668,7 @@ def test_extraction(mock_openai_client):
 ### 3. Ignoring Costs
 
 ```python
+# script_id: day_015_testing_llm_applications/antipattern_ignoring_costs
 # BAD - Running GPT-4 integration tests on every commit
 @pytest.mark.parametrize("text", [hundred_different_inputs])
 def test_all_cases(text):

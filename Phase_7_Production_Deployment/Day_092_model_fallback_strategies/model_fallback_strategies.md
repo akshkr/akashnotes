@@ -40,6 +40,7 @@ Real-world failure modes:
 The most straightforward pattern — try each provider in order:
 
 ```python
+# script_id: day_092_model_fallback_strategies/fallback_chain_with_health
 from openai import OpenAI
 from anthropic import Anthropic
 import time
@@ -127,6 +128,7 @@ print(f"Answered by: {result['provider']} in {result['latency']:.2f}s")
 Don't wait for failures — proactively track provider health:
 
 ```python
+# script_id: day_092_model_fallback_strategies/fallback_chain_with_health
 import time
 import threading
 from dataclasses import dataclass, field
@@ -208,6 +210,7 @@ class HealthAwareRouter:
 Not every query needs your most expensive model. Route by complexity:
 
 ```python
+# script_id: day_092_model_fallback_strategies/cost_aware_router
 class CostAwareRouter:
     """Route queries to the cheapest capable model."""
 
@@ -292,6 +295,7 @@ print(router.estimate_savings(queries))
 Combine with the circuit breaker pattern from the rate limits lesson:
 
 ```python
+# script_id: day_092_model_fallback_strategies/provider_circuit_breaker
 from enum import Enum
 
 class CircuitState(Enum):
@@ -337,6 +341,7 @@ class ProviderCircuitBreaker:
 When ALL providers fail, don't show a blank error page:
 
 ```python
+# script_id: day_092_model_fallback_strategies/degraded_mode_handler
 class DegradedModeHandler:
     """Handle total provider failure gracefully."""
 

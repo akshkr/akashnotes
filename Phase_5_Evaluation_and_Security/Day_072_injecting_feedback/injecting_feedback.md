@@ -31,6 +31,7 @@ Feedback injection enables:
 ## Basic Feedback Injection
 
 ```python
+# script_id: day_072_injecting_feedback/basic_feedback_injection
 from openai import OpenAI
 
 client = OpenAI()
@@ -114,6 +115,7 @@ print("\nRevised:", result2[:200])
 Inject feedback into graph state:
 
 ```python
+# script_id: day_072_injecting_feedback/langgraph_feedback_injection
 from langgraph.graph import StateGraph, END
 from langgraph.checkpoint.sqlite import SqliteSaver
 from typing import TypedDict, Annotated, List
@@ -215,6 +217,7 @@ else:
 Use structured feedback for better incorporation:
 
 ```python
+# script_id: day_072_injecting_feedback/structured_feedback
 from pydantic import BaseModel
 from typing import List, Optional
 from enum import Enum
@@ -290,6 +293,7 @@ print(state["structured_feedback"])
 Allow feedback injection during agent execution:
 
 ```python
+# script_id: day_072_injecting_feedback/realtime_feedback_agent
 import threading
 import queue
 
@@ -358,6 +362,7 @@ class InteractiveAgent:
 ### 1. Iterative Refinement
 
 ```python
+# script_id: day_072_injecting_feedback/iterative_refinement
 def iterative_refinement(agent, task: str, max_iterations: int = 3):
     """Refine output through multiple feedback rounds."""
 
@@ -380,6 +385,7 @@ def iterative_refinement(agent, task: str, max_iterations: int = 3):
 ### 2. A/B Feedback
 
 ```python
+# script_id: day_072_injecting_feedback/ab_feedback
 def ab_feedback(agent, task: str):
     """Generate two options and get preference feedback."""
 
@@ -403,6 +409,7 @@ def ab_feedback(agent, task: str):
 ### 3. Rating-Based Feedback
 
 ```python
+# script_id: day_072_injecting_feedback/rating_feedback
 def rating_feedback(agent, output: str):
     """Collect rating-based feedback."""
 
@@ -431,6 +438,7 @@ def rating_feedback(agent, output: str):
 Store feedback for long-term learning:
 
 ```python
+# script_id: day_072_injecting_feedback/feedback_store
 import json
 from datetime import datetime
 from pathlib import Path
@@ -519,6 +527,7 @@ mindmap
 ## Quick Reference
 
 ```python
+# script_id: day_072_injecting_feedback/quick_reference
 # Basic injection
 agent.inject_feedback("Make it shorter")
 output = agent.regenerate_with_feedback(task, feedback)

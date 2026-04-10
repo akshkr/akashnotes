@@ -9,6 +9,7 @@ Never expose API keys in agent code or logs!
 ### Environment Variable Pattern
 
 ```python
+# script_id: day_066_docker_sandboxing_part2/secure_api_client
 import os
 from typing import Optional
 
@@ -52,6 +53,7 @@ print(f"Using API key: {client.get_masked_key()}")  # sk-ab****wxyz
 ### Secret Injection for Containers
 
 ```python
+# script_id: day_066_docker_sandboxing_part2/secret_injection
 import docker
 import tempfile
 
@@ -132,6 +134,7 @@ For production, use dedicated secret management:
 ### AWS Secrets Manager
 
 ```python
+# script_id: day_066_docker_sandboxing_part2/aws_secrets_manager
 import boto3
 import json
 
@@ -154,6 +157,7 @@ openai_key = secrets["OPENAI_API_KEY"]
 ### HashiCorp Vault
 
 ```python
+# script_id: day_066_docker_sandboxing_part2/hashicorp_vault
 import hvac
 
 def get_vault_secret(path: str, vault_url: str = "http://localhost:8200") -> dict:
@@ -173,6 +177,7 @@ api_key = secrets["api_key"]
 ### Local Development with .env
 
 ```python
+# script_id: day_066_docker_sandboxing_part2/dotenv_loading
 # .env file (add to .gitignore!)
 # OPENAI_API_KEY=sk-your-key-here
 
@@ -193,6 +198,7 @@ api_key = os.environ.get("OPENAI_API_KEY")
 Putting it all together:
 
 ```python
+# script_id: day_066_docker_sandboxing_part2/secure_sandbox_system
 import docker
 import tempfile
 import os
@@ -451,6 +457,7 @@ mindmap
 ## Quick Reference
 
 ```python
+# script_id: day_066_docker_sandboxing_part2/quick_reference
 # Basic Docker sandbox
 result = client.containers.run(
     image="python:3.11-slim",

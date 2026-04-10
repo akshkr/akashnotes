@@ -42,6 +42,7 @@ flowchart LR
 **Similar meanings = Similar numbers!**
 
 ```python
+# script_id: day_019_what_are_embeddings/conceptual_similarity
 # Conceptual example
 embedding_dog = [0.8, 0.3, -0.5, 0.2, ...]
 embedding_puppy = [0.79, 0.31, -0.48, 0.19, ...]  # Very similar!
@@ -67,6 +68,7 @@ embedding_pizza = [0.1, -0.7, 0.9, -0.4, ...]     # Very different!
 ## Generating Embeddings with OpenAI
 
 ```python
+# script_id: day_019_what_are_embeddings/generate_embedding
 from openai import OpenAI
 
 client = OpenAI()
@@ -121,6 +123,7 @@ Each of the 1536 numbers represents something about the text's meaning. We don't
 The real power comes from comparing embeddings:
 
 ```python
+# script_id: day_019_what_are_embeddings/compare_embeddings
 from openai import OpenAI
 import numpy as np
 
@@ -199,6 +202,7 @@ graph TB
 ```
 
 ```python
+# script_id: day_019_what_are_embeddings/visualize_embeddings
 # Visualization with matplotlib (requires: pip install matplotlib scikit-learn)
 from openai import OpenAI
 import numpy as np
@@ -274,6 +278,7 @@ flowchart TB
 For efficiency, process multiple texts at once:
 
 ```python
+# script_id: day_019_what_are_embeddings/batch_embeddings
 from openai import OpenAI
 
 client = OpenAI()
@@ -308,6 +313,7 @@ print(f"Each with {len(embeddings[0])} dimensions")
 ### 1. Find Most Similar
 
 ```python
+# script_id: day_019_what_are_embeddings/find_most_similar
 from openai import OpenAI
 import numpy as np
 
@@ -358,6 +364,7 @@ for doc, score in results:
 ### 2. Cluster Similar Content
 
 ```python
+# script_id: day_019_what_are_embeddings/cluster_documents
 from openai import OpenAI
 from sklearn.cluster import KMeans
 import numpy as np
@@ -434,6 +441,7 @@ mindmap
 ## Quick Reference
 
 ```python
+# script_id: day_019_what_are_embeddings/quick_reference
 from openai import OpenAI
 
 client = OpenAI()

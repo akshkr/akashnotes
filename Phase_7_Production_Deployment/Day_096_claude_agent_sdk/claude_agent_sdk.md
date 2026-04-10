@@ -69,6 +69,7 @@ flowchart LR
 ## Building a Basic Agent
 
 ```python
+# script_id: day_096_claude_agent_sdk/multi_agent_support_system
 import anthropic
 from claude_agent_sdk import Agent, Tool, Runner
 import json
@@ -163,6 +164,7 @@ print(result.final_output)
 For tools that need precise input control, define the schema explicitly:
 
 ```python
+# script_id: day_096_claude_agent_sdk/multi_agent_support_system
 from claude_agent_sdk import Tool
 import requests
 
@@ -242,6 +244,7 @@ api_tool = Tool(
 This is where the SDK shines. Handoffs let a triage agent route to specialist agents.
 
 ```python
+# script_id: day_096_claude_agent_sdk/multi_agent_support_system
 from claude_agent_sdk import Agent, Tool, Runner, Handoff
 
 
@@ -338,6 +341,7 @@ print(f"Answer: {result.final_output}")
 Guardrails run validation before or after agent responses. They are the SDK's answer to "what if the agent says something it shouldn't?"
 
 ```python
+# script_id: day_096_claude_agent_sdk/guardrails_example
 from claude_agent_sdk import InputGuardrail, OutputGuardrail, GuardrailFunctionOutput
 import re
 
@@ -412,6 +416,7 @@ guarded_agent = Agent(
 The SDK has built-in tracing. In production, you would send traces to LangSmith or your own observability platform.
 
 ```python
+# script_id: day_096_claude_agent_sdk/multi_agent_support_system
 from claude_agent_sdk import Runner, RunConfig
 import json
 
@@ -453,6 +458,7 @@ print(f"\nFinal output: {result.final_output}")
 For production web apps, use the async runner:
 
 ```python
+# script_id: day_096_claude_agent_sdk/multi_agent_support_system
 import asyncio
 from claude_agent_sdk import Runner
 

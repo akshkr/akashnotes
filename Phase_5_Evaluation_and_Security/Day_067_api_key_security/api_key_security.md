@@ -40,6 +40,7 @@ Risks of exposed keys:
 ## Never Hardcode Keys
 
 ```python
+# script_id: day_067_api_key_security/never_hardcode_keys
 # ❌ NEVER DO THIS
 api_key = "sk-abc123secretkey"
 
@@ -83,6 +84,7 @@ $env:OPENAI_API_KEY="sk-your-key-here"
 ### Using in Python
 
 ```python
+# script_id: day_067_api_key_security/env_var_usage
 import os
 from openai import OpenAI
 
@@ -115,6 +117,7 @@ openai_key = get_api_key("OPENAI_API_KEY")
 For local development:
 
 ```python
+# script_id: day_067_api_key_security/dotenv_file_example
 # .env file (add to .gitignore!)
 OPENAI_API_KEY=sk-your-key-here
 ANTHROPIC_API_KEY=sk-ant-your-key-here
@@ -122,6 +125,7 @@ DATABASE_URL=postgresql://localhost/mydb
 ```
 
 ```python
+# script_id: day_067_api_key_security/dotenv_loading
 # Python code
 from dotenv import load_dotenv
 import os
@@ -155,6 +159,7 @@ For production environments:
 ### AWS Secrets Manager
 
 ```python
+# script_id: day_067_api_key_security/aws_secrets_manager
 import boto3
 import json
 
@@ -177,6 +182,7 @@ openai_key = secrets["OPENAI_API_KEY"]
 ### HashiCorp Vault
 
 ```python
+# script_id: day_067_api_key_security/hashicorp_vault
 import hvac
 import os
 
@@ -197,6 +203,7 @@ openai_key = secrets["openai"]
 ### Azure Key Vault
 
 ```python
+# script_id: day_067_api_key_security/azure_key_vault
 from azure.identity import DefaultAzureCredential
 from azure.keyvault.secrets import SecretClient
 
@@ -223,6 +230,7 @@ openai_key = get_azure_secret(
 Rotate keys regularly for security:
 
 ```python
+# script_id: day_067_api_key_security/key_rotation
 from datetime import datetime, timedelta
 from dataclasses import dataclass
 from typing import Optional
@@ -293,6 +301,7 @@ class KeyManager:
 Use least-privilege keys:
 
 ```python
+# script_id: day_067_api_key_security/scoped_api_client
 class ScopedAPIClient:
     """Client with scoped API access."""
 
@@ -331,6 +340,7 @@ class ScopedAPIClient:
 Track key usage without exposing keys:
 
 ```python
+# script_id: day_067_api_key_security/key_usage_logging
 import hashlib
 from datetime import datetime
 
@@ -399,6 +409,7 @@ except Exception:
 Secure keys in agent workflows:
 
 ```python
+# script_id: day_067_api_key_security/secure_agent
 class SecureAgent:
     """Agent with secure key handling."""
 
@@ -489,6 +500,7 @@ mindmap
 ## Quick Reference
 
 ```python
+# script_id: day_067_api_key_security/quick_reference
 # Environment variable
 api_key = os.environ.get("OPENAI_API_KEY")
 

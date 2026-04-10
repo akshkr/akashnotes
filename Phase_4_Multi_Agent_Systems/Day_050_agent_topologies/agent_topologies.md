@@ -65,6 +65,7 @@ flowchart TB
 One agent coordinates, others execute:
 
 ```python
+# script_id: day_050_agent_topologies/agent_topologies
 from openai import OpenAI
 import json
 
@@ -192,6 +193,7 @@ print(result["final"])
 Agents communicate directly with each other:
 
 ```python
+# script_id: day_050_agent_topologies/agent_topologies
 class NetworkedSystem:
     """Agents collaborate as peers."""
 
@@ -282,6 +284,7 @@ discussion = network.run_discussion("Should AI replace human jobs?", rounds=2)
 Agents challenge each other to improve outputs:
 
 ```python
+# script_id: day_050_agent_topologies/agent_topologies
 class AdversarialSystem:
     """Generator and Critic improve outputs through iteration."""
 

@@ -137,6 +137,7 @@ flowchart TB
 ### Why Context Windows Matter
 
 ```python
+# script_id: day_002_transformer_intuition/context_window_example
 # Example: When your conversation exceeds the context window
 
 conversation_so_far = """
@@ -296,6 +297,7 @@ Now that you understand how Transformers "think," let's dive into **Tokenization
 Here's a simple mental exercise:
 
 ```python
+# script_id: day_002_transformer_intuition/self_attention_exercise
 # Think about this sentence:
 sentence = "The bank by the river was overgrown with grass."
 

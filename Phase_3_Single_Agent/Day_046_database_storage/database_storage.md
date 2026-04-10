@@ -38,6 +38,7 @@ Benefits:
 SQLite is perfect for local development and small deployments:
 
 ```python
+# script_id: day_046_database_storage/sqlite_store_and_agent
 import sqlite3
 import json
 from datetime import datetime
@@ -190,6 +191,7 @@ print(conversation)
 PostgreSQL provides better concurrency and scaling:
 
 ```python
+# script_id: day_046_database_storage/postgres_conversation_store
 import psycopg2
 from psycopg2.extras import RealDictCursor, Json
 from datetime import datetime
@@ -351,6 +353,7 @@ context = store.get_recent_context(conv_id, max_tokens=2000)
 Use database storage with LangGraph checkpointing:
 
 ```python
+# script_id: day_046_database_storage/langgraph_postgres_integration
 from langgraph.checkpoint.postgres import PostgresSaver
 from langgraph.graph import StateGraph, END
 
@@ -377,6 +380,7 @@ result = app.invoke(initial_state, config=config)
 ## Combining Conversation Store with Agent
 
 ```python
+# script_id: day_046_database_storage/sqlite_store_and_agent
 from openai import OpenAI
 
 class PersistentAgent:
@@ -498,6 +502,7 @@ erDiagram
 Migrate from SQLite to PostgreSQL:
 
 ```python
+# script_id: day_046_database_storage/migrate_sqlite_to_postgres
 def migrate_sqlite_to_postgres(sqlite_path: str, postgres_conn: str):
     """Migrate data from SQLite to PostgreSQL."""
 
@@ -565,6 +570,7 @@ mindmap
 ## Quick Reference
 
 ```python
+# script_id: day_046_database_storage/quick_reference
 # SQLite setup
 store = SQLiteConversationStore("app.db")
 

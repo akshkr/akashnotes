@@ -63,6 +63,7 @@ flowchart LR
 ### Basic Input/Output Validation
 
 ```python
+# script_id: day_064_llm_guardrails/basic_input_output_validation
 import openai
 from guardrails import Guard
 from guardrails.hub import ToxicLanguage, DetectPII, RestrictToTopic
@@ -98,6 +99,7 @@ print(result.validated_output)
 Guardrails AI works with Pydantic models to enforce structured outputs:
 
 ```python
+# script_id: day_064_llm_guardrails/structured_output_validation
 from guardrails import Guard
 from pydantic import BaseModel, Field
 from typing import List
@@ -128,6 +130,7 @@ print(result.validated_output["pros"])
 ### Topic Restriction
 
 ```python
+# script_id: day_064_llm_guardrails/topic_restriction
 from guardrails import Guard
 from guardrails.hub import RestrictToTopic
 
@@ -149,6 +152,7 @@ result = guard.validate("What's your opinion on the election?")
 ### Custom Validators
 
 ```python
+# script_id: day_064_llm_guardrails/custom_validator
 from guardrails.validators import Validator, register_validator
 from typing import Any, Dict, List
 
@@ -198,6 +202,7 @@ Before reaching for a framework, consider the safety features already built into
 OpenAI provides a free moderation endpoint that classifies text across safety categories:
 
 ```python
+# script_id: day_064_llm_guardrails/openai_moderation
 from openai import OpenAI
 
 client = OpenAI()
@@ -239,6 +244,7 @@ else:
 Anthropic's Claude has strong built-in safety, and you can reinforce it with system prompt instructions:
 
 ```python
+# script_id: day_064_llm_guardrails/claude_system_guardrails
 from anthropic import Anthropic
 
 client = Anthropic()
@@ -271,6 +277,7 @@ GUARDRAILS:
 ## Combining Guardrails with Agents
 
 ```python
+# script_id: day_064_llm_guardrails/guarded_agent
 import openai
 from guardrails import Guard
 from guardrails.hub import ToxicLanguage, DetectPII
@@ -362,6 +369,7 @@ mindmap
 ## Quick Reference
 
 ```python
+# script_id: day_064_llm_guardrails/quick_reference
 # Guardrails AI — input/output validation
 from guardrails import Guard
 from guardrails.hub import ToxicLanguage, DetectPII

@@ -36,6 +36,7 @@ Common issues:
 ## Basic Retry with Backoff
 
 ```python
+# script_id: day_090_rate_limits_backoffs/basic_retry_with_backoff
 import time
 import random
 from typing import Callable, Any
@@ -96,6 +97,7 @@ result = retry_with_backoff(call_api)
 ## Decorator-Based Retry
 
 ```python
+# script_id: day_090_rate_limits_backoffs/resilience_toolkit
 import functools
 import time
 import random
@@ -149,6 +151,7 @@ result = call_openai("Hello!")
 Proactively limit your request rate:
 
 ```python
+# script_id: day_090_rate_limits_backoffs/resilience_toolkit
 import time
 from collections import deque
 from threading import Lock
@@ -209,6 +212,7 @@ result = call_api()
 Stop calling failing services:
 
 ```python
+# script_id: day_090_rate_limits_backoffs/resilience_toolkit
 import time
 from enum import Enum
 from threading import Lock
@@ -310,6 +314,7 @@ except CircuitBreakerOpen:
 Put it all together:
 
 ```python
+# script_id: day_090_rate_limits_backoffs/resilience_toolkit
 from dataclasses import dataclass
 from typing import Optional, Callable
 import time
@@ -394,6 +399,7 @@ pip install tenacity
 ```
 
 ```python
+# script_id: day_090_rate_limits_backoffs/tenacity_retry
 from tenacity import (
     retry,
     stop_after_attempt,
@@ -462,6 +468,7 @@ mindmap
 ## Quick Reference
 
 ```python
+# script_id: day_090_rate_limits_backoffs/resilience_toolkit
 # Simple retry
 @retry(max_retries=3, base_delay=1.0)
 def api_call():
@@ -490,6 +497,7 @@ def resilient_call():
 In production, you need to prevent cost explosions. Token budgets enforce limits per user, per organization, or per time window.
 
 ```python
+# script_id: day_090_rate_limits_backoffs/token_budget
 import time
 from dataclasses import dataclass, field
 

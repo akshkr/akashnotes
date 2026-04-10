@@ -40,6 +40,7 @@ Time-travel debugging allows you to:
 First, enable checkpointing to record states:
 
 ```python
+# script_id: day_045_time_travel_debugging/checkpointing_setup
 from langgraph.graph import StateGraph, END
 from langgraph.checkpoint.memory import MemorySaver  # or: pip install langgraph-checkpoint-sqlite
 from typing import TypedDict, Annotated
@@ -86,6 +87,7 @@ app = workflow.compile(checkpointer=checkpointer)
 Run your agent with a thread ID to record checkpoints:
 
 ```python
+# script_id: day_045_time_travel_debugging/checkpointing_setup
 # Run with thread ID
 config = {"configurable": {"thread_id": "debug-session-1"}}
 
@@ -105,6 +107,7 @@ print(f"Final state: {result}")
 List all checkpoints for a thread:
 
 ```python
+# script_id: day_045_time_travel_debugging/checkpointing_setup
 def list_checkpoints(checkpointer, thread_id: str):
     """List all checkpoints for a thread."""
 
@@ -154,6 +157,7 @@ Checkpoint 3:
 Go back to any checkpoint:
 
 ```python
+# script_id: day_045_time_travel_debugging/checkpointing_setup
 def rewind_to_checkpoint(app, checkpointer, thread_id: str, checkpoint_index: int):
     """Rewind to a specific checkpoint."""
 
@@ -194,6 +198,7 @@ resume_config, old_state = rewind_to_checkpoint(
 Resume execution from a previous state:
 
 ```python
+# script_id: day_045_time_travel_debugging/checkpointing_setup
 def replay_from_checkpoint(app, resume_config, new_input: dict = None):
     """Replay from a checkpoint, optionally with new input."""
 
@@ -221,6 +226,7 @@ print(f"New result: {new_result}")
 ## Complete Time-Travel Example
 
 ```python
+# script_id: day_045_time_travel_debugging/complete_time_travel_example
 from langgraph.graph import StateGraph, END
 from langgraph.checkpoint.memory import MemorySaver  # or: pip install langgraph-checkpoint-sqlite
 from typing import TypedDict, Annotated, Literal
@@ -320,6 +326,7 @@ flowchart TB
 Build an interactive debugging session:
 
 ```python
+# script_id: day_045_time_travel_debugging/checkpointing_setup
 class TimeTraceDebugger:
     """Interactive time-travel debugger."""
 
@@ -406,6 +413,7 @@ result = debugger.replay({"choice": "B"})
 ### 1. Use Meaningful Thread IDs
 
 ```python
+# script_id: day_045_time_travel_debugging/meaningful_thread_ids
 # Good: Descriptive thread IDs
 config = {"configurable": {"thread_id": f"user-{user_id}-task-{task_id}"}}
 
@@ -416,6 +424,7 @@ config = {"configurable": {"thread_id": "abc123"}}
 ### 2. Clean Up Old Checkpoints
 
 ```python
+# script_id: day_045_time_travel_debugging/checkpointing_setup
 def cleanup_old_checkpoints(checkpointer, thread_id: str, keep_last: int = 10):
     """Remove old checkpoints to save space."""
     config = {"configurable": {"thread_id": thread_id}}
@@ -431,6 +440,7 @@ def cleanup_old_checkpoints(checkpointer, thread_id: str, keep_last: int = 10):
 ### 3. Log Checkpoint Events
 
 ```python
+# script_id: day_045_time_travel_debugging/log_checkpoint
 def log_checkpoint(state, checkpoint_id):
     """Log checkpoint for debugging."""
     import logging
@@ -463,6 +473,7 @@ mindmap
 ## Quick Reference
 
 ```python
+# script_id: day_045_time_travel_debugging/quick_reference
 # Setup checkpointing
 checkpointer = MemorySaver()
 app = workflow.compile(checkpointer=checkpointer)

@@ -15,6 +15,7 @@ Your Day 72 judge works — until it doesn't. LLM judges have well-documented bi
 LLMs tend to prefer whichever response appears first (or last, depending on the model). This means pairwise comparisons can flip just by swapping the order.
 
 ```python
+# script_id: day_059_llm_as_judge_part2/judge_techniques
 from openai import OpenAI
 import json
 
@@ -70,6 +71,7 @@ Which response is better? Return JSON: {{"winner": "A" or "B", "reasoning": "...
 LLM judges tend to rate longer, more detailed responses higher — even when the shorter response is more accurate or more appropriate.
 
 ```python
+# script_id: day_059_llm_as_judge_part2/judge_techniques
 def detect_verbosity_bias(question: str, concise: str, verbose: str) -> dict:
     """Check if the judge prefers verbose responses regardless of quality."""
 
@@ -123,6 +125,7 @@ Calibration means ensuring your judge's scores are meaningful and consistent. Wi
 Provide the judge with reference examples at known quality levels:
 
 ```python
+# script_id: day_059_llm_as_judge_part2/judge_techniques
 CALIBRATION_ANCHORS = {
     "excellent": {
         "question": "Explain recursion in programming.",
@@ -184,6 +187,7 @@ Return JSON: {{"score": 1-5, "reasoning": "...", "closest_anchor": "excellent/me
 Compare your LLM judge against human evaluators (or against itself across runs) to measure agreement:
 
 ```python
+# script_id: day_059_llm_as_judge_part2/cohens_kappa
 def cohens_kappa(judge_1_scores: list[int], judge_2_scores: list[int]) -> float:
     """Calculate Cohen's Kappa for inter-rater agreement (Landis & Koch, 1977).
 
@@ -227,6 +231,7 @@ print(f"Cohen's Kappa: {kappa:.3f}")
 For high-stakes evaluations, use multiple judges and aggregate their scores. This reduces the impact of any single judge's bias.
 
 ```python
+# script_id: day_059_llm_as_judge_part2/judge_techniques
 from typing import Optional
 
 def multi_judge_evaluate(
@@ -277,6 +282,7 @@ Return JSON: {{"score": 1-5, "reasoning": "..."}}"""}],
 When judges disagree significantly, you need a tiebreaker strategy:
 
 ```python
+# script_id: day_059_llm_as_judge_part2/judge_techniques
 def evaluate_with_tiebreaker(question: str, response: str) -> dict:
     """Two cheap judges + expensive tiebreaker when they disagree."""
 
@@ -326,6 +332,7 @@ Running LLM-as-judge on every response is expensive. Here are strategies to keep
 Don't evaluate everything. Evaluate a random sample and extrapolate:
 
 ```python
+# script_id: day_059_llm_as_judge_part2/sampled_evaluation
 import random
 
 def sampled_evaluation(
@@ -359,6 +366,7 @@ def sampled_evaluation(
 Use cheap models for screening, expensive models for borderline cases:
 
 ```python
+# script_id: day_059_llm_as_judge_part2/judge_techniques
 def tiered_evaluation(question: str, response: str) -> dict:
     """Cheap screening → expensive evaluation only for borderline cases."""
 

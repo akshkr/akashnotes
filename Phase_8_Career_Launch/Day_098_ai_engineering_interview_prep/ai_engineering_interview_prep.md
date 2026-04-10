@@ -105,6 +105,7 @@ AI engineering coding interviews test your ability to work with LLM APIs, parse 
 ### Pattern 1: Structured Output Extraction
 
 ```python
+# script_id: day_098_ai_engineering_interview_prep/structured_output_extraction
 # Common prompt: "Parse this LLM response and extract structured data"
 from pydantic import BaseModel, field_validator
 from openai import OpenAI
@@ -154,6 +155,7 @@ For remote: true only if explicitly stated as remote/hybrid.""",
 ### Pattern 2: Tool Calling Implementation
 
 ```python
+# script_id: day_098_ai_engineering_interview_prep/tool_calling_agent
 # Common prompt: "Implement a tool-calling agent for X"
 import json
 from openai import OpenAI

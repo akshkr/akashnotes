@@ -53,6 +53,7 @@ flowchart TB
 ## Building a ReAct Agent from Scratch
 
 ```python
+# script_id: day_035_react_loop/react_agent_core
 from openai import OpenAI
 import json
 import re
@@ -127,6 +128,7 @@ Always start with a Thought. Never skip the thinking step."""
 Instead of parsing free-text with regex, you can ask the LLM to return structured JSON directly using `response_format`:
 
 ```python
+# script_id: day_035_react_loop/structured_response_json_mode
     def _get_structured_response(self, messages: list) -> dict:
         """Get a structured response using JSON mode instead of regex parsing."""
         json_system_prompt = """You are a helpful assistant that solves problems step by step.
@@ -164,6 +166,7 @@ The regex approach above is valuable for understanding how ReAct works under the
 The regex approach above is great for learning how ReAct works under the hood, but it is fragile -- the LLM might format its output slightly differently and break the regex. Modern APIs let you enforce structured output directly:
 
 ```python
+# script_id: day_035_react_loop/structured_response_system_inject
     def _get_structured_response(self, messages: list) -> dict:
         """Get a structured response using JSON mode instead of regex parsing."""
 
@@ -307,6 +310,7 @@ print(f"\n=== Final Result ===\n{result}")
 ## Managing Conversation History
 
 ```python
+# script_id: day_035_react_loop/conversation_manager
 class ConversationManager:
     """Manage conversation history for agents."""
 
@@ -357,6 +361,7 @@ class ConversationManager:
 Prevent infinite loops:
 
 ```python
+# script_id: day_035_react_loop/safe_agent
 import time
 
 class SafeAgent:
@@ -439,6 +444,7 @@ class SafeAgent:
 ## Complete ReAct Agent
 
 ```python
+# script_id: day_035_react_loop/complete_react_agent
 from openai import OpenAI
 from typing import Callable, Any
 import json

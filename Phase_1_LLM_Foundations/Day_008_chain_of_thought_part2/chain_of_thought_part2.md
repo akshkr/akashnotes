@@ -46,6 +46,7 @@ graph TD
 ### Pattern 1: Problem Decomposition
 
 ```python
+# script_id: day_008_chain_of_thought_part2/problem_decomposition
 def decompose_problem(complex_problem: str) -> str:
     """Break complex problems into sub-problems."""
     prompt = f"""I'll solve this complex problem by breaking it into smaller parts.
@@ -70,6 +71,7 @@ Decomposition:"""
 ### Pattern 2: Verify and Correct
 
 ```python
+# script_id: day_008_chain_of_thought_part2/verify_and_correct
 def cot_with_verification(problem: str) -> str:
     """Solve with built-in verification step."""
     prompt = f"""{problem}
@@ -101,6 +103,7 @@ print(cot_with_verification(problem))
 ### Pattern 3: Work Backwards
 
 ```python
+# script_id: day_008_chain_of_thought_part2/work_backwards
 def reverse_cot(goal: str, starting_point: str) -> str:
     """Reason backwards from goal to start."""
     prompt = f"""Let's work backwards from the goal to figure out the solution.
@@ -131,6 +134,7 @@ Reasoning:"""
 CoT gives great reasoning but you often just need the answer:
 
 ```python
+# script_id: day_008_chain_of_thought_part2/cot_with_extraction
 import re
 from openai import OpenAI
 

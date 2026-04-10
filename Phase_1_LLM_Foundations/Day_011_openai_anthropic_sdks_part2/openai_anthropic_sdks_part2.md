@@ -37,6 +37,7 @@ flowchart TB
 ### Unified Wrapper
 
 ```python
+# script_id: day_011_openai_anthropic_sdks_part2/unified_llm_wrapper
 from openai import OpenAI
 from anthropic import Anthropic
 
@@ -149,6 +150,7 @@ print("Anthropic:", result2["content"])
 Both SDKs can throw various errors. Handle them gracefully!
 
 ```python
+# script_id: day_011_openai_anthropic_sdks_part2/error_handling_retry
 from openai import OpenAI, APIError, RateLimitError, APIConnectionError
 from anthropic import Anthropic, APIError as AnthropicAPIError
 import time
@@ -248,6 +250,7 @@ Google's Gemini models are the third major LLM provider alongside OpenAI and Ant
 ### Installation and Basic Usage
 
 ```python
+# script_id: day_011_openai_anthropic_sdks_part2/gemini_basic_usage
 # pip install google-genai
 from google import genai
 
@@ -303,6 +306,7 @@ mindmap
 ## Quick Reference
 
 ```python
+# script_id: day_011_openai_anthropic_sdks_part2/quick_reference_templates
 # OpenAI Quick Template
 from openai import OpenAI
 client = OpenAI()

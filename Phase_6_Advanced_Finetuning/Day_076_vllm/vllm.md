@@ -112,6 +112,7 @@ vllm serve meta-llama/Llama-3.1-8B-Instruct \
 ### Python API
 
 ```python
+# script_id: day_076_vllm/batch_inference
 from vllm import LLM, SamplingParams
 
 # Load model
@@ -181,6 +182,7 @@ sequenceDiagram
 vLLM exposes an API that's a drop-in replacement for OpenAI's. Your existing code works with zero changes.
 
 ```python
+# script_id: day_076_vllm/openai_compatible_api
 from openai import OpenAI
 
 # Point to your vLLM server instead of OpenAI
@@ -219,6 +221,7 @@ for chunk in stream:
 ## Benchmarking: vLLM vs Ollama vs Transformers
 
 ```python
+# script_id: day_076_vllm/benchmark_provider
 import time
 from openai import OpenAI
 
@@ -305,6 +308,7 @@ vllm serve meta-llama/Llama-3.1-70B-Instruct \
 ```
 
 ```python
+# script_id: day_076_vllm/tensor_parallelism
 from vllm import LLM, SamplingParams
 
 # Python API with tensor parallelism
@@ -333,6 +337,7 @@ outputs = llm.generate(
 ## Production Configuration
 
 ```python
+# script_id: day_076_vllm/production_config
 # production_config.py
 """Production vLLM configuration."""
 
@@ -403,6 +408,7 @@ vllm serve model-name --tensor-parallel-size 4
 ```
 
 ```python
+# script_id: day_076_vllm/quick_reference
 # Python offline inference
 from vllm import LLM, SamplingParams
 llm = LLM(model="meta-llama/Llama-3.1-8B-Instruct")

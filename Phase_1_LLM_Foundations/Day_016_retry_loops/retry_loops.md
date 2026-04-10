@@ -36,6 +36,7 @@ flowchart LR
 ## Basic Retry Pattern
 
 ```python
+# script_id: day_016_retry_loops/basic_retry_pattern
 from openai import OpenAI
 from pydantic import BaseModel, ValidationError
 import json
@@ -103,6 +104,7 @@ if result:
 The real power comes from telling the LLM what went wrong:
 
 ```python
+# script_id: day_016_retry_loops/feedback_retry
 from openai import OpenAI
 from pydantic import BaseModel, ValidationError
 import json
@@ -218,6 +220,7 @@ sequenceDiagram
 ## Exponential Backoff for Rate Limits
 
 ```python
+# script_id: day_016_retry_loops/exponential_backoff
 from openai import OpenAI, RateLimitError, APIError
 import time
 import random
@@ -285,6 +288,7 @@ flowchart TB
 Here's a fully-featured retry system:
 
 ```python
+# script_id: day_016_retry_loops/production_retry_system
 from openai import OpenAI, RateLimitError, APIError, APIConnectionError
 from pydantic import BaseModel, ValidationError
 from typing import TypeVar, Type, Callable, Any
@@ -533,6 +537,7 @@ else:
 For high-throughput applications:
 
 ```python
+# script_id: day_016_retry_loops/async_retry_system
 import asyncio
 from openai import AsyncOpenAI
 from pydantic import BaseModel, ValidationError
@@ -644,6 +649,7 @@ mindmap
 ## Quick Reference
 
 ```python
+# script_id: day_016_retry_loops/quick_reference
 # Basic retry pattern
 for attempt in range(max_retries):
     try:

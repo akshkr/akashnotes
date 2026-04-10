@@ -44,6 +44,7 @@ This is a pattern you'll use constantly as an AI engineer. Document parsing, dat
 We'll support three input types, each with its own Pydantic model. This demonstrates how the same pipeline handles different schemas.
 
 ```python
+# script_id: day_018_capstone_data_extraction_pipeline/extraction_pipeline
 # schemas.py
 from pydantic import BaseModel, Field, field_validator
 from typing import Optional, List
@@ -119,6 +120,7 @@ Notice we're using `Field` with descriptions everywhere. Those descriptions go i
 ## The Pipeline Core
 
 ```python
+# script_id: day_018_capstone_data_extraction_pipeline/extraction_pipeline
 # extractor.py
 import json
 import time
@@ -249,6 +251,7 @@ def estimate_cost(tokens: int, model: str) -> float:
 For long documents you don't want to wait 30 seconds staring at a blank terminal. Add streaming progress:
 
 ```python
+# script_id: day_018_capstone_data_extraction_pipeline/extraction_pipeline
 # streaming_extractor.py
 import json
 from openai import OpenAI
@@ -300,6 +303,7 @@ def extract_with_streaming(text: str, schema_class: Type[T]) -> T:
 Now wire it all together into a clean interface:
 
 ```python
+# script_id: day_018_capstone_data_extraction_pipeline/extraction_pipeline
 # pipeline.py
 import json
 from pathlib import Path
@@ -441,6 +445,7 @@ if __name__ == "__main__":
 Real pipelines process many documents. Here's how to do it efficiently:
 
 ```python
+# script_id: day_018_capstone_data_extraction_pipeline/extraction_pipeline
 # batch.py
 import asyncio
 from openai import AsyncOpenAI

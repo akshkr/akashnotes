@@ -108,6 +108,7 @@ The algorithm:
 Here's how to actually tokenize text using the `tiktoken` library (OpenAI's tokenizer):
 
 ```python
+# script_id: day_003_tokenization/basic_tokenization
 # Install: pip install tiktoken
 
 import tiktoken
@@ -133,6 +134,7 @@ print(f"Number of tokens: {len(tokens)}")
 ### Decoding Tokens Back to Text
 
 ```python
+# script_id: day_003_tokenization/decode_tokens
 import tiktoken
 
 encoder = tiktoken.encoding_for_model("gpt-4o")
@@ -167,6 +169,7 @@ Let's explore some interesting tokenization behaviors:
 ### Example 1: Numbers
 
 ```python
+# script_id: day_003_tokenization/tokenize_numbers
 import tiktoken
 
 encoder = tiktoken.encoding_for_model("gpt-4o")
@@ -189,6 +192,7 @@ Large numbers get split into multiple tokens!
 ### Example 2: Different Languages
 
 ```python
+# script_id: day_003_tokenization/tokenize_languages
 import tiktoken
 
 encoder = tiktoken.encoding_for_model("gpt-4o")
@@ -216,6 +220,7 @@ Non-English text often uses more tokens because the tokenizer was trained primar
 ### Example 3: Code vs Text
 
 ```python
+# script_id: day_003_tokenization/tokenize_code_vs_text
 import tiktoken
 
 encoder = tiktoken.encoding_for_model("gpt-4o")

@@ -39,6 +39,7 @@ Common failure modes without proper evaluation:
 Automated metrics give you fast, reproducible scores. They're your first line of defense.
 
 ```python
+# script_id: day_081_evaluating_finetuned/automated_metrics
 import math
 from collections import Counter
 
@@ -117,6 +118,7 @@ flowchart TD
 Generic metrics only tell part of the story. You need benchmarks designed for **your** use case.
 
 ```python
+# script_id: day_081_evaluating_finetuned/task_specific_benchmarks
 import json
 from dataclasses import dataclass
 from typing import Callable
@@ -191,6 +193,7 @@ def run_eval_suite(model_fn: Callable, cases: list[EvalCase]) -> dict:
 The ultimate question: is your fine-tuned 7B actually better than GPT-4o for this task?
 
 ```python
+# script_id: day_081_evaluating_finetuned/ab_testing
 from openai import OpenAI
 import time
 
@@ -256,6 +259,7 @@ def compare_results(results: dict, scorer: Callable) -> dict:
 Automated metrics miss nuance. Human evaluation catches what machines cannot.
 
 ```python
+# script_id: day_081_evaluating_finetuned/human_evaluation
 from dataclasses import dataclass, field
 from typing import Optional
 import json
@@ -331,6 +335,7 @@ sequenceDiagram
 ```
 
 ```python
+# script_id: day_081_evaluating_finetuned/regression_testing
 def regression_test(
     fine_tuned_fn: Callable,
     base_model_fn: Callable,
@@ -395,6 +400,7 @@ flowchart LR
 ```
 
 ```python
+# script_id: day_081_evaluating_finetuned/eval_pipeline
 from datetime import datetime
 
 class EvalPipeline:
@@ -441,6 +447,7 @@ class EvalPipeline:
 ## When to Ship: Go/No-Go Criteria
 
 ```python
+# script_id: day_081_evaluating_finetuned/go_no_go_criteria
 go_no_go_checklist = {
     "target_task_improvement":    ">= 5% over baseline",
     "general_regression":         "<= 5% drop on general benchmarks",
@@ -505,6 +512,7 @@ mindmap
 ## Quick Reference
 
 ```python
+# script_id: day_081_evaluating_finetuned/quick_reference
 # Automated metrics
 exact_match_score(predictions, references)  # Exact string match
 rouge_l_score(prediction, reference)        # Longest common subsequence

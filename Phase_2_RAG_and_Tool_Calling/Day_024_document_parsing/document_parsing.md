@@ -27,6 +27,7 @@ Today we focus on the **Parse** step!
 The easiest format - just read it:
 
 ```python
+# script_id: day_024_document_parsing/text_and_markdown_parsing
 from pathlib import Path
 
 def parse_text_file(file_path: str) -> str:
@@ -55,6 +56,7 @@ print(f"Extracted {len(content)} characters")
 ### Parsing Markdown
 
 ```python
+# script_id: day_024_document_parsing/text_and_markdown_parsing
 import re
 
 def parse_markdown(file_path: str) -> dict:
@@ -95,6 +97,7 @@ pip install pypdf2
 ```
 
 ```python
+# script_id: day_024_document_parsing/parse_pdf_pypdf2
 from pypdf2 import PdfReader
 
 def parse_pdf_pypdf2(file_path: str) -> dict:
@@ -132,6 +135,7 @@ pip install pdfplumber
 ```
 
 ```python
+# script_id: day_024_document_parsing/parse_pdf_plumber
 import pdfplumber
 
 def parse_pdf_plumber(file_path: str) -> dict:
@@ -171,6 +175,7 @@ pip install pymupdf
 ```
 
 ```python
+# script_id: day_024_document_parsing/parse_pdf_mupdf
 import fitz  # PyMuPDF
 
 def parse_pdf_mupdf(file_path: str) -> dict:
@@ -207,6 +212,7 @@ pip install beautifulsoup4 requests
 ```
 
 ```python
+# script_id: day_024_document_parsing/web_and_universal_loader
 import requests
 from bs4 import BeautifulSoup
 
@@ -261,6 +267,7 @@ print(f"Text length: {len(result['text'])}")
 ### Clean Text Extraction
 
 ```python
+# script_id: day_024_document_parsing/web_and_universal_loader
 import re
 
 def clean_extracted_text(text: str) -> str:
@@ -305,6 +312,7 @@ def extract_main_content(html: str) -> str:
 ## Universal Document Loader
 
 ```python
+# script_id: day_024_document_parsing/web_and_universal_loader
 from pathlib import Path
 from typing import Union
 import mimetypes
@@ -398,6 +406,7 @@ for doc in [doc1, doc2, doc3]:
 ## Handling Large Documents
 
 ```python
+# script_id: day_024_document_parsing/web_and_universal_loader
 def load_directory(
     directory: str,
     extensions: list[str] = None,
@@ -466,6 +475,7 @@ mindmap
 ## Quick Reference
 
 ```python
+# script_id: day_024_document_parsing/quick_reference
 # Text files
 content = Path("file.txt").read_text()
 

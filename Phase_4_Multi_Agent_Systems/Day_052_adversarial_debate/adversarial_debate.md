@@ -89,6 +89,7 @@ flowchart TD
 ## Basic Debate Implementation
 
 ```python
+# script_id: day_052_adversarial_debate/debate_system
 from openai import OpenAI
 import json
 
@@ -189,6 +190,7 @@ result = debate("Should companies adopt a 4-day work week?")
 Allow multiple rounds of argument:
 
 ```python
+# script_id: day_052_adversarial_debate/debate_system
 def multi_round_debate(question: str, rounds: int = 3) -> str:
     """Run multiple rounds of debate."""
 
@@ -244,6 +246,7 @@ print(result)
 One team attacks, one defends:
 
 ```python
+# script_id: day_052_adversarial_debate/debate_system
 def red_blue_debate(topic: str, position: str) -> dict:
     """Red team attacks, blue team defends."""
 
@@ -358,6 +361,7 @@ flowchart TB
 Use questions to improve reasoning:
 
 ```python
+# script_id: day_052_adversarial_debate/debate_system
 def socratic_debate(claim: str, max_questions: int = 5) -> dict:
     """Challenge a claim with Socratic questioning."""
 
@@ -432,6 +436,7 @@ print("\n[REFINED CLAIM]:", result["refined_claim"])
 Multiple agents debate until they agree:
 
 ```python
+# script_id: day_052_adversarial_debate/debate_system
 def build_consensus(question: str, num_agents: int = 3, max_rounds: int = 5) -> str:
     """Multiple agents debate until consensus."""
 
@@ -538,6 +543,7 @@ mindmap
 ## Quick Reference
 
 ```python
+# script_id: day_052_adversarial_debate/quick_reference
 # Basic debate
 answer = proposer(question)
 critique = critic(question, answer)

@@ -34,6 +34,7 @@ Key reasons:
 ### From OpenAI Responses
 
 ```python
+# script_id: day_057_token_latency_visualization/metrics_system
 from openai import OpenAI
 from dataclasses import dataclass
 from datetime import datetime
@@ -93,6 +94,7 @@ print(f"  Latency: {metrics.latency_ms:.0f}ms")
 Build a comprehensive metrics collector:
 
 ```python
+# script_id: day_057_token_latency_visualization/metrics_system
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import List, Dict, Optional
@@ -210,6 +212,7 @@ def tracked_call(messages: list, model: str = "gpt-4o-mini", **kwargs) -> str:
 Simple ASCII visualizations:
 
 ```python
+# script_id: day_057_token_latency_visualization/metrics_system
 def print_latency_histogram(calls: List[APICall], buckets: int = 10):
     """Print ASCII histogram of latencies."""
 
@@ -264,6 +267,7 @@ print_token_timeline(metrics.calls)
 Create an interactive dashboard:
 
 ```python
+# script_id: day_057_token_latency_visualization/streamlit_dashboard
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -334,6 +338,7 @@ if __name__ == "__main__":
 Track and estimate costs:
 
 ```python
+# script_id: day_057_token_latency_visualization/metrics_system
 # Pricing per 1K tokens (example rates, check current pricing)
 PRICING = {
     "gpt-4o": {"prompt": 0.0025, "completion": 0.01},
@@ -378,6 +383,7 @@ print(f"By model: {cost_summary['by_model']}")
 Monitor metrics in real-time:
 
 ```python
+# script_id: day_057_token_latency_visualization/metrics_system
 import threading
 import time
 
@@ -458,6 +464,7 @@ mindmap
 ## Quick Reference
 
 ```python
+# script_id: day_057_token_latency_visualization/quick_reference
 # Capture metrics
 response = client.chat.completions.create(...)
 tokens = response.usage.total_tokens

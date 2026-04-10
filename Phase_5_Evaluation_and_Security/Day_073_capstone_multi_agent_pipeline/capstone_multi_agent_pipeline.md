@@ -69,6 +69,7 @@ content_pipeline/
 ## Step 1: State Definition
 
 ```python
+# script_id: day_073_capstone_multi_agent_pipeline/state
 # state.py
 from typing import TypedDict, List, Optional, Literal, Annotated
 from langgraph.graph.message import add_messages
@@ -112,6 +113,7 @@ class ContentPipelineState(TypedDict):
 Before any agent ever sees user input, sanitize it. This is not optional.
 
 ```python
+# script_id: day_073_capstone_multi_agent_pipeline/security
 # security.py
 import re
 from openai import OpenAI
@@ -201,6 +203,7 @@ def sanitize_input(raw_input: str) -> tuple[str, bool]:
 ## Step 3: The Specialized Agents
 
 ```python
+# script_id: day_073_capstone_multi_agent_pipeline/researcher_agent
 # agents/researcher.py
 from openai import OpenAI
 
@@ -246,6 +249,7 @@ Provide comprehensive research notes including:
 ```
 
 ```python
+# script_id: day_073_capstone_multi_agent_pipeline/writer_agent
 # agents/writer.py
 from openai import OpenAI
 
@@ -305,6 +309,7 @@ Write the complete content now. Do not include meta-commentary — just the cont
 ```
 
 ```python
+# script_id: day_073_capstone_multi_agent_pipeline/reviewer_agent
 # agents/reviewer.py
 import json
 from openai import OpenAI
@@ -369,6 +374,7 @@ Provide your review as JSON:
 ## Step 4: LLM-as-Judge Evaluator
 
 ```python
+# script_id: day_073_capstone_multi_agent_pipeline/evaluator
 # evaluator.py
 import json
 from openai import OpenAI
@@ -435,6 +441,7 @@ Score each dimension 1-10 with brief justification:
 ## Step 5: Human-in-the-Loop
 
 ```python
+# script_id: day_073_capstone_multi_agent_pipeline/hitl
 # hitl.py
 from typing import Literal
 
@@ -494,6 +501,7 @@ def get_human_review(
 ## Step 6: The Pipeline Orchestrator
 
 ```python
+# script_id: day_073_capstone_multi_agent_pipeline/pipeline
 # pipeline.py
 import uuid
 from security import sanitize_input
@@ -689,6 +697,7 @@ HUMAN REVIEW REQUIRED
 ## Cost Analysis: What Does This Pipeline Cost Per Run?
 
 ```python
+# script_id: day_073_capstone_multi_agent_pipeline/cost_analysis
 # Multi-agent pipeline cost breakdown per content piece (GPT-4o, 2025 pricing)
 # 
 # Agent          | Input tokens | Output tokens | Cost
