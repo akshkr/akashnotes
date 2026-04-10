@@ -44,6 +44,7 @@ Zero-shot means asking the model to do something **without providing any example
 ### Basic Zero-Shot Example
 
 ```python
+# script_id: day_006_zero_shot_vs_few_shot/zero_shot_classify
 from openai import OpenAI
 
 client = OpenAI()
@@ -103,6 +104,7 @@ flowchart LR
 ### Zero-Shot Best Practices
 
 ```python
+# script_id: day_006_zero_shot_vs_few_shot/zero_shot_best_practices
 # BAD: Vague zero-shot prompt
 bad_prompt = "Analyze this text"
 
@@ -147,6 +149,7 @@ flowchart TB
 ### Basic Few-Shot Example
 
 ```python
+# script_id: day_006_zero_shot_vs_few_shot/few_shot_classify
 from openai import OpenAI
 
 client = OpenAI()
@@ -191,6 +194,7 @@ print("Few-shot result:", few_shot_classify(tricky_text))
 ### Structured Few-Shot Template
 
 ```python
+# script_id: day_006_zero_shot_vs_few_shot/few_shot_prompt_template
 def create_few_shot_prompt(examples: list, task: str, new_input: str) -> str:
     """
     Create a few-shot prompt from examples.
@@ -276,6 +280,7 @@ flowchart TB
 ### Example Selection Strategy
 
 ```python
+# script_id: day_006_zero_shot_vs_few_shot/select_diverse_examples
 def select_diverse_examples(all_examples: list, n: int = 5) -> list:
     """
     Select diverse examples for few-shot prompting.
@@ -347,6 +352,7 @@ graph LR
 ### Token Cost Calculation
 
 ```python
+# script_id: day_006_zero_shot_vs_few_shot/token_cost_calculation
 import tiktoken
 
 def calculate_few_shot_cost(
@@ -395,6 +401,7 @@ for n in [1, 3, 5]:
 Let's see zero-shot vs few-shot on the same challenging task:
 
 ```python
+# script_id: day_006_zero_shot_vs_few_shot/side_by_side_comparison
 from openai import OpenAI
 
 client = OpenAI()
@@ -525,6 +532,7 @@ flowchart TB
 Instead of static examples, select them based on the input. This is essentially building a retrieval cache for your best examples.
 
 ```python
+# script_id: day_006_zero_shot_vs_few_shot/dynamic_few_shot_selection
 from openai import OpenAI
 import numpy as np
 

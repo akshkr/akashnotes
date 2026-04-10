@@ -31,6 +31,7 @@ Risks without sanitization:
 ## Basic Output Sanitization
 
 ```python
+# script_id: day_063_output_sanitization/sanitization_pipeline
 import re
 from typing import List, Tuple
 
@@ -108,6 +109,7 @@ print(f"Cleaned: {clean2}")
 Use an LLM to evaluate content safety:
 
 ```python
+# script_id: day_063_output_sanitization/sanitization_pipeline
 from openai import OpenAI
 import json
 
@@ -158,6 +160,7 @@ print(f"Recommendation: {result['recommendation']}")
 Use OpenAI's built-in moderation:
 
 ```python
+# script_id: day_063_output_sanitization/sanitization_pipeline
 from openai import OpenAI
 
 client = OpenAI()
@@ -195,6 +198,7 @@ print(f"Flagged categories: {result['categories']}")
 ## Comprehensive Sanitization Pipeline
 
 ```python
+# script_id: day_063_output_sanitization/sanitization_pipeline
 from dataclasses import dataclass
 from typing import List, Optional
 from enum import Enum
@@ -321,6 +325,7 @@ print(f"Issues: {result.issues}")
 ### Code Output Sanitization
 
 ```python
+# script_id: day_063_output_sanitization/code_output_sanitizer
 def sanitize_code_output(code: str) -> Tuple[str, List[str]]:
     """Sanitize code to remove dangerous operations."""
 
@@ -350,6 +355,7 @@ def sanitize_code_output(code: str) -> Tuple[str, List[str]]:
 ### JSON Output Sanitization
 
 ```python
+# script_id: day_063_output_sanitization/json_output_sanitizer
 def sanitize_json_output(data: dict, sensitive_keys: List[str] = None) -> dict:
     """Remove sensitive data from JSON outputs."""
 
@@ -386,6 +392,7 @@ print(clean_data)
 ## Integration with Agent
 
 ```python
+# script_id: day_063_output_sanitization/sanitization_pipeline
 class SanitizedAgent:
     """Agent with built-in output sanitization."""
 
@@ -444,6 +451,7 @@ mindmap
 ## Quick Reference
 
 ```python
+# script_id: day_063_output_sanitization/sanitization_pipeline
 # Pattern-based
 sanitizer = OutputSanitizer()
 clean, issues = sanitizer.sanitize(text)

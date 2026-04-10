@@ -51,6 +51,7 @@ pip install ragas>=0.3 datasets
 ## Basic Ragas Evaluation
 
 ```python
+# script_id: day_060_ragas_evaluation/basic_ragas_eval
 from ragas import evaluate, EvaluationDataset
 from ragas.metrics import faithfulness, answer_relevancy, context_precision, context_recall
 
@@ -103,6 +104,7 @@ print(f"Context Recall: {results['context_recall']:.3f}")
 Measures if the answer can be inferred from the context:
 
 ```python
+# script_id: day_060_ragas_evaluation/faithfulness_examples
 from ragas.metrics import faithfulness
 
 # High faithfulness - answer matches context
@@ -125,6 +127,7 @@ low_faith = {
 Measures if the answer addresses the question:
 
 ```python
+# script_id: day_060_ragas_evaluation/answer_relevancy_examples
 from ragas.metrics import answer_relevancy
 
 # High relevancy - directly answers question
@@ -145,6 +148,7 @@ low_rel = {
 Measures if retrieved contexts are relevant:
 
 ```python
+# script_id: day_060_ragas_evaluation/context_precision_examples
 from ragas.metrics import context_precision
 
 # High precision - all contexts relevant
@@ -171,6 +175,7 @@ low_prec = {
 Measures if contexts contain ground truth information:
 
 ```python
+# script_id: day_060_ragas_evaluation/context_recall_examples
 from ragas.metrics import context_recall
 
 # High recall - context contains needed info
@@ -195,6 +200,7 @@ low_rec = {
 Build a complete evaluation pipeline:
 
 ```python
+# script_id: day_060_ragas_evaluation/evaluated_rag_system
 from ragas import evaluate, EvaluationDataset
 from ragas.metrics import faithfulness, answer_relevancy, context_precision, context_recall
 from typing import List, Dict
@@ -297,6 +303,7 @@ print(evaluator.get_score_breakdown(result))
 Integrate with your existing RAG:
 
 ```python
+# script_id: day_060_ragas_evaluation/evaluated_rag_system
 from openai import OpenAI
 import chromadb
 
@@ -396,6 +403,7 @@ print(f"\nOverall avg faithfulness: {summary['avg_faithfulness']:.2%}")
 ## Benchmarking Against Test Sets
 
 ```python
+# script_id: day_060_ragas_evaluation/evaluated_rag_system
 def run_benchmark(rag_system, test_set: List[Dict]) -> Dict:
     """Run benchmark evaluation."""
 
@@ -464,6 +472,7 @@ mindmap
 ## Quick Reference
 
 ```python
+# script_id: day_060_ragas_evaluation/quick_reference
 from ragas import evaluate, EvaluationDataset
 from ragas.metrics import faithfulness, answer_relevancy, context_precision, context_recall
 

@@ -5,6 +5,7 @@
 Here's a complete streaming chat implementation:
 
 ```python
+# script_id: day_013_streaming_responses_part2/streaming_chat_interface
 from openai import OpenAI
 
 client = OpenAI()
@@ -88,6 +89,7 @@ if __name__ == "__main__":
 For frameworks and UIs, use callbacks:
 
 ```python
+# script_id: day_013_streaming_responses_part2/stream_with_callbacks
 from openai import OpenAI
 from typing import Callable
 
@@ -156,6 +158,7 @@ stream_with_callbacks(
 When building web APIs, use SSE to stream to browsers:
 
 ```python
+# script_id: day_013_streaming_responses_part2/sse_fastapi_endpoint
 from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
 from openai import OpenAI
@@ -229,6 +232,7 @@ sequenceDiagram
 Allow users to cancel streams:
 
 ```python
+# script_id: day_013_streaming_responses_part2/cancellable_stream
 import asyncio
 from openai import AsyncOpenAI
 
@@ -289,6 +293,7 @@ asyncio.run(demo_cancellation())
 ## Measuring Streaming Performance
 
 ```python
+# script_id: day_013_streaming_responses_part2/measure_streaming_performance
 import time
 from openai import OpenAI
 
@@ -365,6 +370,7 @@ mindmap
 ## Quick Reference
 
 ```python
+# script_id: day_013_streaming_responses_part2/quick_reference
 # OpenAI Streaming
 from openai import OpenAI
 client = OpenAI()

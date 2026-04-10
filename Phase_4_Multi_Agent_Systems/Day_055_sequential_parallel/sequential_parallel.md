@@ -36,6 +36,7 @@ flowchart TB
 Tasks execute one after another, in order:
 
 ```python
+# script_id: day_055_sequential_parallel/sequential_process
 from crewai import Agent, Task, Crew, Process
 
 # Create agents
@@ -105,6 +106,7 @@ flowchart LR
 A manager agent coordinates worker agents:
 
 ```python
+# script_id: day_055_sequential_parallel/hierarchical_process
 from crewai import Agent, Task, Crew, Process
 
 # Create worker agents
@@ -186,6 +188,7 @@ flowchart TB
 Instead of a manager agent, use an LLM directly:
 
 ```python
+# script_id: day_055_sequential_parallel/manager_llm
 from crewai import Crew, Process
 
 crew = Crew(
@@ -206,6 +209,7 @@ crew = Crew(
 Run independent tasks in parallel:
 
 ```python
+# script_id: day_055_sequential_parallel/async_task_execution
 from crewai import Task
 
 # These tasks don't depend on each other - can run in parallel
@@ -271,6 +275,7 @@ flowchart TB
 ### Use Sequential When:
 
 ```python
+# script_id: day_055_sequential_parallel/when_sequential
 # Tasks have clear dependencies
 # Each task needs the previous task's output
 # Order matters
@@ -290,6 +295,7 @@ crew = Crew(
 ### Use Hierarchical When:
 
 ```python
+# script_id: day_055_sequential_parallel/when_hierarchical
 # Tasks can be delegated flexibly
 # Manager can decide the best approach
 # Complex coordination needed
@@ -314,6 +320,7 @@ crew = Crew(
 Combine sequential and async for optimal flow:
 
 ```python
+# script_id: day_055_sequential_parallel/mixing_approaches
 # Phase 1: Parallel research
 research_a = Task(description="Research A", agent=researcher1, async_execution=True)
 research_b = Task(description="Research B", agent=researcher2, async_execution=True)
@@ -385,6 +392,7 @@ flowchart TB
 ### Max Iterations
 
 ```python
+# script_id: day_055_sequential_parallel/max_iterations
 crew = Crew(
     agents=[...],
     tasks=[...],
@@ -397,6 +405,7 @@ crew = Crew(
 ### Memory and Caching
 
 ```python
+# script_id: day_055_sequential_parallel/memory_and_caching
 crew = Crew(
     agents=[...],
     tasks=[...],
@@ -410,6 +419,7 @@ crew = Crew(
 ### Custom Execution
 
 ```python
+# script_id: day_055_sequential_parallel/custom_execution
 # Kickoff with inputs
 result = crew.kickoff(inputs={
     "topic": "Artificial Intelligence",
@@ -429,6 +439,7 @@ task = Task(
 ## Error Handling
 
 ```python
+# script_id: day_055_sequential_parallel/error_handling
 from crewai import Crew
 
 crew = Crew(
@@ -450,6 +461,7 @@ except Exception as e:
 ## Monitoring Execution
 
 ```python
+# script_id: day_055_sequential_parallel/monitoring_execution
 # Verbose mode shows each step
 crew = Crew(
     agents=[...],
@@ -492,6 +504,7 @@ mindmap
 ## Quick Reference
 
 ```python
+# script_id: day_055_sequential_parallel/quick_reference
 # Sequential process
 crew = Crew(
     agents=[a1, a2, a3],

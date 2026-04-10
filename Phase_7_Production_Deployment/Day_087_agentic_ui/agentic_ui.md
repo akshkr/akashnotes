@@ -51,6 +51,7 @@ sequenceDiagram
 ```
 
 ```python
+# script_id: day_087_agentic_ui/generative_ui_app
 # Server-side: mapping tool calls to UI components (Python/FastAPI equivalent)
 from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
@@ -95,6 +96,7 @@ print(f"Streaming component: {component.type} with props: {component.props}")
 ## Streaming UI Components Over SSE
 
 ```python
+# script_id: day_087_agentic_ui/generative_ui_app
 from openai import OpenAI
 import json
 
@@ -224,6 +226,7 @@ flowchart TD
 ## Building a Generative UI: Weather + Search Example
 
 ```python
+# script_id: day_087_agentic_ui/generative_ui_app
 # Frontend component registry (conceptual -- actual implementation in React/TypeScript)
 # This shows the data contract between backend and frontend
 
@@ -299,6 +302,7 @@ print(f"WeatherCard valid: {validate_component_props('WeatherCard', weather_prop
 For SEO and initial load performance, you can render tool results as HTML on the server before hydrating with React on the client.
 
 ```python
+# script_id: day_087_agentic_ui/server_side_render
 from typing import Optional
 
 def render_component_html(component_type: str, props: dict) -> str:
@@ -389,6 +393,7 @@ flowchart TD
 ## Full Example: Generative UI Chat Handler
 
 ```python
+# script_id: day_087_agentic_ui/generative_ui_app
 class GenerativeUIHandler:
     """Complete handler that processes messages and returns UI components."""
 
@@ -488,6 +493,7 @@ mindmap
 ## Quick Reference
 
 ```python
+# script_id: day_087_agentic_ui/quick_reference
 # Core pattern: tool name -> UI component
 TOOL_UI_MAP = {
     "get_weather":    "WeatherCard",

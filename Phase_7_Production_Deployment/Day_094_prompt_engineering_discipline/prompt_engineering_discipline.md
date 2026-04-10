@@ -11,6 +11,7 @@ Prompt engineering as a discipline means treating prompts like code: version the
 ## The Problem with Inline Prompts
 
 ```python
+# script_id: day_094_prompt_engineering_discipline/inline_prompt_antipattern
 # What most teams do — and regret
 def analyze_sentiment(text: str) -> str:
     response = client.chat.completions.create(
@@ -52,6 +53,7 @@ prompts/
 ```
 
 ```python
+# script_id: day_094_prompt_engineering_discipline/sentiment_prompt_template
 # prompts/v1/sentiment_analysis.txt
 You are a sentiment analysis expert. Analyze the sentiment of the following text.
 
@@ -65,6 +67,7 @@ Text to analyze:
 ```
 
 ```python
+# script_id: day_094_prompt_engineering_discipline/prompt_management_system
 # prompt_manager.py
 from pathlib import Path
 import json
@@ -165,6 +168,7 @@ def analyze_sentiment(text: str, prompt_version: str = "v1") -> str:
 ```
 
 ```python
+# script_id: day_094_prompt_engineering_discipline/prompt_management_system
 class PromptRegistry:
     """Manage prompt versions with environment routing."""
 
@@ -199,6 +203,7 @@ class PromptRegistry:
 This is where treating prompts as code pays off. Run two versions simultaneously and measure which performs better.
 
 ```python
+# script_id: day_094_prompt_engineering_discipline/prompt_management_system
 import random
 import time
 from dataclasses import dataclass
@@ -298,6 +303,7 @@ for variant, stats in report.items():
 Do not rely on vibes. Measure.
 
 ```python
+# script_id: day_094_prompt_engineering_discipline/prompt_management_system
 from pydantic import BaseModel
 from openai import OpenAI
 import json
@@ -411,6 +417,7 @@ flowchart LR
 ```
 
 ```python
+# script_id: day_094_prompt_engineering_discipline/prompt_management_system
 def find_failure_cases(version: str, n: int = 5) -> list[dict]:
     """Find the examples where a prompt version fails."""
     failures = []

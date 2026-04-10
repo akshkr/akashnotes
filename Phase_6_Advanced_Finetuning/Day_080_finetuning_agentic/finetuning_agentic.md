@@ -37,6 +37,7 @@ Three core reasons to fine-tune for agentic tasks:
 The key to fine-tuning for tool calling is structured training examples. Each example shows the model a conversation with tool definitions, a user request, and the correct tool call response.
 
 ```python
+# script_id: day_080_finetuning_agentic/training_data_format
 # Training example format for tool-use fine-tuning
 training_example = {
     "messages": [
@@ -111,6 +112,7 @@ flowchart LR
 ```
 
 ```python
+# script_id: day_080_finetuning_agentic/build_tool_use_dataset
 import json
 import random
 
@@ -172,6 +174,7 @@ print(f"Tools defined: {len(tools)}")
 One of the biggest wins from fine-tuning is eliminating malformed JSON. You train the model to always produce valid arguments that match your schema.
 
 ```python
+# script_id: day_080_finetuning_agentic/validate_schema_compliance
 from pydantic import BaseModel, ValidationError
 from typing import Optional
 import json
@@ -216,6 +219,7 @@ schemas = {"search_db": SearchArgs}
 ## Launching a Fine-tuning Job
 
 ```python
+# script_id: day_080_finetuning_agentic/launch_finetuning_job
 from openai import OpenAI
 import json
 
@@ -282,6 +286,7 @@ sequenceDiagram
 ```
 
 ```python
+# script_id: day_080_finetuning_agentic/evaluate_tool_call_accuracy
 from difflib import SequenceMatcher
 
 def evaluate_tool_calls(predictions: list, ground_truth: list) -> dict:
@@ -338,6 +343,7 @@ def evaluate_tool_calls(predictions: list, ground_truth: list) -> dict:
 A common production pattern: fine-tune a small open-source model to match or beat GPT-4o on your specific tool-calling task, then serve it locally for 10x cost savings.
 
 ```python
+# script_id: day_080_finetuning_agentic/benchmark_comparison
 # Benchmark: compare fine-tuned 7B vs GPT-4o on your tool-calling eval set
 
 benchmark_results = {
@@ -396,6 +402,7 @@ mindmap
 ## Quick Reference
 
 ```python
+# script_id: day_080_finetuning_agentic/quick_reference
 # Training data format: messages + tools
 {"messages": [...], "tools": [...]}
 

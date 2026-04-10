@@ -30,6 +30,7 @@ sequenceDiagram
 When the LLM wants to call a function, it returns a special response:
 
 ```python
+# script_id: day_030_tool_execution_handling_part1/tool_call_flow
 from openai import OpenAI, pydantic_function_tool
 from pydantic import BaseModel, Field
 import json
@@ -70,6 +71,7 @@ else:
 Extract the function name and arguments:
 
 ```python
+# script_id: day_030_tool_execution_handling_part1/tool_call_flow
 def parse_tool_call(tool_call) -> dict:
     """
     Parse a tool call from the LLM response.
@@ -99,6 +101,7 @@ if message.tool_calls:
 Map function names to actual Python functions and execute:
 
 ```python
+# script_id: day_030_tool_execution_handling_part1/tool_call_flow
 # Define your actual functions
 def get_weather(city: str, unit: str = "celsius") -> dict:
     """Get weather for a city (mock implementation)."""
@@ -149,6 +152,7 @@ print(result)  # {"temp": 22, "condition": "sunny", "unit": "celsius", "city": "
 Send the function result back so the LLM can formulate a response:
 
 ```python
+# script_id: day_030_tool_execution_handling_part1/tool_call_flow
 def complete_tool_call(client, messages: list, tools: list) -> str:
     """
     Complete the full tool calling cycle.
@@ -210,6 +214,7 @@ print(answer)  # "The current weather in Tokyo is 22°C and sunny!"
 ## Complete Example: Multi-Tool Agent
 
 ```python
+# script_id: day_030_tool_execution_handling_part1/multi_tool_agent
 from openai import OpenAI, pydantic_function_tool
 from pydantic import BaseModel, Field
 import json

@@ -48,6 +48,7 @@ flowchart LR
 A **signature** is a concise declaration of what a module should do -- its inputs and outputs:
 
 ```python
+# script_id: day_017_dspy/inline_signature
 import dspy
 
 # Simple inline signature: "input_field -> output_field"
@@ -61,6 +62,7 @@ print(result.sentiment)  # "positive"
 ### Class-Based Signatures for More Control
 
 ```python
+# script_id: day_017_dspy/class_based_signature
 import dspy
 
 class FactCheck(dspy.Signature):
@@ -94,6 +96,7 @@ flowchart TB
 Modules wrap signatures with specific prompting strategies:
 
 ```python
+# script_id: day_017_dspy/modules_predict_cot
 import dspy
 
 # Configure the language model
@@ -116,6 +119,7 @@ print(result.answer)     # "36"
 ### Building a Multi-Step Program
 
 ```python
+# script_id: day_017_dspy/multi_hop_qa
 import dspy
 
 class MultiHopQA(dspy.Module):
@@ -178,6 +182,7 @@ sequenceDiagram
 Optimizers search for the best prompts, few-shot examples, and instructions:
 
 ```python
+# script_id: day_017_dspy/optimizer_and_evaluator
 import dspy
 from dspy.evaluate import Evaluate
 
@@ -248,6 +253,7 @@ flowchart TB
 ## Evaluators: Measuring Quality
 
 ```python
+# script_id: day_017_dspy/optimizer_and_evaluator
 import dspy
 from dspy.evaluate import Evaluate
 
@@ -288,6 +294,7 @@ print(f"Accuracy: {score}%")
 ## Manual Prompting vs DSPy: Side by Side
 
 ```python
+# script_id: day_017_dspy/manual_vs_dspy_comparison
 # ---- MANUAL APPROACH ----
 # Fragile, model-specific, hard to maintain
 
@@ -364,6 +371,7 @@ mindmap
 ## Quick Reference
 
 ```python
+# script_id: day_017_dspy/quick_reference
 import dspy
 
 # Configure LM

@@ -36,6 +36,7 @@ Issues with synchronous:
 FastAPI's built-in background tasks:
 
 ```python
+# script_id: day_084_async_task_handling/background_tasks
 from fastapi import FastAPI, BackgroundTasks
 from pydantic import BaseModel
 import uuid
@@ -96,6 +97,7 @@ async def get_task_status(task_id: str):
 For production, use a proper task queue:
 
 ```python
+# script_id: day_084_async_task_handling/celery_task_queue
 from fastapi import FastAPI
 from celery import Celery
 from pydantic import BaseModel
@@ -156,6 +158,7 @@ async def get_status(task_id: str):
 Simple queue for single-server deployments:
 
 ```python
+# script_id: day_084_async_task_handling/in_memory_queue
 from fastapi import FastAPI
 from pydantic import BaseModel
 import asyncio
@@ -278,6 +281,7 @@ async def get_status(task_id: str):
 Client-side polling for results:
 
 ```python
+# script_id: day_084_async_task_handling/polling_client
 import httpx
 import asyncio
 
@@ -321,6 +325,7 @@ print(f"Result: {result}")
 Notify when complete:
 
 ```python
+# script_id: day_084_async_task_handling/callback_webhook
 from fastapi import FastAPI
 from pydantic import BaseModel
 import httpx
@@ -376,6 +381,7 @@ async def submit_with_callback(request: TaskWithCallback):
 ### 1. Task Timeouts
 
 ```python
+# script_id: day_084_async_task_handling/task_timeout
 async def run_with_timeout(task: Task, timeout: int = 300):
     """Run task with timeout."""
     try:
@@ -393,6 +399,7 @@ async def run_with_timeout(task: Task, timeout: int = 300):
 ### 2. Progress Updates
 
 ```python
+# script_id: day_084_async_task_handling/progress_updates
 async def run_agent_with_progress(task: Task):
     """Run agent with progress updates."""
 
@@ -412,6 +419,7 @@ async def run_agent_with_progress(task: Task):
 ### 3. Cleanup Old Tasks
 
 ```python
+# script_id: day_084_async_task_handling/cleanup_old_tasks
 async def cleanup_old_tasks(task_queue: TaskQueue, max_age_hours: int = 24):
     """Remove old completed tasks."""
     cutoff = datetime.now() - timedelta(hours=max_age_hours)
@@ -452,6 +460,7 @@ mindmap
 ## Quick Reference
 
 ```python
+# script_id: day_084_async_task_handling/quick_reference
 # Submit task
 POST /agent/submit
 {"prompt": "..."}

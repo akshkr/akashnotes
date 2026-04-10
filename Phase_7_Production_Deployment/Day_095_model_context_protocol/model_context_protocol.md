@@ -85,6 +85,7 @@ pip install mcp
 Here is a minimal MCP server that exposes database query capabilities:
 
 ```python
+# script_id: day_095_model_context_protocol/db_mcp_server
 # db_mcp_server.py
 import asyncio
 import sqlite3
@@ -234,6 +235,7 @@ if __name__ == "__main__":
 Resources let the AI read data without calling a function. Think of it as exposing files or structured data.
 
 ```python
+# script_id: day_095_model_context_protocol/db_mcp_server
 @server.list_resources()
 async def handle_list_resources() -> list[types.Resource]:
     """Expose readable resources."""
@@ -312,6 +314,7 @@ Restart Claude Desktop. You will see a hammer icon in the input area — that me
 ## A More Practical Example: File System MCP Server
 
 ```python
+# script_id: day_095_model_context_protocol/filesystem_mcp_server
 # filesystem_mcp_server.py
 import os
 from pathlib import Path

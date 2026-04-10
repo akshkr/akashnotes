@@ -46,6 +46,7 @@ Every node in that diagram is a failure mode. Let's handle each one.
 The LLM API will fail. Rate limits, transient server errors, timeouts — they all happen. Retry intelligently.
 
 ```python
+# script_id: day_068_production_hardening/resilient_llm_client
 import asyncio
 import random
 import logging
@@ -122,6 +123,7 @@ def resilient_completion(messages: list[dict], model: str = "gpt-4o-mini", **kwa
 Retrying endlessly when a service is down makes things worse. A circuit breaker stops calls when the failure rate is too high, then gradually allows traffic back.
 
 ```python
+# script_id: day_068_production_hardening/resilient_llm_client
 import time
 from enum import Enum
 from dataclasses import dataclass, field
@@ -224,6 +226,7 @@ def protected_llm_call(messages: list[dict]) -> str:
 When the LLM is down, don't just fail. Have a fallback chain.
 
 ```python
+# script_id: day_068_production_hardening/resilient_llm_client
 from typing import Callable
 
 
@@ -290,6 +293,7 @@ chain = FallbackChain(
 Validate before you spend tokens.
 
 ```python
+# script_id: day_068_production_hardening/input_validation
 from pydantic import BaseModel, field_validator, ValidationError
 
 
@@ -339,6 +343,7 @@ def validate_request(raw_request: dict) -> ChatRequest | tuple[None, str]:
 Never send raw LLM output directly to users without checking it.
 
 ```python
+# script_id: day_068_production_hardening/resilient_llm_client
 import re
 from pydantic import BaseModel
 
@@ -397,6 +402,7 @@ def safe_response(raw_output: str) -> str:
 In-memory rate limiting breaks when you scale to multiple servers. Use Redis.
 
 ```python
+# script_id: day_068_production_hardening/redis_rate_limiter
 import redis
 import time
 
@@ -468,6 +474,7 @@ async def check_rate_limit(request: Request, user_id: str):
 Long-running agents must have timeouts. Users will not wait 3 minutes.
 
 ```python
+# script_id: day_068_production_hardening/resilient_llm_client
 import asyncio
 from contextlib import asynccontextmanager
 
@@ -501,6 +508,7 @@ async def run_agent_with_timeout(agent, task: str, timeout_seconds: float = 30.0
 ## Pattern 8: Health Checks and Readiness Probes
 
 ```python
+# script_id: day_068_production_hardening/health_checks
 from fastapi import FastAPI
 from pydantic import BaseModel
 import time
@@ -565,6 +573,7 @@ async def readiness_check() -> HealthStatus:
 ## Pattern 9: Structured Logging
 
 ```python
+# script_id: day_068_production_hardening/structured_logging
 import json
 import logging
 from datetime import datetime, timezone

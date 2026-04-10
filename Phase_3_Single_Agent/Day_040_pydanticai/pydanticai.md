@@ -54,6 +54,7 @@ pip install pydantic-ai
 ## Your First Agent
 
 ```python
+# script_id: day_040_pydanticai/first_agent
 from pydantic_ai import Agent
 
 # Create a simple agent with a system prompt
@@ -76,6 +77,7 @@ That's it -- no chains, no runnables, no output parsers. Just a function call.
 The real power comes from typed outputs. PydanticAI validates LLM responses against your Pydantic models automatically.
 
 ```python
+# script_id: day_040_pydanticai/structured_results
 from pydantic import BaseModel
 from pydantic_ai import Agent
 
@@ -122,6 +124,7 @@ sequenceDiagram
 Tools let your agent call Python functions to fetch data, perform calculations, or interact with external systems.
 
 ```python
+# script_id: day_040_pydanticai/weather_tool
 from pydantic_ai import Agent, RunContext
 import httpx
 
@@ -148,6 +151,7 @@ print(result.data)
 ### Multiple Tools
 
 ```python
+# script_id: day_040_pydanticai/multiple_tools
 from pydantic_ai import Agent, RunContext
 from datetime import datetime
 
@@ -197,6 +201,7 @@ print(result.data)
 Dependency injection is what makes PydanticAI agents testable and modular. You define a dependency type, and the agent receives it at runtime through `RunContext`.
 
 ```python
+# script_id: day_040_pydanticai/dependency_injection
 from dataclasses import dataclass
 from pydantic_ai import Agent, RunContext
 
@@ -265,6 +270,7 @@ flowchart TB
 Dependency injection makes testing straightforward -- swap real dependencies for mocks.
 
 ```python
+# script_id: day_040_pydanticai/dependency_injection
 import pytest
 from unittest.mock import MagicMock
 
@@ -302,6 +308,7 @@ def test_order_lookup(mock_deps):
 ## Conversation History and Multi-Turn
 
 ```python
+# script_id: day_040_pydanticai/conversation_history
 from pydantic_ai import Agent
 
 agent = Agent(
@@ -386,6 +393,7 @@ mindmap
 ## Quick Reference
 
 ```python
+# script_id: day_040_pydanticai/quick_reference
 from pydantic_ai import Agent, RunContext
 from pydantic import BaseModel
 

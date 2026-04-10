@@ -26,6 +26,7 @@ pip install openai anthropic
 Both providers require API keys. Never hardcode them!
 
 ```python
+# script_id: day_010_openai_anthropic_sdks_part1/api_keys_setup
 # Best practice: Use environment variables
 
 # In your terminal or .env file:
@@ -70,6 +71,7 @@ flowchart LR
 ### Your First API Call
 
 ```python
+# script_id: day_010_openai_anthropic_sdks_part1/openai_simple_chat
 from openai import OpenAI
 
 client = OpenAI()
@@ -94,6 +96,7 @@ print(result)
 ### Understanding the Response Object
 
 ```python
+# script_id: day_010_openai_anthropic_sdks_part1/openai_response_object
 from openai import OpenAI
 
 client = OpenAI()
@@ -155,6 +158,7 @@ flowchart TB
 ### Complete OpenAI Example with All Parameters
 
 ```python
+# script_id: day_010_openai_anthropic_sdks_part1/openai_advanced_chat
 from openai import OpenAI
 
 client = OpenAI()
@@ -214,6 +218,7 @@ print(f"\nTokens used: {result['tokens_used']}")
 ### Your First Claude API Call
 
 ```python
+# script_id: day_010_openai_anthropic_sdks_part1/anthropic_simple_chat
 from anthropic import Anthropic
 
 client = Anthropic()
@@ -237,6 +242,7 @@ print(result)
 ### Understanding Claude's Response Object
 
 ```python
+# script_id: day_010_openai_anthropic_sdks_part1/anthropic_response_object
 from anthropic import Anthropic
 
 client = Anthropic()
@@ -287,6 +293,7 @@ flowchart TB
 ### Complete Anthropic Example
 
 ```python
+# script_id: day_010_openai_anthropic_sdks_part1/anthropic_advanced_chat
 from anthropic import Anthropic
 
 client = Anthropic()
@@ -356,6 +363,7 @@ Both OpenAI and Anthropic support **image input alongside text** in the same API
 Pass a list of content blocks instead of a plain string. Mix `text` and `image_url` blocks freely:
 
 ```python
+# script_id: day_010_openai_anthropic_sdks_part1/openai_vision
 response = client.chat.completions.create(
     model="gpt-4o",
     messages=[
@@ -378,6 +386,7 @@ response = client.chat.completions.create(
 Anthropic requires base64-encoded image data (or a URL source). The content block uses `type: "image"` with a `source` object:
 
 ```python
+# script_id: day_010_openai_anthropic_sdks_part1/anthropic_vision
 import base64
 
 with open("document.png", "rb") as f:

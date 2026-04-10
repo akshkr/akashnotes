@@ -46,6 +46,7 @@ Common causes of infinite loops:
 The simplest safeguard:
 
 ```python
+# script_id: day_037_max_iterations/basic_agent_loop
 from openai import OpenAI
 
 client = OpenAI()
@@ -100,6 +101,7 @@ def is_task_complete(response: str) -> bool:
 A more structured approach:
 
 ```python
+# script_id: day_037_max_iterations/iteration_state_tracker
 from dataclasses import dataclass
 from typing import Optional
 from datetime import datetime, timedelta
@@ -165,6 +167,7 @@ while True:
 Combine different stopping criteria:
 
 ```python
+# script_id: day_037_max_iterations/stop_condition_checker
 from enum import Enum
 from typing import Callable, List
 
@@ -281,6 +284,7 @@ flowchart TB
 When stopping, clean up properly:
 
 ```python
+# script_id: day_037_max_iterations/graceful_agent
 class GracefulAgent:
     """Agent with graceful termination."""
 
@@ -368,6 +372,7 @@ if result["status"] == "terminated":
 Add timeouts to any function:
 
 ```python
+# script_id: day_037_max_iterations/timeout_decorator
 import signal
 from functools import wraps
 
@@ -423,6 +428,7 @@ except TimeoutError as e:
 For async agents, use cancellation tokens:
 
 ```python
+# script_id: day_037_max_iterations/async_cancellation
 import asyncio
 from typing import Optional
 
@@ -497,6 +503,7 @@ asyncio.run(main())
 Track and report progress:
 
 ```python
+# script_id: day_037_max_iterations/progress_monitor
 from dataclasses import dataclass
 from typing import Optional, Callable
 
@@ -586,6 +593,7 @@ mindmap
 ## Quick Reference
 
 ```python
+# script_id: day_037_max_iterations/quick_reference
 # Simple max iterations
 for i in range(max_iterations):
     if task_complete:

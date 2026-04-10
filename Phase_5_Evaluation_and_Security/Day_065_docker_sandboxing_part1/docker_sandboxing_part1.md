@@ -56,6 +56,7 @@ docker --version
 ### Your First Sandbox
 
 ```python
+# script_id: day_065_docker_sandboxing_part1/basic_sandbox
 import docker
 import tempfile
 import os
@@ -168,6 +169,7 @@ docker build -t sandbox:latest -f Dockerfile.sandbox .
 ```
 
 ```python
+# script_id: day_065_docker_sandboxing_part1/secure_sandbox
 def run_in_secure_sandbox(code: str, timeout: int = 30) -> dict:
     """Run code in a custom secure sandbox."""
 
@@ -220,6 +222,7 @@ def run_in_secure_sandbox(code: str, timeout: int = 30) -> dict:
 Prevent resource exhaustion attacks:
 
 ```python
+# script_id: day_065_docker_sandboxing_part1/resource_limits
 def create_limited_container(code: str) -> dict:
     """Create container with strict resource limits."""
 
@@ -291,6 +294,7 @@ flowchart TB
 Safely pass data to and from sandboxed code:
 
 ```python
+# script_id: day_065_docker_sandboxing_part1/sandbox_io
 import json
 import base64
 

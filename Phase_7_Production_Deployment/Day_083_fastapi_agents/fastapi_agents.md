@@ -36,6 +36,7 @@ pip install fastapi uvicorn python-multipart
 ### Simple Agent API
 
 ```python
+# script_id: day_083_fastapi_agents/simple_agent_api
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from openai import OpenAI
@@ -79,6 +80,7 @@ async def chat(request: QueryRequest):
 ## Complete Agent API
 
 ```python
+# script_id: day_083_fastapi_agents/complete_agent_api
 from fastapi import FastAPI, HTTPException, BackgroundTasks
 from pydantic import BaseModel, Field
 from typing import Optional, List
@@ -205,6 +207,7 @@ async def health_check():
 AI tasks can take a while. Use background tasks:
 
 ```python
+# script_id: day_083_fastapi_agents/complete_agent_api
 from fastapi import BackgroundTasks
 import asyncio
 
@@ -275,6 +278,7 @@ async def get_task(task_id: str):
 ## Streaming Responses
 
 ```python
+# script_id: day_083_fastapi_agents/complete_agent_api
 from fastapi.responses import StreamingResponse
 import json
 
@@ -314,6 +318,7 @@ async def chat_stream(request: StreamRequest):
 ## WebSocket for Real-Time Chat
 
 ```python
+# script_id: day_083_fastapi_agents/complete_agent_api
 from fastapi import WebSocket, WebSocketDisconnect
 import json
 
@@ -374,6 +379,7 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
 ## Adding Authentication
 
 ```python
+# script_id: day_083_fastapi_agents/complete_agent_api
 from fastapi import Security, Depends
 from fastapi.security import APIKeyHeader
 
@@ -401,6 +407,7 @@ async def secure_chat(
 ## Rate Limiting
 
 ```python
+# script_id: day_083_fastapi_agents/complete_agent_api
 from fastapi import Request
 from collections import defaultdict
 import time
@@ -442,6 +449,7 @@ async def limited_chat(request: ChatRequest, _: None = Depends(rate_limit)):
 Server-Sent Events (SSE) is the standard pattern for streaming LLM output over HTTP. Unlike WebSockets, SSE is unidirectional (server to client), uses plain HTTP, and works through most proxies and CDNs without special configuration. This is how ChatGPT, Claude, and most LLM-powered UIs stream responses to the browser.
 
 ```python
+# script_id: day_083_fastapi_agents/sse_streaming
 from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
 from openai import OpenAI
@@ -475,6 +483,7 @@ On the client side, you consume SSE with the `EventSource` API in JavaScript or 
 Server-Sent Events (SSE) is the standard pattern for streaming LLM output over HTTP. Unlike WebSockets, SSE is unidirectional (server to client), which is a natural fit for LLM generation where the client sends a prompt and the server streams back tokens. Most LLM frontend libraries (including the OpenAI JS SDK) expect SSE format.
 
 ```python
+# script_id: day_083_fastapi_agents/sse_streaming_detailed
 from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
 from openai import OpenAI
@@ -528,6 +537,7 @@ mindmap
 ## Quick Reference
 
 ```python
+# script_id: day_083_fastapi_agents/quick_reference
 # Basic endpoint
 @app.post("/chat")
 async def chat(request: ChatRequest):

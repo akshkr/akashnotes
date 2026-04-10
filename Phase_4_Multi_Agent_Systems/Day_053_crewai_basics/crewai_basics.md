@@ -48,6 +48,7 @@ pip install crewai crewai-tools
 Agents are team members with roles and personalities:
 
 ```python
+# script_id: day_053_crewai_basics/crew_pipeline
 from crewai import Agent
 
 # Define agents with roles
@@ -86,6 +87,7 @@ editor = Agent(
 Tasks are specific assignments for agents:
 
 ```python
+# script_id: day_053_crewai_basics/crew_pipeline
 from crewai import Task
 
 # Define tasks
@@ -135,6 +137,7 @@ editing_task = Task(
 The crew brings agents and tasks together:
 
 ```python
+# script_id: day_053_crewai_basics/crew_pipeline
 from crewai import Crew, Process
 
 # Create the crew
@@ -164,6 +167,7 @@ flowchart LR
 ```
 
 ```python
+# script_id: day_053_crewai_basics/crew_pipeline
 crew = Crew(
     agents=[researcher, writer, editor],
     tasks=[research_task, writing_task, editing_task],
@@ -186,6 +190,7 @@ flowchart TB
 ```
 
 ```python
+# script_id: day_053_crewai_basics/crew_pipeline
 from crewai import Crew, Process
 
 manager = Agent(
@@ -208,6 +213,7 @@ crew = Crew(
 ## Adding Tools to Agents
 
 ```python
+# script_id: day_053_crewai_basics/agent_with_tools
 from crewai import Agent
 from crewai_tools import SerperDevTool, WebsiteSearchTool
 
@@ -228,6 +234,7 @@ researcher = Agent(
 ### Custom Tools
 
 ```python
+# script_id: day_053_crewai_basics/custom_tool
 from crewai_tools import BaseTool
 from pydantic import BaseModel, Field
 
@@ -271,6 +278,7 @@ analyst = Agent(
 ## Complete Example: Content Creation Pipeline
 
 ```python
+# script_id: day_053_crewai_basics/content_creation_pipeline
 from crewai import Agent, Task, Crew, Process
 
 # Define the team
@@ -360,6 +368,7 @@ print(result)
 Agents can share information through task context:
 
 ```python
+# script_id: day_053_crewai_basics/agent_communication
 # Task outputs are automatically passed to dependent tasks
 task1 = Task(
     description="Research topic X",
@@ -387,6 +396,7 @@ task3 = Task(
 ## Error Handling and Retries
 
 ```python
+# script_id: day_053_crewai_basics/error_handling
 from crewai import Crew
 
 crew = Crew(
@@ -434,6 +444,7 @@ mindmap
 ## Quick Reference
 
 ```python
+# script_id: day_053_crewai_basics/quick_reference
 from crewai import Agent, Task, Crew, Process
 
 # Agent

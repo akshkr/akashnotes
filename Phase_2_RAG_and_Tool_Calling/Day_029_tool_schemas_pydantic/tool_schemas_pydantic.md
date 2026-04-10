@@ -13,6 +13,7 @@ Every major LLM SDK now supports generating tool schemas from Pydantic models. D
 ### OpenAI: `pydantic_function_tool()`
 
 ```python
+# script_id: day_029_tool_schemas_pydantic/openai_pydantic_tool
 from openai import OpenAI, pydantic_function_tool
 from pydantic import BaseModel, Field
 from typing import Optional
@@ -43,6 +44,7 @@ That's it. The SDK inspects `SearchProducts`, pulls the docstring as the descrip
 Anthropic's SDK doesn't have a `pydantic_function_tool()` equivalent, but Pydantic's built-in `model_json_schema()` gets you there:
 
 ```python
+# script_id: day_029_tool_schemas_pydantic/anthropic_pydantic_tool
 from anthropic import Anthropic
 from pydantic import BaseModel, Field
 from typing import Optional
@@ -78,6 +80,7 @@ response = client.messages.create(
 LangChain goes even further — it generates schemas directly from function signatures:
 
 ```python
+# script_id: day_029_tool_schemas_pydantic/langchain_tool_decorator
 from langchain_core.tools import tool
 
 @tool
@@ -95,6 +98,7 @@ print(search_products.args_schema)   # Pydantic model generated from type hints
 For more control, combine `@tool` with a Pydantic input model:
 
 ```python
+# script_id: day_029_tool_schemas_pydantic/langchain_tool_with_schema
 from langchain_core.tools import tool
 from pydantic import BaseModel, Field
 
@@ -116,6 +120,7 @@ def search_products(query: str, category: str = None, max_price: float = None) -
 You rarely write these by hand, but understanding the format helps when debugging tool-calling issues.
 
 ```python
+# script_id: day_029_tool_schemas_pydantic/raw_json_schema_example
 # This is what pydantic_function_tool(SearchProducts) generates for OpenAI:
 {
     "type": "function",
@@ -163,6 +168,7 @@ Key things to notice:
 The schema content is identical — only the wrapper differs:
 
 ```python
+# script_id: day_029_tool_schemas_pydantic/provider_format_helpers
 from pydantic import BaseModel, Field
 
 class GetWeather(BaseModel):
@@ -196,6 +202,7 @@ anthropic_tool = to_anthropic(GetWeather, name="get_weather")
 Pydantic gives you rich schema control through field definitions:
 
 ```python
+# script_id: day_029_tool_schemas_pydantic/pydantic_schema_constraints
 from pydantic import BaseModel, Field
 from typing import Literal, Optional
 from enum import Enum
@@ -249,6 +256,7 @@ print(json.dumps(CreateTicket.model_json_schema(), indent=2))
 ## Nested Models for Complex Tools
 
 ```python
+# script_id: day_029_tool_schemas_pydantic/nested_models
 from pydantic import BaseModel, Field
 from typing import Optional
 
@@ -296,6 +304,7 @@ mindmap
 
 **Good:** Descriptive fields that guide the LLM
 ```python
+# script_id: day_029_tool_schemas_pydantic/good_schema_example
 class SearchProducts(BaseModel):
     """Search for products in the catalog by name, category, or price range.
     Use this when the user wants to find products to buy."""
@@ -307,6 +316,7 @@ class SearchProducts(BaseModel):
 
 **Bad:** Vague names and no descriptions
 ```python
+# script_id: day_029_tool_schemas_pydantic/bad_schema_example
 class DoStuff(BaseModel):
     """Does stuff."""
     x: str  # No description — LLM will guess what to put here

@@ -31,6 +31,7 @@ Breakpoints are strategic pause points where:
 ### Critical Decision Points
 
 ```python
+# script_id: day_071_breakpoints_design/critical_decision_points
 # Before irreversible actions
 breakpoints = [
     "before_send_email",      # Can't unsend
@@ -43,6 +44,7 @@ breakpoints = [
 ### High-Risk Operations
 
 ```python
+# script_id: day_071_breakpoints_design/high_risk_operations
 # Operations that need verification
 breakpoints = [
     "before_code_execution",  # Security risk
@@ -54,6 +56,7 @@ breakpoints = [
 ### Quality Gates
 
 ```python
+# script_id: day_071_breakpoints_design/quality_gates
 # Quality checkpoints
 breakpoints = [
     "after_draft_complete",   # Review draft
@@ -69,6 +72,7 @@ breakpoints = [
 ### Strategic Placement
 
 ```python
+# script_id: day_071_breakpoints_design/strategic_placement
 from langgraph.graph import StateGraph, END
 from langgraph.checkpoint.sqlite import SqliteSaver
 from typing import TypedDict, Annotated
@@ -122,6 +126,7 @@ app = workflow.compile(
 ### Using the Breakpoint
 
 ```python
+# script_id: day_071_breakpoints_design/strategic_placement
 # Run until breakpoint
 config = {"configurable": {"thread_id": "task-123"}}
 result = app.invoke(
@@ -153,6 +158,7 @@ else:
 Only pause when certain conditions are met:
 
 ```python
+# script_id: day_071_breakpoints_design/conditional_breakpoints
 class ConditionalBreakpoint:
     """Breakpoint that only triggers under certain conditions."""
 
@@ -197,6 +203,7 @@ def check_breakpoint(state):
 ### Risk-Based Breakpoints
 
 ```python
+# script_id: day_071_breakpoints_design/risk_based_breakpoints
 def calculate_risk_score(state: dict) -> float:
     """Calculate risk score for current operation."""
     risk = 0.0
@@ -242,6 +249,7 @@ def risk_based_breakpoint(state: dict, threshold: float = 0.5) -> bool:
 ### Clear Status Display
 
 ```python
+# script_id: day_071_breakpoints_design/breakpoint_ui_display
 def display_breakpoint_info(state: dict, node_name: str):
     """Display clear breakpoint information."""
 
@@ -269,6 +277,7 @@ def display_breakpoint_info(state: dict, node_name: str):
 ### Action Options
 
 ```python
+# script_id: day_071_breakpoints_design/breakpoint_ui_actions
 def handle_breakpoint(state: dict) -> tuple[str, dict]:
     """Handle breakpoint with user options."""
 
@@ -308,6 +317,7 @@ def handle_breakpoint(state: dict) -> tuple[str, dict]:
 ### 1. Pre-Action Breakpoint
 
 ```python
+# script_id: day_071_breakpoints_design/pre_action_breakpoint
 # Pause BEFORE an action
 app = workflow.compile(
     interrupt_before=["critical_action"]
@@ -317,6 +327,7 @@ app = workflow.compile(
 ### 2. Post-Action Breakpoint
 
 ```python
+# script_id: day_071_breakpoints_design/post_action_breakpoint
 # Pause AFTER an action (for review)
 app = workflow.compile(
     interrupt_after=["generate_output"]
@@ -326,6 +337,7 @@ app = workflow.compile(
 ### 3. Checkpoint Breakpoint
 
 ```python
+# script_id: day_071_breakpoints_design/checkpoint_breakpoint
 # Breakpoint at specific checkpoints
 def add_checkpoint_breakpoint(state, checkpoint_name):
     state["checkpoint"] = checkpoint_name
@@ -336,6 +348,7 @@ def add_checkpoint_breakpoint(state, checkpoint_name):
 ### 4. Escalation Breakpoint
 
 ```python
+# script_id: day_071_breakpoints_design/escalation_breakpoint
 def escalation_breakpoint(state: dict, escalation_level: int = 1):
     """Breakpoint that escalates based on severity."""
 
@@ -359,6 +372,7 @@ def escalation_breakpoint(state: dict, escalation_level: int = 1):
 ### 1. Clear Breakpoint Reasons
 
 ```python
+# script_id: day_071_breakpoints_design/clear_breakpoint_reasons
 # Good: Explain why we're pausing
 breakpoint_info = {
     "reason": "About to send email to 500+ recipients",
@@ -376,6 +390,7 @@ breakpoint_info = {
 ### 2. Provide Context
 
 ```python
+# script_id: day_071_breakpoints_design/provide_context
 def breakpoint_with_context(state: dict, history: list):
     """Show context at breakpoint."""
 
@@ -393,6 +408,7 @@ def breakpoint_with_context(state: dict, history: list):
 ### 3. Log Breakpoint Decisions
 
 ```python
+# script_id: day_071_breakpoints_design/log_breakpoint_decisions
 import datetime
 
 def log_breakpoint_decision(
@@ -445,6 +461,7 @@ mindmap
 ## Quick Reference
 
 ```python
+# script_id: day_071_breakpoints_design/quick_reference
 # LangGraph breakpoints
 app = workflow.compile(
     interrupt_before=["node_name"],  # Pause before

@@ -11,6 +11,7 @@ Now that you understand what embeddings are and how to compare them, let's dive 
 ### Basic Usage
 
 ```python
+# script_id: day_021_generating_embeddings_api/basic_openai_usage
 from openai import OpenAI
 
 client = OpenAI()
@@ -51,6 +52,7 @@ flowchart TB
 Always batch your requests for efficiency:
 
 ```python
+# script_id: day_021_generating_embeddings_api/batch_processing
 from openai import OpenAI
 from typing import List
 
@@ -95,6 +97,7 @@ print(f"Generated {len(embeddings)} embeddings")
 The new embedding models support dimension reduction:
 
 ```python
+# script_id: day_021_generating_embeddings_api/dimension_reduction
 from openai import OpenAI
 
 client = OpenAI()
@@ -129,6 +132,7 @@ for dims in [256, 512, 1024, 1536]:
 For high throughput applications:
 
 ```python
+# script_id: day_021_generating_embeddings_api/async_embedding_generation
 import asyncio
 from openai import AsyncOpenAI
 from typing import List
@@ -181,6 +185,7 @@ asyncio.run(main())
 ### Cohere
 
 ```python
+# script_id: day_021_generating_embeddings_api/cohere_embeddings
 import cohere
 
 co = cohere.Client("YOUR_COHERE_API_KEY")
@@ -203,6 +208,7 @@ print(f"Cohere embedding dimensions: {len(embeddings[0])}")  # 1024
 ### Voyage AI
 
 ```python
+# script_id: day_021_generating_embeddings_api/voyage_embeddings
 import voyageai
 
 vo = voyageai.Client()
@@ -223,6 +229,7 @@ embeddings = get_voyage_embeddings(["Sample text"])
 ### Hugging Face (Local)
 
 ```python
+# script_id: day_021_generating_embeddings_api/huggingface_local_embeddings
 from sentence_transformers import SentenceTransformer
 
 # Download model once, run locally
@@ -247,6 +254,7 @@ print(f"Local embedding dimensions: {len(embeddings[0])}")  # 384
 ## Unified Embedding Interface
 
 ```python
+# script_id: day_021_generating_embeddings_api/unified_embedding_interface
 from abc import ABC, abstractmethod
 from typing import List
 from enum import Enum
@@ -320,6 +328,7 @@ flowchart TB
 ### Caching Embeddings
 
 ```python
+# script_id: day_021_generating_embeddings_api/caching_embeddings
 import hashlib
 import json
 from pathlib import Path
@@ -382,6 +391,7 @@ emb2 = get_embedding_cached("Hello world")  # Cache hit!
 ### Cost Calculator
 
 ```python
+# script_id: day_021_generating_embeddings_api/cost_calculator
 def calculate_embedding_cost(
     texts: list[str],
     model: str = "text-embedding-3-small"
@@ -425,6 +435,7 @@ print(cost_info)
 ## Error Handling
 
 ```python
+# script_id: day_021_generating_embeddings_api/error_handling
 from openai import OpenAI, RateLimitError, APIError
 import time
 
@@ -499,6 +510,7 @@ mindmap
 ## Quick Reference
 
 ```python
+# script_id: day_021_generating_embeddings_api/quick_reference
 # OpenAI (recommended for most use cases)
 from openai import OpenAI
 client = OpenAI()

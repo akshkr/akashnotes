@@ -11,6 +11,7 @@ Make your agent's output beautiful and understandable! This guide shows you how 
 ### Streamlit Markdown
 
 ```python
+# script_id: day_088_displaying_content_ui/streamlit_markdown
 import streamlit as st
 
 # Basic markdown
@@ -46,6 +47,7 @@ st.markdown(
 ### Gradio Markdown
 
 ```python
+# script_id: day_088_displaying_content_ui/gradio_markdown
 import gradio as gr
 
 def format_response(response: str) -> str:
@@ -78,6 +80,7 @@ demo.launch()
 ### Streamlit Tables
 
 ```python
+# script_id: day_088_displaying_content_ui/streamlit_tables
 import streamlit as st
 import pandas as pd
 
@@ -108,6 +111,7 @@ st.dataframe(
 ### Agent Results as Tables
 
 ```python
+# script_id: day_088_displaying_content_ui/agent_results_table
 import streamlit as st
 import pandas as pd
 
@@ -152,6 +156,7 @@ display_search_results(results)
 ### Expandable Steps
 
 ```python
+# script_id: day_088_displaying_content_ui/expandable_reasoning
 import streamlit as st
 
 def display_reasoning(steps: list):
@@ -185,6 +190,7 @@ display_reasoning(steps)
 ### Timeline View
 
 ```python
+# script_id: day_088_displaying_content_ui/timeline_view
 import streamlit as st
 
 def display_timeline(steps: list):
@@ -220,6 +226,7 @@ def display_timeline(steps: list):
 ### Syntax Highlighted Code
 
 ```python
+# script_id: day_088_displaying_content_ui/syntax_highlighted_code
 import streamlit as st
 
 def display_code_result(code: str, language: str = "python", output: str = None):
@@ -247,6 +254,7 @@ display_code_result(code, "python", "55")
 ### Diff Display
 
 ```python
+# script_id: day_088_displaying_content_ui/diff_display
 import streamlit as st
 import difflib
 
@@ -273,6 +281,7 @@ def display_diff(original: str, modified: str):
 ### Combined Display
 
 ```python
+# script_id: day_088_displaying_content_ui/gradio_combined_display
 import gradio as gr
 import pandas as pd
 
@@ -337,6 +346,7 @@ demo.launch()
 ### Streamlit Streaming
 
 ```python
+# script_id: day_088_displaying_content_ui/streamlit_streaming
 import streamlit as st
 import time
 
@@ -365,6 +375,7 @@ if prompt := st.chat_input("Ask something"):
 ### Gradio Streaming
 
 ```python
+# script_id: day_088_displaying_content_ui/gradio_streaming
 import gradio as gr
 import time
 
@@ -392,6 +403,7 @@ demo.launch()
 ### Progress Indicators
 
 ```python
+# script_id: day_088_displaying_content_ui/progress_indicators
 import streamlit as st
 import time
 
@@ -455,6 +467,7 @@ mindmap
 ## Quick Reference
 
 ```python
+# script_id: day_088_displaying_content_ui/quick_reference
 # Streamlit
 st.markdown("**Bold** and *italic*")
 st.table(df)

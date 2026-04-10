@@ -40,6 +40,7 @@ Use cases for HITL:
 The simplest HITL: ask before acting.
 
 ```python
+# script_id: day_069_hitl_patterns_part1/basic_approval_pattern
 from openai import OpenAI
 
 client = OpenAI()
@@ -113,6 +114,7 @@ result = agent_with_approval("Send an email to john@example.com saying the meeti
 LangGraph has built-in support for breakpoints - points where execution pauses for human input.
 
 ```python
+# script_id: day_069_hitl_patterns_part1/langgraph_breakpoints
 from langgraph.graph import StateGraph, END
 from langgraph.checkpoint.sqlite import SqliteSaver
 from typing import TypedDict, Annotated, Literal
@@ -176,6 +178,7 @@ app = workflow.compile(
 ### Using the Breakpoint
 
 ```python
+# script_id: day_069_hitl_patterns_part1/langgraph_breakpoints
 # Start execution
 config = {"configurable": {"thread_id": "session-123"}}
 
@@ -225,6 +228,7 @@ sequenceDiagram
 Sometimes you want to inject guidance mid-execution, not just approve/reject.
 
 ```python
+# script_id: day_069_hitl_patterns_part1/feedback_injection
 from openai import OpenAI
 from typing import Optional
 
@@ -311,6 +315,7 @@ result = agent.run_with_feedback(
 Only ask for human input when the agent is uncertain:
 
 ```python
+# script_id: day_069_hitl_patterns_part1/confidence_based_hitl
 from openai import OpenAI
 import json
 

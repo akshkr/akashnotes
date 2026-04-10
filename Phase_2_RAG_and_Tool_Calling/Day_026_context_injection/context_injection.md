@@ -26,6 +26,7 @@ flowchart LR
 The simplest approach - stuff context into the prompt:
 
 ```python
+# script_id: day_026_context_injection/rag_with_context_management
 from openai import OpenAI
 import chromadb
 
@@ -84,6 +85,7 @@ print(answer)
 Use clear sections for better results:
 
 ```python
+# script_id: day_026_context_injection/rag_with_context_management
 RAG_PROMPT_TEMPLATE = """You are a helpful assistant that answers questions based on provided context.
 
 ## Instructions
@@ -159,6 +161,7 @@ def structured_rag(question: str, n_results: int = 5) -> dict:
 Don't overflow the context window!
 
 ```python
+# script_id: day_026_context_injection/rag_with_context_management
 import tiktoken
 
 def count_tokens(text: str, model: str = "gpt-4o-mini") -> int:
@@ -237,6 +240,7 @@ Question: {question}"""
 Generate multiple queries for better retrieval:
 
 ```python
+# script_id: day_026_context_injection/rag_with_context_management
 def generate_query_variations(question: str, n_variations: int = 3) -> list[str]:
     """Generate variations of the question for better retrieval."""
 
@@ -309,6 +313,7 @@ Question: {question}"""
 ## Complete RAG System
 
 ```python
+# script_id: day_026_context_injection/complete_rag_system
 from dataclasses import dataclass
 from typing import Optional
 import chromadb
@@ -451,6 +456,7 @@ Without access control, a vector similarity search returns the nearest neighbors
 **1. Metadata filtering (simplest):** Tag every document with an `owner_id` and filter at query time.
 
 ```python
+# script_id: day_026_context_injection/multi_tenant_metadata_filtering
 # When indexing
 collection.add(
     documents=["Secret quarterly results..."],
@@ -490,6 +496,7 @@ flowchart LR
 ### Cohere Rerank (Managed API)
 
 ```python
+# script_id: day_026_context_injection/cohere_rerank
 # pip install cohere
 import cohere
 
@@ -512,6 +519,7 @@ reranked_chunks = [vector_results[r.index] for r in results.results]
 If you want to self-host and avoid API costs, cross-encoders give you the same two-stage pattern with no external dependency:
 
 ```python
+# script_id: day_026_context_injection/cross_encoder_rerank
 from sentence_transformers import CrossEncoder
 
 reranker = CrossEncoder("cross-encoder/ms-marco-MiniLM-L-6-v2")
@@ -584,6 +592,7 @@ flowchart TD
 ### The Long-Context Approach in Code
 
 ```python
+# script_id: day_026_context_injection/long_context_approach
 from openai import OpenAI
 
 client = OpenAI()
@@ -608,6 +617,7 @@ Compare that to the RAG system above — no embeddings, no ChromaDB, no chunking
 In practice, production systems often combine both strategies: use RAG to retrieve the top-K relevant chunks from a massive corpus, then stuff those chunks *plus surrounding context* into a generous context window. You get the scalability of retrieval with the comprehension benefits of feeding the model more complete documents.
 
 ```python
+# script_id: day_026_context_injection/hybrid_rag_approach
 def hybrid_rag(question: str, n_chunks: int = 5, context_padding: int = 2) -> str:
     """Retrieve top chunks via RAG, then expand context for the LLM."""
 
@@ -669,6 +679,7 @@ mindmap
 ## Quick Reference
 
 ```python
+# script_id: day_026_context_injection/quick_reference
 # Basic RAG prompt
 prompt = f"""Context: {context}
 

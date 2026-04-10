@@ -104,6 +104,7 @@ Generate embeddings with the OpenAI API and insert them using psycopg2.
 ### Single Document
 
 ```python
+# script_id: day_022_pgvector/pgvector_crud_operations
 import psycopg2
 from openai import OpenAI
 
@@ -145,6 +146,7 @@ print("Document stored with embedding.")
 ### Batch Insert
 
 ```python
+# script_id: day_022_pgvector/pgvector_crud_operations
 import psycopg2.extras
 
 def store_documents_batch(
@@ -242,6 +244,7 @@ LIMIT 5;
 This is the core use case: "given a query, find the most similar documents."
 
 ```python
+# script_id: day_022_pgvector/pgvector_crud_operations
 def search_documents(
     cur,
     query: str,
@@ -368,6 +371,7 @@ CREATE INDEX ON documents USING gin(tsv);
 ```
 
 ```python
+# script_id: day_022_pgvector/pgvector_crud_operations
 def hybrid_search(
     cur,
     query: str,
@@ -441,6 +445,7 @@ pgvector is excellent when you already use PostgreSQL. But it is not the only op
 **ChromaDB** is a lightweight, in-process vector database that is great for prototyping and small-scale experiments:
 
 ```python
+# script_id: day_022_pgvector/chromadb_alternative
 import chromadb
 
 client = chromadb.Client()
@@ -494,6 +499,7 @@ mindmap
 ## Quick Reference
 
 ```python
+# script_id: day_022_pgvector/quick_reference
 import psycopg2
 from openai import OpenAI
 

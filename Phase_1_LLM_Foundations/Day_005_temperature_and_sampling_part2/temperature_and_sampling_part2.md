@@ -79,6 +79,7 @@ flowchart TB
 ### Code Example
 
 ```python
+# script_id: day_005_temperature_and_sampling_part2/penalties_example
 from openai import OpenAI
 
 client = OpenAI()
@@ -131,6 +132,7 @@ Both penalties range from **-2.0 to 2.0**:
 ## Putting It All Together: A Practical Configuration Guide
 
 ```python
+# script_id: day_005_temperature_and_sampling_part2/practical_config_guide
 from openai import OpenAI
 
 client = OpenAI()
@@ -225,6 +227,7 @@ flowchart TB
 ### Mistake 1: Using High Temperature AND Low Top-P
 
 ```python
+# script_id: day_005_temperature_and_sampling_part2/conflicting_settings_mistake
 # BAD: Conflicting settings
 response = client.chat.completions.create(
     model="gpt-4o-mini",
@@ -246,6 +249,7 @@ temperature=1.0, top_p=0.5
 ### Mistake 2: Extreme Penalties
 
 ```python
+# script_id: day_005_temperature_and_sampling_part2/extreme_penalties_mistake
 # BAD: Penalties too high
 frequency_penalty=2.0
 presence_penalty=2.0

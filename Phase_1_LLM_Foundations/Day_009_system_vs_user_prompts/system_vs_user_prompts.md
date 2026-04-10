@@ -61,6 +61,7 @@ flowchart LR
 ### Basic System Prompt Example
 
 ```python
+# script_id: day_009_system_vs_user_prompts/basic_system_prompt
 from openai import OpenAI
 
 client = OpenAI()
@@ -93,6 +94,7 @@ print(response)
 ### The Same Question, Different System Prompts
 
 ```python
+# script_id: day_009_system_vs_user_prompts/different_system_prompts
 from openai import OpenAI
 
 client = OpenAI()
@@ -153,6 +155,7 @@ flowchart TB
 ### User Prompt Best Practices
 
 ```python
+# script_id: day_009_system_vs_user_prompts/user_prompt_best_practices
 # BAD: Redundant with system prompt
 system = "You are a Python expert."
 user = "You are a Python expert. Write a function to sort a list."
@@ -201,6 +204,7 @@ flowchart TB
 Real conversations involve multiple messages:
 
 ```python
+# script_id: day_009_system_vs_user_prompts/conversation_flow
 from openai import OpenAI
 
 client = OpenAI()
@@ -273,6 +277,7 @@ flowchart TB
 ### Template: Professional System Prompt
 
 ```python
+# script_id: day_009_system_vs_user_prompts/system_prompt_template
 system_prompt_template = """
 # Role
 You are {role_name}, {role_description}.
@@ -337,6 +342,7 @@ TICKET: [Issue Type] - [Brief Description]
 ### Pattern 1: The Expert
 
 ```python
+# script_id: day_009_system_vs_user_prompts/pattern_expert
 expert_prompt = """You are an expert {domain} specialist with 20+ years of experience.
 You provide accurate, detailed information based on current best practices.
 When uncertain, you clearly state your confidence level.
@@ -346,6 +352,7 @@ You cite sources or explain your reasoning when making claims."""
 ### Pattern 2: The Constrained Assistant
 
 ```python
+# script_id: day_009_system_vs_user_prompts/pattern_constrained
 constrained_prompt = """You are a helpful assistant with the following rules:
 
 MUST DO:
@@ -363,6 +370,7 @@ MUST NOT:
 ### Pattern 3: The Persona
 
 ```python
+# script_id: day_009_system_vs_user_prompts/pattern_persona
 persona_prompt = """You are Captain Nova, a space explorer from the year 3000.
 You speak with enthusiasm about technology and discovery.
 You often relate modern concepts to futuristic analogies.
@@ -373,6 +381,7 @@ Despite your futuristic persona, you provide accurate, helpful information."""
 ### Pattern 4: The Structured Output Generator
 
 ```python
+# script_id: day_009_system_vs_user_prompts/pattern_structured_output
 structured_prompt = """You are a data extraction assistant.
 You analyze text and extract information in strict JSON format.
 
@@ -394,6 +403,7 @@ If information is not found, use null. Never invent data."""
 Sometimes you need to adjust the system prompt based on context:
 
 ```python
+# script_id: day_009_system_vs_user_prompts/dynamic_system_prompt
 from openai import OpenAI
 from datetime import datetime
 
@@ -449,6 +459,7 @@ print(response.choices[0].message.content)
 As conversations grow, you need to manage the message history:
 
 ```python
+# script_id: day_009_system_vs_user_prompts/conversation_manager
 from openai import OpenAI
 
 client = OpenAI()
@@ -522,6 +533,7 @@ flowchart TB
 ### Defensive System Prompt Techniques
 
 ```python
+# script_id: day_009_system_vs_user_prompts/defensive_system_prompt
 defensive_system_prompt = """You are a helpful customer service assistant for AcmeCorp.
 
 ## IMPORTANT SECURITY RULES ##

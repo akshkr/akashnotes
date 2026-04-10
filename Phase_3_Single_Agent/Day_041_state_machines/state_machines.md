@@ -52,6 +52,7 @@ pip install langgraph langchain langchain-openai
 A TypedDict that holds all information the agent needs:
 
 ```python
+# script_id: day_041_state_machines/state_definition
 from typing import TypedDict, Annotated
 from operator import add
 
@@ -67,6 +68,7 @@ class AgentState(TypedDict):
 Functions that process the state:
 
 ```python
+# script_id: day_041_state_machines/node_example
 def research_node(state: AgentState) -> dict:
     """Do research and update state."""
     # Process state
@@ -79,6 +81,7 @@ def research_node(state: AgentState) -> dict:
 Connections between nodes (can be conditional):
 
 ```python
+# script_id: day_041_state_machines/edge_example
 def should_continue(state: AgentState) -> str:
     """Decide which node to go to next."""
     if state["iteration"] >= 5:
@@ -94,6 +97,7 @@ def should_continue(state: AgentState) -> str:
 ## Building Your First Graph
 
 ```python
+# script_id: day_041_state_machines/first_graph
 from typing import TypedDict, Annotated
 from langgraph.graph import StateGraph, END
 from langchain_openai import ChatOpenAI
@@ -177,6 +181,7 @@ print(result["final_answer"])
 ## Visualizing Your Graph
 
 ```python
+# script_id: day_041_state_machines/first_graph
 # Print the graph structure
 print(app.get_graph().draw_mermaid())
 ```
@@ -196,6 +201,7 @@ flowchart TD
 ## Agent with Tools
 
 ```python
+# script_id: day_041_state_machines/agent_with_tools
 from typing import TypedDict, Annotated
 from langgraph.graph import StateGraph, END
 from langgraph.prebuilt import ToolNode
@@ -277,6 +283,7 @@ for msg in result["messages"]:
 ## Branching Workflows
 
 ```python
+# script_id: day_041_state_machines/branching_workflows
 from langgraph.graph import StateGraph, END
 
 class TaskState(TypedDict):
@@ -353,6 +360,7 @@ flowchart TD
 ## Cycles and Iteration
 
 ```python
+# script_id: day_041_state_machines/cycles_and_iteration
 class IterativeState(TypedDict):
     content: str
     quality_score: float
@@ -433,6 +441,7 @@ mindmap
 ## Quick Reference
 
 ```python
+# script_id: day_041_state_machines/quick_reference
 from langgraph.graph import StateGraph, END
 
 # 1. Define state

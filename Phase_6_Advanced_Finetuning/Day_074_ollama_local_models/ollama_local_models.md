@@ -72,6 +72,7 @@ ollama list
 ### Direct API
 
 ```python
+# script_id: day_074_ollama_local_models/ollama_api
 import requests
 
 def ollama_generate(prompt: str, model: str = "llama3.2") -> str:
@@ -94,6 +95,7 @@ print(result)
 ### Chat API
 
 ```python
+# script_id: day_074_ollama_local_models/ollama_api
 def ollama_chat(messages: list, model: str = "llama3.2") -> str:
     """Chat using Ollama."""
     response = requests.post(
@@ -121,6 +123,7 @@ pip install ollama
 ```
 
 ```python
+# script_id: day_074_ollama_local_models/ollama_library
 import ollama
 
 # Simple generation
@@ -149,6 +152,7 @@ for chunk in ollama.chat(
 Use Ollama as a drop-in replacement for OpenAI:
 
 ```python
+# script_id: day_074_ollama_local_models/openai_compatible
 from openai import OpenAI
 
 # Point to local Ollama server
@@ -172,6 +176,7 @@ print(response.choices[0].message.content)
 ### Swap Between Local and Cloud
 
 ```python
+# script_id: day_074_ollama_local_models/swap_local_cloud
 from openai import OpenAI
 import os
 
@@ -221,6 +226,7 @@ flowchart LR
 ### Choosing Model Size
 
 ```python
+# script_id: day_074_ollama_local_models/recommend_model
 def recommend_model(available_ram_gb: int) -> str:
     """Recommend model based on available RAM."""
     if available_ram_gb >= 64:
@@ -240,6 +246,7 @@ def recommend_model(available_ram_gb: int) -> str:
 ## Model Comparison
 
 ```python
+# script_id: day_074_ollama_local_models/benchmark_models
 import ollama
 import time
 
@@ -281,6 +288,7 @@ for model, data in results.items():
 ### Replace Cloud Calls
 
 ```python
+# script_id: day_074_ollama_local_models/llm_provider
 class LLMProvider:
     """Unified LLM provider supporting local and cloud."""
 
@@ -329,6 +337,7 @@ response = llm.chat([{"role": "user", "content": "Hello!"}])
 ### Local Embeddings
 
 ```python
+# script_id: day_074_ollama_local_models/local_embeddings
 import ollama
 
 # Pull embedding model
@@ -368,6 +377,7 @@ ollama run llama3.2 --verbose
 ### Concurrent Requests
 
 ```python
+# script_id: day_074_ollama_local_models/concurrent_requests
 import ollama
 import asyncio
 
@@ -421,6 +431,7 @@ ollama rm llama3.2        # Delete model
 ```
 
 ```python
+# script_id: day_074_ollama_local_models/quick_reference
 # Python usage
 import ollama
 response = ollama.chat(model='llama3.2', messages=[...])

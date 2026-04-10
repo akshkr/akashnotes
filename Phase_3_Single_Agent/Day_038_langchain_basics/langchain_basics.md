@@ -52,6 +52,7 @@ pip install langchain langchain-openai langchain-community
 ### 1. Chat Models
 
 ```python
+# script_id: day_038_langchain_basics/chat_models
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage
 
@@ -70,6 +71,7 @@ print(response.content)
 ### 2. Prompt Templates
 
 ```python
+# script_id: day_038_langchain_basics/prompt_templates
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
 # Simple template
@@ -97,6 +99,7 @@ messages = chat_prompt.format_messages(
 ### 3. Output Parsers
 
 ```python
+# script_id: day_038_langchain_basics/output_parsers
 from langchain_core.output_parsers import StrOutputParser, JsonOutputParser
 from pydantic import BaseModel, Field
 
@@ -124,6 +127,7 @@ print(json_parser.get_format_instructions())
 LCEL is LangChain's declarative way to compose chains using the pipe (`|`) operator:
 
 ```python
+# script_id: day_038_langchain_basics/lcel_basic_chain
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
@@ -154,6 +158,7 @@ flowchart LR
 ### Chaining Multiple Steps
 
 ```python
+# script_id: day_038_langchain_basics/chaining_multiple_steps
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
@@ -201,6 +206,7 @@ print(result)
 ### Document Loaders
 
 ```python
+# script_id: day_038_langchain_basics/document_loaders
 from langchain_community.document_loaders import (
     TextLoader,
     PyPDFLoader,
@@ -233,6 +239,7 @@ for doc in docs:
 ### Text Splitters
 
 ```python
+# script_id: day_038_langchain_basics/text_splitters
 from langchain_text_splitters import (
     RecursiveCharacterTextSplitter,
     CharacterTextSplitter,
@@ -262,6 +269,7 @@ print(f"After split: {len(split_docs)} chunks")
 ## Building a RAG Chain
 
 ```python
+# script_id: day_038_langchain_basics/rag_chain
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_community.vectorstores import Chroma
 from langchain_core.prompts import ChatPromptTemplate
@@ -324,6 +332,7 @@ flowchart LR
 ## Streaming with LCEL
 
 ```python
+# script_id: day_038_langchain_basics/streaming_lcel
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 
@@ -342,6 +351,7 @@ for chunk in chain.stream({"topic": "a robot learning to paint"}):
 ## Async Support
 
 ```python
+# script_id: day_038_langchain_basics/async_support
 import asyncio
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
@@ -369,6 +379,7 @@ for topic, result in zip(topics, results):
 ## Comparison: Vanilla Python vs LangChain
 
 ```python
+# script_id: day_038_langchain_basics/vanilla_vs_langchain
 # Vanilla Python
 from openai import OpenAI
 client = OpenAI()
@@ -450,6 +461,7 @@ mindmap
 ## Quick Reference
 
 ```python
+# script_id: day_038_langchain_basics/quick_reference
 # Basic chain
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate

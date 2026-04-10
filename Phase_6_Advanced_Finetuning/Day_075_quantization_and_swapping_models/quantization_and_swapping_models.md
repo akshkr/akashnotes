@@ -106,6 +106,7 @@ wget https://huggingface.co/TheBloke/Llama-2-7B-Chat-GGUF/resolve/main/llama-2-7
 ### Using with Python
 
 ```python
+# script_id: day_075_quantization_and_swapping_models/gguf_llama_cpp
 from llama_cpp import Llama
 
 # Load quantized model
@@ -159,6 +160,7 @@ pip install vllm
 ```
 
 ```python
+# script_id: day_075_quantization_and_swapping_models/awq_load_generate
 from awq import AutoAWQForCausalLM
 from transformers import AutoTokenizer
 
@@ -188,6 +190,7 @@ print(tokenizer.decode(outputs[0]))
 ### AWQ with vLLM
 
 ```python
+# script_id: day_075_quantization_and_swapping_models/awq_with_vllm
 from vllm import LLM, SamplingParams
 
 # Load AWQ model with vLLM
@@ -214,6 +217,7 @@ print(outputs[0].outputs[0].text)
 Another popular GPU-focused quantization:
 
 ```python
+# script_id: day_075_quantization_and_swapping_models/gptq_usage
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 # Load GPTQ model
@@ -276,6 +280,7 @@ python convert.py /path/to/model --outfile model-f16.gguf
 ### Create AWQ Model
 
 ```python
+# script_id: day_075_quantization_and_swapping_models/create_awq_model
 from awq import AutoAWQForCausalLM
 from transformers import AutoTokenizer
 
@@ -305,6 +310,7 @@ tokenizer.save_pretrained(quant_path)
 ## Quality Comparison
 
 ```python
+# script_id: day_075_quantization_and_swapping_models/compare_quantizations
 def compare_quantizations(prompt: str, original_model, quantized_model):
     """Compare output quality between models."""
 
@@ -363,6 +369,7 @@ Q8_0    # Maximum quality
 ```
 
 ```python
+# script_id: day_075_quantization_and_swapping_models/quantization_quick_ref
 # GGUF with llama-cpp-python
 llm = Llama(model_path="model.Q4_K_M.gguf")
 
@@ -417,6 +424,7 @@ Benefits:
 Most local tools support OpenAI's API format:
 
 ```python
+# script_id: day_075_quantization_and_swapping_models/openai_compatible_interface
 # OpenAI original
 from openai import OpenAI
 client = OpenAI()
@@ -440,6 +448,7 @@ response = client.chat.completions.create(
 ## Method 1: Environment Variable Switch
 
 ```python
+# script_id: day_075_quantization_and_swapping_models/env_variable_switch
 import os
 from openai import OpenAI
 
@@ -482,6 +491,7 @@ export LLM_PROVIDER=local
 ## Method 2: Configuration-Based
 
 ```python
+# script_id: day_075_quantization_and_swapping_models/config_based_client
 from dataclasses import dataclass
 from openai import OpenAI
 from typing import Optional
@@ -556,6 +566,7 @@ response = client.chat([{"role": "user", "content": "Hello!"}])
 Create a wrapper that works like OpenAI:
 
 ```python
+# script_id: day_075_quantization_and_swapping_models/universal_llm
 from openai import OpenAI
 import os
 
@@ -630,6 +641,7 @@ response = llm.chat_completion(
 ## LangChain Provider Swapping
 
 ```python
+# script_id: day_075_quantization_and_swapping_models/langchain_swap
 from langchain_openai import ChatOpenAI
 from langchain_ollama import ChatOllama
 
@@ -659,6 +671,7 @@ response = llm.invoke("Hello!")
 Choose appropriate local models:
 
 ```python
+# script_id: day_075_quantization_and_swapping_models/model_quality_map
 MODEL_QUALITY_MAP = {
     # OpenAI -> Local equivalents by capability
     "gpt-4o-mini": {
@@ -697,6 +710,7 @@ print(f"Use: {suggestion['ollama']}")
 Local models may behave differently:
 
 ```python
+# script_id: day_075_quantization_and_swapping_models/adaptive_llm
 class AdaptiveLLM:
     """LLM client that adapts to provider differences."""
 
@@ -744,6 +758,7 @@ class AdaptiveLLM:
 ## Testing Your Swap
 
 ```python
+# script_id: day_075_quantization_and_swapping_models/universal_llm
 def test_provider_swap():
     """Test that local model produces reasonable output."""
 
@@ -804,6 +819,7 @@ mindmap
 ## Quick Reference
 
 ```python
+# script_id: day_075_quantization_and_swapping_models/swap_quick_ref
 # Quick swap using base_url
 client = OpenAI(
     base_url="http://localhost:11434/v1",  # Ollama

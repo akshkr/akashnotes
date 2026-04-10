@@ -60,6 +60,7 @@ flowchart TB
 ```
 
 ```python
+# script_id: day_077_synthetic_data/synthetic_data_pipeline
 from openai import OpenAI
 import json
 
@@ -127,6 +128,7 @@ print(f"Generated {len(generated)} new examples")
 Not all generated examples are good. Filter aggressively.
 
 ```python
+# script_id: day_077_synthetic_data/synthetic_data_pipeline
 from pydantic import BaseModel, validator
 from openai import OpenAI
 import hashlib
@@ -188,6 +190,7 @@ def filter_quality(examples: list) -> list:
 Frontier models often generate near-duplicates. Remove them.
 
 ```python
+# script_id: day_077_synthetic_data/synthetic_data_pipeline
 from difflib import SequenceMatcher
 
 def compute_hash(text: str) -> str:
@@ -232,6 +235,7 @@ def deduplicate(examples: list) -> list:
 Ensure your dataset covers a broad range of topics, not just variations of the same thing.
 
 ```python
+# script_id: day_077_synthetic_data/synthetic_data_pipeline
 from collections import Counter
 
 def score_diversity(examples: list) -> dict:
@@ -282,6 +286,7 @@ Different fine-tuning approaches expect different formats.
 ### Alpaca Format (Instruction Tuning)
 
 ```python
+# script_id: day_077_synthetic_data/to_alpaca_format
 def to_alpaca_format(examples: list) -> list:
     """Convert to Alpaca/Stanford format."""
     return [
@@ -297,6 +302,7 @@ def to_alpaca_format(examples: list) -> list:
 ### Chat Format (ChatML / OpenAI)
 
 ```python
+# script_id: day_077_synthetic_data/synthetic_data_pipeline
 def to_chat_format(examples: list, system_prompt: str = "") -> list:
     """Convert to chat/conversation format."""
     formatted = []
@@ -315,6 +321,7 @@ def to_chat_format(examples: list, system_prompt: str = "") -> list:
 ### ShareGPT Format
 
 ```python
+# script_id: day_077_synthetic_data/to_sharegpt_format
 def to_sharegpt_format(examples: list) -> list:
     """Convert to ShareGPT format (used by many open-source trainers)."""
     formatted = []
@@ -349,6 +356,7 @@ flowchart LR
 ## End-to-End Pipeline
 
 ```python
+# script_id: day_077_synthetic_data/synthetic_data_pipeline
 import json
 from pathlib import Path
 
@@ -483,6 +491,7 @@ mindmap
 ## Quick Reference
 
 ```python
+# script_id: day_077_synthetic_data/quick_reference
 # Generate with frontier model
 response = client.chat.completions.create(
     model="gpt-4o",

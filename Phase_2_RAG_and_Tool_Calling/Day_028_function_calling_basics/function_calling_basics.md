@@ -55,6 +55,7 @@ Modern SDKs auto-generate JSON schemas from Pydantic models — no hand-writing 
 ### OpenAI with Pydantic (Recommended)
 
 ```python
+# script_id: day_028_function_calling_basics/pydantic_tool_definition
 from openai import OpenAI, pydantic_function_tool
 from pydantic import BaseModel, Field
 
@@ -85,6 +86,7 @@ print(response.choices[0].message)
 The `pydantic_function_tool()` call above produces this raw JSON schema — you rarely need to write this by hand anymore, but understanding it helps with debugging:
 
 ```python
+# script_id: day_028_function_calling_basics/generated_schema_example
 # This is what pydantic_function_tool(GetWeather) generates:
 {
     "type": "function",
@@ -115,6 +117,7 @@ The `pydantic_function_tool()` call above produces this raw JSON schema — you 
 ## Implementing Tool Functions
 
 ```python
+# script_id: day_028_function_calling_basics/tool_calling_loop
 import json
 from openai import OpenAI, pydantic_function_tool
 from pydantic import BaseModel, Field
@@ -184,6 +187,7 @@ tools = [pydantic_function_tool(GetWeather), pydantic_function_tool(Calculate)]
 ## Complete Tool Calling Loop
 
 ```python
+# script_id: day_028_function_calling_basics/tool_calling_loop
 def chat_with_tools(user_message: str) -> str:
     """Chat with tool calling capability."""
     messages = [{"role": "user", "content": user_message}]
@@ -259,6 +263,7 @@ flowchart TB
 ```
 
 ```python
+# script_id: day_028_function_calling_basics/tool_calling_loop
 def process_parallel_tools(response_message):
     """Process multiple tool calls in parallel."""
     results = []
@@ -288,6 +293,7 @@ def process_parallel_tools(response_message):
 Anthropic uses `input_schema` instead of `parameters`. You can generate this from Pydantic too:
 
 ```python
+# script_id: day_028_function_calling_basics/tool_calling_loop
 from anthropic import Anthropic
 from pydantic import BaseModel, Field
 
@@ -376,6 +382,7 @@ mindmap
 ### Good Tool Definition
 
 ```python
+# script_id: day_028_function_calling_basics/good_tool_example
 good_tool = {
     "type": "function",
     "function": {
@@ -411,6 +418,7 @@ good_tool = {
 ### Bad Tool Definition
 
 ```python
+# script_id: day_028_function_calling_basics/bad_tool_example
 bad_tool = {
     "type": "function",
     "function": {
@@ -434,6 +442,7 @@ bad_tool = {
 Sometimes you want to ensure a specific tool is called:
 
 ```python
+# script_id: day_028_function_calling_basics/forcing_tool_use
 # Force specific tool
 response = client.chat.completions.create(
     model="gpt-4o-mini",
@@ -472,6 +481,7 @@ response = client.chat.completions.create(
 ## Complete Tool Calling System
 
 ```python
+# script_id: day_028_function_calling_basics/complete_tool_system
 from openai import OpenAI, pydantic_function_tool
 from pydantic import BaseModel, Field
 from typing import Callable

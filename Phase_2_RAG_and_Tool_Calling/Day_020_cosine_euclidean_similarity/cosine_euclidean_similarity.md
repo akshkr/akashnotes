@@ -66,6 +66,7 @@ Where:
 ### Python Implementation
 
 ```python
+# script_id: day_020_cosine_euclidean_similarity/cosine_similarity_impl
 import numpy as np
 
 def cosine_similarity(a: list, b: list) -> float:
@@ -107,6 +108,7 @@ print(f"Opposite: {cosine_similarity(v1, v4):.4f}")            # -1.0
 ### Real Embedding Example
 
 ```python
+# script_id: day_020_cosine_euclidean_similarity/cosine_real_embeddings
 from openai import OpenAI
 import numpy as np
 
@@ -184,6 +186,7 @@ distance = √((a1-b1)² + (a2-b2)² + ... + (an-bn)²)
 ### Python Implementation
 
 ```python
+# script_id: day_020_cosine_euclidean_similarity/euclidean_distance_impl
 import numpy as np
 
 def euclidean_distance(a: list, b: list) -> float:
@@ -211,6 +214,7 @@ print(f"Distance (0,0) to (0,0): {euclidean_distance(point1, point3):.4f}")  # 0
 ### With Real Embeddings
 
 ```python
+# script_id: day_020_cosine_euclidean_similarity/euclidean_real_embeddings
 from openai import OpenAI
 import numpy as np
 
@@ -272,6 +276,7 @@ flowchart TB
 ### Visual Comparison
 
 ```python
+# script_id: day_020_cosine_euclidean_similarity/compare_metrics
 import numpy as np
 
 def compare_metrics():
@@ -324,6 +329,7 @@ Notice how cosine sees `a` and `b` as identical (same direction), while euclidea
 When embeddings are **normalized** (length = 1), cosine and euclidean become mathematically related:
 
 ```python
+# script_id: day_020_cosine_euclidean_similarity/normalized_embeddings
 import numpy as np
 
 def normalize(v: list) -> np.array:
@@ -369,6 +375,7 @@ Many embedding models return **already normalized** vectors, making either metri
 For large-scale search, optimize your computations:
 
 ```python
+# script_id: day_020_cosine_euclidean_similarity/efficient_search
 import numpy as np
 from openai import OpenAI
 
@@ -440,6 +447,7 @@ for doc, score in results:
 Sometimes you need to convert or use both:
 
 ```python
+# script_id: day_020_cosine_euclidean_similarity/metric_conversion
 import numpy as np
 
 def cosine_to_euclidean(cosine_sim: float) -> float:
@@ -489,6 +497,7 @@ flowchart LR
 ```
 
 ```python
+# script_id: day_020_cosine_euclidean_similarity/categorize_similarity
 def categorize_similarity(cosine_sim: float) -> str:
     """Categorize similarity score."""
     if cosine_sim >= 0.95:
@@ -540,6 +549,7 @@ mindmap
 ## Quick Reference
 
 ```python
+# script_id: day_020_cosine_euclidean_similarity/quick_reference
 import numpy as np
 
 # Cosine Similarity (-1 to 1, higher = more similar)

@@ -35,6 +35,7 @@ The key insight: **output tokens cost 4-5x more than input tokens**. Your prompt
 The `tiktoken` library lets you count tokens exactly before making an API call.
 
 ```python
+# script_id: day_033_cost_engineering_for_llms/token_counting
 import tiktoken
 from openai import OpenAI
 
@@ -80,6 +81,7 @@ print(f"Estimated input cost (GPT-4o): ${input_tokens / 1_000_000 * 2.50:.6f}")
 ## Calculating Real Costs
 
 ```python
+# script_id: day_033_cost_engineering_for_llms/cost_calculation
 from dataclasses import dataclass
 
 
@@ -147,6 +149,7 @@ flowchart LR
 ```
 
 ```python
+# script_id: day_033_cost_engineering_for_llms/cost_calculation
 def estimate_monthly_cost(
     daily_users: int,
     messages_per_user: float,
@@ -238,6 +241,7 @@ flowchart TB
 ```
 
 ```python
+# script_id: day_033_cost_engineering_for_llms/model_routing
 from openai import OpenAI
 from pydantic import BaseModel
 from enum import Enum
@@ -326,6 +330,7 @@ for q in queries:
 For deterministic queries (same input = same output), cache aggressively.
 
 ```python
+# script_id: day_033_cost_engineering_for_llms/cost_calculation
 import hashlib
 import json
 import time
@@ -399,6 +404,7 @@ def cached_completion(
 For similar queries that should get the same answer, use embedding similarity.
 
 ```python
+# script_id: day_033_cost_engineering_for_llms/semantic_cache
 import numpy as np
 from openai import OpenAI
 
@@ -490,6 +496,7 @@ Application-level caching (exact match, semantic) is powerful, but the API provi
 - Any scenario where the first N thousand tokens are identical across requests
 
 ```python
+# script_id: day_033_cost_engineering_for_llms/prompt_caching
 from anthropic import Anthropic
 
 client = Anthropic()
@@ -544,6 +551,7 @@ Real-time API calls are priced for real-time response. If you do not need result
 - Anything where "done within 24 hours" is fast enough
 
 ```python
+# script_id: day_033_cost_engineering_for_llms/batch_api
 from openai import OpenAI
 import json
 
@@ -599,6 +607,7 @@ At scale this adds up fast. If you run 10,000 eval calls per week during develop
 In production, you need to track costs per request, per user, and per day.
 
 ```python
+# script_id: day_033_cost_engineering_for_llms/cost_calculation
 import time
 import logging
 from dataclasses import dataclass, field
@@ -724,6 +733,7 @@ Embeddings are so cheap they are almost free. The LLM call dominates. This means
 - Control output length with `max_tokens`
 
 ```python
+# script_id: day_033_cost_engineering_for_llms/cost_conscious_chunking
 # Cost-conscious chunking: fewer, better chunks
 def optimize_context(chunks: list[str], query: str, max_tokens: int = 800) -> list[str]:
     """Select top chunks that fit within a token budget."""

@@ -99,6 +99,7 @@ flowchart LR
 ### Key Parameters
 
 ```python
+# script_id: day_078_finetuning_fundamentals/lora_config_example
 # LoRA configuration
 lora_config = {
     "r": 16,              # Rank: size of the low-rank matrices
@@ -154,6 +155,7 @@ Key innovations in QLoRA:
 - **Paged optimizers**: Offload optimizer states to CPU when GPU runs out
 
 ```python
+# script_id: day_078_finetuning_fundamentals/qlora_peft_workflow
 from transformers import BitsAndBytesConfig
 import torch
 
@@ -171,6 +173,7 @@ bnb_config = BitsAndBytesConfig(
 ## Training Hyperparameters
 
 ```python
+# script_id: day_078_finetuning_fundamentals/training_args
 from transformers import TrainingArguments
 
 training_args = TrainingArguments(
@@ -240,6 +243,7 @@ training_args = TrainingArguments(
 ## Putting It Together: LoRA with PEFT
 
 ```python
+# script_id: day_078_finetuning_fundamentals/qlora_peft_workflow
 from peft import LoraConfig, get_peft_model, TaskType
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
@@ -274,6 +278,7 @@ model.print_trainable_parameters()
 ## Saving and Loading Adapters
 
 ```python
+# script_id: day_078_finetuning_fundamentals/qlora_peft_workflow
 # Save only the LoRA adapter (tiny file, ~50-100 MB)
 model.save_pretrained("./my-lora-adapter")
 
@@ -354,6 +359,7 @@ mindmap
 ## Quick Reference
 
 ```python
+# script_id: day_078_finetuning_fundamentals/quick_reference
 # QLoRA quantization config
 bnb_config = BitsAndBytesConfig(
     load_in_4bit=True,

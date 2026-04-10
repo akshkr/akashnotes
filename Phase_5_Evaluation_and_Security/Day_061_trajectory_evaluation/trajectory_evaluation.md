@@ -37,6 +37,7 @@ Trajectory evaluation asks:
 First, record what the agent does:
 
 ```python
+# script_id: day_061_trajectory_evaluation/trajectory_evaluator
 from dataclasses import dataclass, field
 from typing import List, Dict, Optional
 from datetime import datetime
@@ -128,6 +129,7 @@ trajectory.complete(
 ### 1. Step Efficiency
 
 ```python
+# script_id: day_061_trajectory_evaluation/trajectory_evaluator
 def evaluate_efficiency(trajectory: AgentTrajectory, optimal_steps: int) -> Dict:
     """Evaluate if agent took efficient path."""
 
@@ -154,6 +156,7 @@ print(f"Efficiency: {result['efficiency_score']:.2%}")
 ### 2. Step Relevance
 
 ```python
+# script_id: day_061_trajectory_evaluation/trajectory_evaluator
 from openai import OpenAI
 
 client = OpenAI()
@@ -210,6 +213,7 @@ def evaluate_all_steps_relevance(trajectory: AgentTrajectory) -> Dict:
 ### 3. Action Correctness
 
 ```python
+# script_id: day_061_trajectory_evaluation/trajectory_evaluator
 def evaluate_action_correctness(trajectory: AgentTrajectory) -> Dict:
     """Evaluate if actions were correct for the situation."""
 
@@ -253,6 +257,7 @@ Return JSON:
 ### 4. Goal Achievement
 
 ```python
+# script_id: day_061_trajectory_evaluation/trajectory_evaluator
 def evaluate_goal_achievement(trajectory: AgentTrajectory) -> Dict:
     """Evaluate if the agent achieved its goal."""
 
@@ -289,6 +294,7 @@ Return JSON:
 ## Complete Trajectory Evaluator
 
 ```python
+# script_id: day_061_trajectory_evaluation/trajectory_evaluator
 class TrajectoryEvaluator:
     """Comprehensive trajectory evaluation."""
 
@@ -416,6 +422,7 @@ print(evaluator.format_report(results))
 Compare different agent approaches:
 
 ```python
+# script_id: day_061_trajectory_evaluation/trajectory_evaluator
 def compare_trajectories(trajectories: List[AgentTrajectory], optimal_steps: int) -> Dict:
     """Compare multiple trajectories for the same task."""
 
@@ -469,6 +476,7 @@ mindmap
 ## Quick Reference
 
 ```python
+# script_id: day_061_trajectory_evaluation/trajectory_evaluator
 # Capture trajectory
 trajectory = AgentTrajectory(task="...")
 trajectory.add_step(thought="...", action="...", action_input={}, observation="...")

@@ -39,6 +39,7 @@ flowchart LR
 ## OpenAI Streaming Basics
 
 ```python
+# script_id: day_012_streaming_responses_part1/basic_stream_chat
 from openai import OpenAI
 
 client = OpenAI()
@@ -68,6 +69,7 @@ stream_chat("Write a short poem about coding")
 ### Understanding Stream Chunks
 
 ```python
+# script_id: day_012_streaming_responses_part1/inspect_stream_chunks
 from openai import OpenAI
 
 client = OpenAI()
@@ -142,6 +144,7 @@ flowchart TB
 ## Anthropic Streaming
 
 ```python
+# script_id: day_012_streaming_responses_part1/anthropic_basic_stream
 from anthropic import Anthropic
 
 client = Anthropic()
@@ -164,6 +167,7 @@ stream_claude("Write a haiku about Python")
 ### Anthropic Stream Events
 
 ```python
+# script_id: day_012_streaming_responses_part1/anthropic_stream_events
 from anthropic import Anthropic
 
 client = Anthropic()
@@ -194,6 +198,7 @@ detailed_claude_stream("Hi")
 Sometimes you want to both stream to the user AND collect the full response:
 
 ```python
+# script_id: day_012_streaming_responses_part1/stream_and_collect
 from openai import OpenAI
 
 client = OpenAI()
@@ -232,6 +237,7 @@ print(response)
 Combine async with streaming for maximum responsiveness:
 
 ```python
+# script_id: day_012_streaming_responses_part1/async_stream
 import asyncio
 from openai import AsyncOpenAI
 
@@ -265,6 +271,7 @@ asyncio.run(main())
 ### Parallel Async Streams
 
 ```python
+# script_id: day_012_streaming_responses_part1/parallel_async_streams
 import asyncio
 from openai import AsyncOpenAI
 

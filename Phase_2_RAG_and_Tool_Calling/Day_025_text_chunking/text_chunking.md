@@ -45,6 +45,7 @@ flowchart TB
 The simplest approach - split every N characters:
 
 ```python
+# script_id: day_025_text_chunking/fixed_size_chunking
 def chunk_by_characters(text: str, chunk_size: int = 1000, overlap: int = 200) -> list[str]:
     """Split text into fixed-size chunks with overlap."""
     chunks = []
@@ -86,6 +87,7 @@ Fixed size can split mid-sentence or mid-word!
 Split at natural boundaries (paragraphs, sentences, words):
 
 ```python
+# script_id: day_025_text_chunking/recursive_character_splitter
 import re
 
 def recursive_chunk(
@@ -169,6 +171,7 @@ for i, chunk in enumerate(chunks):
 Split based on meaning, not just characters:
 
 ```python
+# script_id: day_025_text_chunking/semantic_chunking
 from openai import OpenAI
 import numpy as np
 
@@ -249,6 +252,7 @@ for i, chunk in enumerate(chunks):
 Respect document structure:
 
 ```python
+# script_id: day_025_text_chunking/markdown_aware_chunking
 import re
 from dataclasses import dataclass
 
@@ -383,6 +387,7 @@ flowchart TB
 ## Complete Chunking Pipeline
 
 ```python
+# script_id: day_025_text_chunking/complete_chunking_pipeline
 from dataclasses import dataclass
 from typing import List, Optional
 import re
@@ -556,6 +561,7 @@ mindmap
 ## Quick Reference
 
 ```python
+# script_id: day_025_text_chunking/quick_reference
 # Simple fixed-size chunks
 def chunk_simple(text, size=500):
     return [text[i:i+size] for i in range(0, len(text), size)]

@@ -45,6 +45,7 @@ pip install langsmith langchain langchain-openai
 ```
 
 ```python
+# script_id: day_056_langsmith_phoenix/langsmith_traced_pipeline
 import os
 
 # Set environment variables
@@ -56,6 +57,7 @@ os.environ["LANGCHAIN_PROJECT"] = "my-ai-project"
 ### Basic Tracing
 
 ```python
+# script_id: day_056_langsmith_phoenix/langsmith_traced_pipeline
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage
 
@@ -71,6 +73,7 @@ print(response.content)
 ### Tracing Custom Functions
 
 ```python
+# script_id: day_056_langsmith_phoenix/langsmith_traced_pipeline
 from langsmith import traceable
 
 @traceable(name="my_rag_pipeline")
@@ -117,6 +120,7 @@ answer = rag_query("What is machine learning?")
 ### Adding Metadata
 
 ```python
+# script_id: day_056_langsmith_phoenix/langsmith_metadata
 from langsmith import traceable
 
 @traceable(
@@ -154,6 +158,7 @@ pip install arize-phoenix opentelemetry-sdk opentelemetry-exporter-otlp
 ```
 
 ```python
+# script_id: day_056_langsmith_phoenix/phoenix_instrument_openai
 import phoenix as px
 
 # Launch Phoenix (opens web UI)
@@ -164,6 +169,7 @@ print(f"Phoenix UI: {session.url}")
 ### Instrument OpenAI
 
 ```python
+# script_id: day_056_langsmith_phoenix/phoenix_instrument_openai
 from phoenix.otel import register
 from openinference.instrumentation.openai import OpenAIInstrumentor
 
@@ -185,6 +191,7 @@ response = client.chat.completions.create(
 ### Custom Spans
 
 ```python
+# script_id: day_056_langsmith_phoenix/phoenix_custom_spans
 from opentelemetry import trace
 
 tracer = trace.get_tracer(__name__)
@@ -231,6 +238,7 @@ mindmap
 ### Building a Metrics Dashboard
 
 ```python
+# script_id: day_056_langsmith_phoenix/metrics_dashboard
 from dataclasses import dataclass, field
 from datetime import datetime
 from collections import defaultdict
@@ -325,6 +333,7 @@ flowchart TB
 ### Trace Analysis Code
 
 ```python
+# script_id: day_056_langsmith_phoenix/trace_analysis
 def analyze_trace(trace: dict) -> dict:
     """Analyze a trace for issues."""
     issues = []
@@ -400,6 +409,7 @@ mindmap
 ## Quick Reference
 
 ```python
+# script_id: day_056_langsmith_phoenix/quick_reference
 # LangSmith
 import os
 os.environ["LANGCHAIN_TRACING_V2"] = "true"

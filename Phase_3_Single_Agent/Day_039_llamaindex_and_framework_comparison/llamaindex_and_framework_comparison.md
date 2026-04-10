@@ -47,6 +47,7 @@ pip install llama-index llama-index-llms-openai llama-index-embeddings-openai
 ## Quick Start
 
 ```python
+# script_id: day_039_llamaindex_and_framework_comparison/quick_start
 from llama_index.core import VectorStoreIndex, SimpleDirectoryReader
 
 # Load documents from a directory
@@ -70,6 +71,7 @@ That's it! LlamaIndex handles chunking, embedding, and retrieval automatically.
 ### 1. Documents and Nodes
 
 ```python
+# script_id: day_039_llamaindex_and_framework_comparison/documents_and_nodes
 from llama_index.core import Document
 from llama_index.core.node_parser import SentenceSplitter
 
@@ -103,6 +105,7 @@ flowchart LR
 ### 2. Data Loaders
 
 ```python
+# script_id: day_039_llamaindex_and_framework_comparison/data_loaders
 from llama_index.core import SimpleDirectoryReader
 from llama_index.readers.web import SimpleWebPageReader
 
@@ -129,6 +132,7 @@ from llama_index.readers.notion import NotionPageReader
 ### 3. Index Types
 
 ```python
+# script_id: day_039_llamaindex_and_framework_comparison/index_types
 from llama_index.core import VectorStoreIndex
 from llama_index.embeddings.openai import OpenAIEmbedding
 
@@ -168,6 +172,7 @@ flowchart TB
 ### Basic Query Engine
 
 ```python
+# script_id: day_039_llamaindex_and_framework_comparison/basic_query_engine
 from llama_index.core import VectorStoreIndex, SimpleDirectoryReader
 
 # Load and index
@@ -188,6 +193,7 @@ print(f"\nSources: {len(response.source_nodes)}")
 ### Response Modes
 
 ```python
+# script_id: day_039_llamaindex_and_framework_comparison/basic_query_engine
 # Different ways to synthesize responses
 query_engine = index.as_query_engine(
     response_mode="refine"  # Iteratively refine answer
@@ -209,6 +215,7 @@ query_engine = index.as_query_engine(
 ### Customizing Retrieval
 
 ```python
+# script_id: day_039_llamaindex_and_framework_comparison/custom_retrieval
 from llama_index.core import VectorStoreIndex
 from llama_index.core.retrievers import VectorIndexRetriever
 from llama_index.core.query_engine import RetrieverQueryEngine
@@ -239,6 +246,7 @@ response = query_engine.query("Your question here")
 For conversational interactions with memory:
 
 ```python
+# script_id: day_039_llamaindex_and_framework_comparison/chat_engine
 from llama_index.core import VectorStoreIndex, SimpleDirectoryReader
 
 documents = SimpleDirectoryReader("./data").load_data()
@@ -267,6 +275,7 @@ chat_engine.reset()
 ### Chat Modes
 
 ```python
+# script_id: day_039_llamaindex_and_framework_comparison/chat_engine
 # Different chat modes
 chat_engine = index.as_chat_engine(chat_mode="simple")  # Basic
 chat_engine = index.as_chat_engine(chat_mode="condense_question")  # Reformulates
@@ -279,6 +288,7 @@ chat_engine = index.as_chat_engine(chat_mode="condense_plus_context")  # Best of
 ## Persistence
 
 ```python
+# script_id: day_039_llamaindex_and_framework_comparison/persistence
 from llama_index.core import VectorStoreIndex, StorageContext, load_index_from_storage
 
 # Create and persist index
@@ -297,6 +307,7 @@ query_engine = loaded_index.as_query_engine()
 ## Using Different Vector Stores
 
 ```python
+# script_id: day_039_llamaindex_and_framework_comparison/vector_stores
 # ChromaDB
 from llama_index.vector_stores.chroma import ChromaVectorStore
 import chromadb
@@ -319,6 +330,7 @@ index = VectorStoreIndex.from_documents(documents, storage_context=storage_conte
 Combine multiple indices:
 
 ```python
+# script_id: day_039_llamaindex_and_framework_comparison/composable_indices
 from llama_index.core import VectorStoreIndex, SimpleDirectoryReader
 from llama_index.llms.openai import OpenAI
 from llama_index.embeddings.openai import OpenAIEmbedding
@@ -377,6 +389,7 @@ flowchart TB
 ## Complete Example: Knowledge Base
 
 ```python
+# script_id: day_039_llamaindex_and_framework_comparison/knowledge_base
 from llama_index.core import (
     VectorStoreIndex,
     SimpleDirectoryReader,
@@ -491,6 +504,7 @@ mindmap
 ## Quick Reference
 
 ```python
+# script_id: day_039_llamaindex_and_framework_comparison/quick_reference
 # Quick start
 from llama_index.core import VectorStoreIndex, SimpleDirectoryReader
 
@@ -600,6 +614,7 @@ flowchart TB
 ### Simple Chat
 
 ```python
+# script_id: day_039_llamaindex_and_framework_comparison/simple_chat_comparison
 # Vanilla Python - Simple and clear
 from openai import OpenAI
 client = OpenAI()
@@ -624,6 +639,7 @@ print(response.content)
 ### RAG Application
 
 ```python
+# script_id: day_039_llamaindex_and_framework_comparison/rag_comparison
 # Vanilla Python - Lots of code
 from openai import OpenAI
 import chromadb
@@ -665,6 +681,7 @@ response = index.as_query_engine().query("Question?")
 ### Complex Agent
 
 ```python
+# script_id: day_039_llamaindex_and_framework_comparison/complex_agent_comparison
 # Vanilla Python - Full control, more code
 class Agent:
     def __init__(self):
@@ -701,6 +718,7 @@ result = executor.invoke({"input": "task"})
 Often the best solution combines approaches:
 
 ```python
+# script_id: day_039_llamaindex_and_framework_comparison/hybrid_approach
 # Use LlamaIndex for data, vanilla for control
 
 from llama_index.core import VectorStoreIndex, SimpleDirectoryReader

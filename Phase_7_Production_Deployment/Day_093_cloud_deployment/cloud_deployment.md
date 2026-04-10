@@ -34,6 +34,7 @@ flowchart TB
 ### 1. Environment Variables
 
 ```python
+# script_id: day_093_cloud_deployment/env_config
 # config.py
 import os
 
@@ -118,6 +119,7 @@ render deploy
 ### 3. FastAPI Health Check
 
 ```python
+# script_id: day_093_cloud_deployment/health_check_render
 from fastapi import FastAPI
 
 app = FastAPI()
@@ -242,6 +244,7 @@ aws apprunner create-service \
 ### Option 3: Lambda (Serverless)
 
 ```python
+# script_id: day_093_cloud_deployment/lambda_handler
 # handler.py
 from mangum import Mangum
 from main import app
@@ -381,6 +384,7 @@ jobs:
 ### Structured Logging
 
 ```python
+# script_id: day_093_cloud_deployment/structured_logging
 import logging
 import json
 from datetime import datetime
@@ -411,6 +415,7 @@ logger.info("Agent started", extra={"agent_id": "123", "model": "gpt-4o"})
 ### Health Checks
 
 ```python
+# script_id: day_093_cloud_deployment/health_checks
 from fastapi import FastAPI
 from datetime import datetime
 
@@ -447,6 +452,7 @@ Structured logging (above) is the minimum. For production AI systems, you need *
 ### LangSmith Integration
 
 ```python
+# script_id: day_093_cloud_deployment/langsmith_tracing
 # pip install langsmith
 import os
 
@@ -472,6 +478,7 @@ def generate_response(query: str) -> str:
 ### Langfuse (Open Source Alternative)
 
 ```python
+# script_id: day_093_cloud_deployment/langfuse_tracing
 # pip install langfuse
 from langfuse import Langfuse
 from langfuse.decorators import observe
@@ -508,6 +515,7 @@ def rag_pipeline(query: str) -> str:
 ## Cost Optimization
 
 ```python
+# script_id: day_093_cloud_deployment/cost_optimization
 # Caching to reduce API calls
 from functools import lru_cache
 import hashlib

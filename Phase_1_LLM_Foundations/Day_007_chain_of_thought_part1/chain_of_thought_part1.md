@@ -68,6 +68,7 @@ flowchart TB
 The simplest way to get Chain of Thought is to just ask for it:
 
 ```python
+# script_id: day_007_chain_of_thought_part1/basic_cot
 from openai import OpenAI
 
 client = OpenAI()
@@ -151,6 +152,7 @@ mindmap
 ### Comparison of Trigger Phrases
 
 ```python
+# script_id: day_007_chain_of_thought_part1/trigger_phrases_comparison
 from openai import OpenAI
 
 client = OpenAI()
@@ -186,6 +188,7 @@ for trigger in triggers:
 Combine few-shot with CoT by showing examples of reasoning:
 
 ```python
+# script_id: day_007_chain_of_thought_part1/few_shot_cot
 from openai import OpenAI
 
 client = OpenAI()
@@ -275,6 +278,7 @@ Sometimes you want the reasoning in a specific structure:
 ### Format 1: Numbered Steps
 
 ```python
+# script_id: day_007_chain_of_thought_part1/structured_cot_formats
 from openai import OpenAI
 
 client = OpenAI()
@@ -304,6 +308,7 @@ Work through each step:"""
 ### Format 2: Thought-Action-Observation
 
 ```python
+# script_id: day_007_chain_of_thought_part1/structured_cot_formats
 def tao_format(problem: str) -> str:
     """Use Thought-Action-Observation format."""
     prompt = f"""Solve this problem using the following format for each step:
@@ -370,6 +375,7 @@ flowchart TB
 ```
 
 ```python
+# script_id: day_007_chain_of_thought_part1/self_consistency_cot
 from openai import OpenAI
 from collections import Counter
 import re

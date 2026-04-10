@@ -38,6 +38,7 @@ Benefits:
 ## Basic WebSocket Server
 
 ```python
+# script_id: day_085_websockets_streaming/basic_websocket_server
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 import asyncio
 
@@ -84,6 +85,7 @@ async def stream_agent_response(prompt: str):
 Stream actual LLM output:
 
 ```python
+# script_id: day_085_websockets_streaming/streaming_llm_responses
 from fastapi import FastAPI, WebSocket
 from openai import OpenAI
 
@@ -125,6 +127,7 @@ async def chat_websocket(websocket: WebSocket):
 Stream the agent's reasoning process:
 
 ```python
+# script_id: day_085_websockets_streaming/streaming_agent_thoughts
 from fastapi import FastAPI, WebSocket
 from dataclasses import dataclass
 from typing import AsyncGenerator
@@ -192,6 +195,7 @@ async def agent_thoughts_websocket(websocket: WebSocket):
 Handle multiple clients:
 
 ```python
+# script_id: day_085_websockets_streaming/connection_manager
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from typing import List, Dict
 import json
@@ -299,6 +303,7 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
 ## Python WebSocket Client
 
 ```python
+# script_id: day_085_websockets_streaming/python_websocket_client
 import asyncio
 import websockets
 import json
@@ -337,6 +342,7 @@ asyncio.run(chat_with_agent())
 ## Error Handling
 
 ```python
+# script_id: day_085_websockets_streaming/error_handling
 from fastapi import WebSocket, WebSocketDisconnect
 import traceback
 
@@ -381,6 +387,7 @@ async def robust_websocket(websocket: WebSocket):
 Secure your WebSocket:
 
 ```python
+# script_id: day_085_websockets_streaming/websocket_auth
 from fastapi import WebSocket, Query, HTTPException
 import jwt
 
@@ -434,6 +441,7 @@ mindmap
 ## Quick Reference
 
 ```python
+# script_id: day_085_websockets_streaming/quick_reference
 # Server
 @app.websocket("/ws")
 async def ws(websocket: WebSocket):

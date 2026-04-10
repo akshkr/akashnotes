@@ -32,6 +32,7 @@ pip install streamlit
 ### Basic Chat UI
 
 ```python
+# script_id: day_086_streamlit_gradio/streamlit_chat_ui
 # app.py
 import streamlit as st
 from openai import OpenAI
@@ -74,6 +75,7 @@ if prompt := st.chat_input("What would you like to know?"):
 ### RAG Application UI
 
 ```python
+# script_id: day_086_streamlit_gradio/streamlit_rag_app
 import streamlit as st
 from openai import OpenAI
 import chromadb
@@ -150,6 +152,7 @@ if query:
 ### Agent Dashboard
 
 ```python
+# script_id: day_086_streamlit_gradio/agent_dashboard
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -214,6 +217,7 @@ pip install gradio
 ### Basic Chat Interface
 
 ```python
+# script_id: day_086_streamlit_gradio/gradio_chat
 import gradio as gr
 from openai import OpenAI
 
@@ -247,6 +251,7 @@ demo.launch()
 ### Multi-Modal Interface
 
 ```python
+# script_id: day_086_streamlit_gradio/gradio_chat
 import gradio as gr
 from openai import OpenAI
 import base64
@@ -314,6 +319,7 @@ demo.launch()
 ### Agent with Tools UI
 
 ```python
+# script_id: day_086_streamlit_gradio/gradio_agent_tools
 import gradio as gr
 from openai import OpenAI
 import json
@@ -425,6 +431,7 @@ mindmap
 ## Quick Reference
 
 ```python
+# script_id: day_086_streamlit_gradio/quick_reference
 # Streamlit Chat
 import streamlit as st
 if prompt := st.chat_input("Message"):

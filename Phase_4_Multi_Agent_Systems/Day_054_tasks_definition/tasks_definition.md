@@ -29,6 +29,7 @@ A task defines:
 ## Basic Task Creation
 
 ```python
+# script_id: day_054_tasks_definition/basic_task_creation
 from crewai import Agent, Task
 
 # First, create an agent
@@ -67,6 +68,7 @@ research_task = Task(
 ### Required Properties
 
 ```python
+# script_id: day_054_tasks_definition/required_properties
 task = Task(
     # What the agent should do (required)
     description="Detailed instructions for the task...",
@@ -82,6 +84,7 @@ task = Task(
 ### Optional Properties
 
 ```python
+# script_id: day_054_tasks_definition/optional_properties
 task = Task(
     description="...",
     expected_output="...",
@@ -111,6 +114,7 @@ task = Task(
 Chain tasks together using context:
 
 ```python
+# script_id: day_054_tasks_definition/task_dependencies_context
 from crewai import Agent, Task, Crew, Process
 
 # Agents
@@ -166,6 +170,7 @@ flowchart LR
 A task can receive context from multiple previous tasks:
 
 ```python
+# script_id: day_054_tasks_definition/multiple_context_sources
 # Research from multiple angles
 market_research = Task(
     description="Research market trends",
@@ -202,6 +207,7 @@ synthesis_task = Task(
 ### Text Output (Default)
 
 ```python
+# script_id: day_054_tasks_definition/text_output
 task = Task(
     description="Write a summary",
     expected_output="A 200-word summary",
@@ -213,6 +219,7 @@ task = Task(
 ### File Output
 
 ```python
+# script_id: day_054_tasks_definition/file_output
 task = Task(
     description="Generate a report",
     expected_output="Detailed report in markdown format",
@@ -224,6 +231,7 @@ task = Task(
 ### Structured Output with Pydantic
 
 ```python
+# script_id: day_054_tasks_definition/structured_output_pydantic
 from pydantic import BaseModel
 from typing import List
 
@@ -255,6 +263,7 @@ print(result.key_findings)
 ### Be Specific
 
 ```python
+# script_id: day_054_tasks_definition/specific_descriptions
 # Bad: Vague
 task = Task(
     description="Research AI",
@@ -293,6 +302,7 @@ task = Task(
 ### Include Success Criteria
 
 ```python
+# script_id: day_054_tasks_definition/success_criteria
 task = Task(
     description="""Write product descriptions for our new laptop.
 
@@ -320,6 +330,7 @@ task = Task(
 Require human approval before proceeding:
 
 ```python
+# script_id: day_054_tasks_definition/human_input_task
 critical_task = Task(
     description="Draft an email to all customers about the service outage",
     expected_output="Professional apology email",
@@ -337,6 +348,7 @@ critical_task = Task(
 Run custom code when a task completes:
 
 ```python
+# script_id: day_054_tasks_definition/callback_functions
 def on_task_complete(output):
     """Called when task finishes."""
     print(f"Task completed!")
@@ -364,6 +376,7 @@ task = Task(
 Create reusable task templates:
 
 ```python
+# script_id: day_054_tasks_definition/task_templates
 def create_research_task(topic: str, agent: Agent) -> Task:
     """Template for research tasks."""
     return Task(
@@ -409,6 +422,7 @@ article = create_writing_task("renewable energy trends", 1000, writer, [research
 ### 1. Clear Expected Output
 
 ```python
+# script_id: day_054_tasks_definition/clear_expected_output
 # Bad
 expected_output="A report"
 
@@ -424,6 +438,7 @@ expected_output="""A structured report containing:
 ### 2. Appropriate Task Granularity
 
 ```python
+# script_id: day_054_tasks_definition/task_granularity
 # Bad: Too big
 task = Task(
     description="Research, write, edit, and publish an article"
@@ -438,6 +453,7 @@ editing_task = Task(description="Edit and polish...", context=[writing_task])
 ### 3. Match Tasks to Agent Strengths
 
 ```python
+# script_id: day_054_tasks_definition/match_tasks_to_agents
 # Good: Task matches agent's role
 researcher = Agent(role="Research Specialist", ...)
 research_task = Task(description="Research market trends", agent=researcher)
@@ -475,6 +491,7 @@ mindmap
 ## Quick Reference
 
 ```python
+# script_id: day_054_tasks_definition/quick_reference
 # Basic task
 task = Task(
     description="What to do",

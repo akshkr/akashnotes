@@ -31,6 +31,7 @@ flowchart LR
 Nodes are Python functions that receive and return state:
 
 ```python
+# script_id: day_042_nodes_and_edges/creating_nodes
 from langgraph.graph import StateGraph, END
 from typing import TypedDict, Annotated
 from operator import add
@@ -75,6 +76,7 @@ def generate_response(state: AgentState) -> dict:
 ## Adding Nodes to the Graph
 
 ```python
+# script_id: day_042_nodes_and_edges/creating_nodes
 from langgraph.graph import StateGraph, END
 
 # Create the graph
@@ -96,6 +98,7 @@ workflow.set_entry_point("process")
 Connect nodes in sequence:
 
 ```python
+# script_id: day_042_nodes_and_edges/creating_nodes
 # Linear flow: process -> analyze -> respond -> END
 workflow.add_edge("process", "analyze")
 workflow.add_edge("analyze", "respond")
@@ -117,6 +120,7 @@ flowchart LR
 Choose the next node based on state:
 
 ```python
+# script_id: day_042_nodes_and_edges/conditional_edges
 from typing import Literal
 
 def route_after_analysis(state: AgentState) -> Literal["respond", "clarify", "error"]:
@@ -155,6 +159,7 @@ flowchart TB
 ## Complete Routing Example
 
 ```python
+# script_id: day_042_nodes_and_edges/complete_routing
 from langgraph.graph import StateGraph, END
 from typing import TypedDict, Annotated, Literal
 from operator import add
@@ -239,6 +244,7 @@ print(result["response"])  # "The weather is sunny!"
 Create agents that can loop back:
 
 ```python
+# script_id: day_042_nodes_and_edges/loops_and_cycles
 def should_continue(state: AgentState) -> Literal["continue", "end"]:
     """Decide whether to continue or end."""
     iterations = state.get("iterations", 0)
@@ -289,6 +295,7 @@ flowchart TB
 Handle parallel branches that merge:
 
 ```python
+# script_id: day_042_nodes_and_edges/branching_and_merging
 from langgraph.graph import StateGraph, END
 
 class ParallelState(TypedDict):
@@ -350,6 +357,7 @@ workflow.add_edge("merge", END)
 ### 1. Keep Nodes Focused
 
 ```python
+# script_id: day_042_nodes_and_edges/best_practice_focused_nodes
 # Good: Single responsibility
 def extract_entities(state):
     """Only extracts entities."""
@@ -371,6 +379,7 @@ def process_everything(state):
 ### 2. Clear Routing Logic
 
 ```python
+# script_id: day_042_nodes_and_edges/best_practice_clear_routing
 # Good: Clear routing function
 def route_by_status(state) -> Literal["success", "retry", "fail"]:
     if state["status"] == "ok":
@@ -391,6 +400,7 @@ workflow.add_conditional_edges(
 ### 3. Document Your Graph
 
 ```python
+# script_id: day_042_nodes_and_edges/best_practice_docstrings
 # Add docstrings to nodes
 def validate_input(state: AgentState) -> dict:
     """
@@ -433,6 +443,7 @@ mindmap
 ## Quick Reference
 
 ```python
+# script_id: day_042_nodes_and_edges/quick_reference
 # Create graph
 workflow = StateGraph(MyState)
 

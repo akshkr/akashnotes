@@ -35,6 +35,7 @@ flowchart TB
 The simplest approach - store messages as a list:
 
 ```python
+# script_id: day_036_conversation_history/basic_chat_history
 from openai import OpenAI
 
 client = OpenAI()
@@ -82,6 +83,7 @@ print(chat("What did I first tell you?"))  # Still remembers!
 A cleaner, reusable approach:
 
 ```python
+# script_id: day_036_conversation_history/structured_history_class
 from dataclasses import dataclass, field
 from typing import List, Optional
 from datetime import datetime
@@ -155,6 +157,7 @@ messages = history.get_messages_for_api()
 Prevent token overflow by keeping only recent messages:
 
 ```python
+# script_id: day_036_conversation_history/sliding_window_history
 from collections import deque
 
 class SlidingWindowHistory:
@@ -216,6 +219,7 @@ flowchart LR
 Keep messages within a token budget:
 
 ```python
+# script_id: day_036_conversation_history/token_aware_history
 import tiktoken
 
 class TokenAwareHistory:
@@ -274,6 +278,7 @@ print(f"Current tokens: {history.total_tokens()}")
 Include tool calls in your history:
 
 ```python
+# script_id: day_036_conversation_history/tool_aware_history
 class ToolAwareHistory:
     """History that handles tool calls."""
 
@@ -335,6 +340,7 @@ history.add_assistant("The weather in Tokyo is 22°C and sunny!")
 Support for exploring different conversation paths:
 
 ```python
+# script_id: day_036_conversation_history/branchable_history
 from typing import Dict, List, Optional
 import copy
 
@@ -423,6 +429,7 @@ flowchart TB
 Save and load conversation history:
 
 ```python
+# script_id: day_036_conversation_history/persistent_history
 import json
 from pathlib import Path
 from datetime import datetime
@@ -524,6 +531,7 @@ mindmap
 ## Quick Reference
 
 ```python
+# script_id: day_036_conversation_history/quick_reference
 # Basic history
 history = []
 history.append({"role": "user", "content": "Hello"})

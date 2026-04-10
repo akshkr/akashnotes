@@ -40,6 +40,7 @@ flowchart LR
 The simplest approach — hash the prompt and check for exact matches.
 
 ```python
+# script_id: day_091_semantic_caching/exact_match_cache
 import hashlib
 import json
 import time
@@ -107,6 +108,7 @@ def cached_chat(messages: list, model: str = "gpt-4o") -> str:
 For multi-instance deployments:
 
 ```python
+# script_id: day_091_semantic_caching/redis_llm_cache
 import redis
 import hashlib
 import json
@@ -155,6 +157,7 @@ flowchart TB
 ### Complete Semantic Cache
 
 ```python
+# script_id: day_091_semantic_caching/semantic_cache
 from openai import OpenAI
 import chromadb
 import time
@@ -279,6 +282,7 @@ The threshold controls the tradeoff between cache hit rate and response accuracy
 | 0.85 | Very high (~70%) | Risky | Only for non-critical use |
 
 ```python
+# script_id: day_091_semantic_caching/adaptive_thresholds
 # Adaptive thresholds by query category
 THRESHOLDS = {
     "factual": 0.97,      # "What are your hours?" — wrong answer is bad
@@ -294,6 +298,7 @@ THRESHOLDS = {
 ## Cache Invalidation
 
 ```python
+# script_id: day_091_semantic_caching/semantic_cache
 class InvalidatingSemanticCache(SemanticCache):
     """Semantic cache with invalidation strategies."""
 
@@ -342,6 +347,7 @@ class InvalidatingSemanticCache(SemanticCache):
 For production deployments, consider [GPTCache](https://github.com/zilliztech/GPTCache):
 
 ```python
+# script_id: day_091_semantic_caching/gptcache_usage
 # pip install gptcache
 
 from gptcache import cache
@@ -368,6 +374,7 @@ response = openai.ChatCompletion.create(
 ## Cost Analysis
 
 ```python
+# script_id: day_091_semantic_caching/cost_analysis
 def estimate_cache_savings(
     daily_queries: int = 10_000,
     cost_per_query: float = 0.01,
@@ -415,6 +422,7 @@ Separately from semantic caching, major providers now offer **server-side prompt
 **Anthropic** offers explicit cache control -- you mark which parts of the prompt to cache and receive a 90% discount on cached input tokens:
 
 ```python
+# script_id: day_091_semantic_caching/anthropic_prompt_caching
 # Anthropic prompt caching — 90% discount on cached input tokens
 response = client.messages.create(
     model="claude-sonnet-4-5",

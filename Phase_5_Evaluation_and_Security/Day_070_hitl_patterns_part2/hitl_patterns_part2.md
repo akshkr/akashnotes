@@ -5,6 +5,7 @@
 For critical workflows, require approval at multiple stages:
 
 ```python
+# script_id: day_070_hitl_patterns_part2/multi_stage_approval_pipeline
 from typing import Callable, List, Dict, Any
 from dataclasses import dataclass
 from enum import Enum
@@ -111,6 +112,7 @@ result = pipeline.run("Project update for stakeholders")
 LangGraph provides built-in HITL support through **interrupt** nodes and **breakpoints** that pause graph execution for human review:
 
 ```python
+# script_id: day_070_hitl_patterns_part2/langgraph_hitl_interrupt
 from langgraph.graph import StateGraph, END
 from langgraph.checkpoint.memory import MemorySaver
 from typing import TypedDict, Literal
@@ -177,6 +179,7 @@ final = app.invoke(None, config)
 ### Multi-Stage Approval Pipeline
 
 ```python
+# script_id: day_070_hitl_patterns_part2/risk_based_escalation
 # Define escalation levels based on risk
 def classify_risk(state: AgentState) -> Literal["low", "medium", "high"]:
     """Route to appropriate approval level."""
@@ -220,6 +223,7 @@ flowchart LR
 ### 1. Clear Action Descriptions
 
 ```python
+# script_id: day_070_hitl_patterns_part2/clear_action_descriptions
 # Bad - vague
 action = "do the thing"
 
@@ -236,6 +240,7 @@ action = {
 ### 2. Provide Context
 
 ```python
+# script_id: day_070_hitl_patterns_part2/provide_context
 def format_approval_request(action: dict, context: dict) -> str:
     """Format a clear approval request."""
     return f"""
@@ -260,6 +265,7 @@ def format_approval_request(action: dict, context: dict) -> str:
 ### 3. Timeout Handling
 
 ```python
+# script_id: day_070_hitl_patterns_part2/timeout_handling
 import threading
 
 def get_approval_with_timeout(action: str, timeout: int = 300) -> bool:
@@ -310,6 +316,7 @@ mindmap
 ## Quick Reference
 
 ```python
+# script_id: day_070_hitl_patterns_part2/quick_reference
 # LangGraph Breakpoint
 app = workflow.compile(
     checkpointer=checkpointer,

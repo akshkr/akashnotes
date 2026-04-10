@@ -73,6 +73,7 @@ volumes:
 ## Handling Rate Limits
 
 ```python
+# script_id: day_089_docker_deployment/retry_with_backoff
 import time
 from functools import wraps
 import random
@@ -118,6 +119,7 @@ def call_openai(messages):
 ## Circuit Breaker Pattern
 
 ```python
+# script_id: day_089_docker_deployment/circuit_breaker
 from datetime import datetime, timedelta
 from enum import Enum
 
@@ -295,6 +297,7 @@ mindmap
 ### Complete Production Setup
 
 ```python
+# script_id: day_089_docker_deployment/production_setup
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 import logging

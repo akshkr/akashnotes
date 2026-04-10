@@ -67,6 +67,7 @@ Temperature adjusts the probability distribution:
 - **High temperature (1.0+)**: Flattens probabilities, more randomness
 
 ```python
+# script_id: day_004_temperature_and_sampling_part1/probability_distribution_concept
 # Conceptual example (not actual API code)
 
 # Original probabilities
@@ -113,6 +114,7 @@ pie showData title Temperature = 1.0
 ### Code Example: Temperature in Action
 
 ```python
+# script_id: day_004_temperature_and_sampling_part1/temperature_in_action
 from openai import OpenAI
 
 client = OpenAI()
@@ -255,6 +257,7 @@ flowchart TB
 3. Only sample from those tokens
 
 ```python
+# script_id: day_004_temperature_and_sampling_part1/top_p_concept
 # Conceptual example
 
 probabilities = [
@@ -291,6 +294,7 @@ print("Tokens kept:", result)
 ### Top-P in API Calls
 
 ```python
+# script_id: day_004_temperature_and_sampling_part1/top_p_api_call
 from openai import OpenAI
 
 client = OpenAI()

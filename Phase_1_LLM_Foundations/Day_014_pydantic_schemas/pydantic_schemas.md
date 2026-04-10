@@ -17,6 +17,7 @@ flowchart LR
 ```
 
 ```python
+# script_id: day_014_pydantic_schemas/the_problem_strings
 # What we want
 user_data = {
     "name": "John Doe",
@@ -70,6 +71,7 @@ pip install pydantic
 ### Basic Model
 
 ```python
+# script_id: day_014_pydantic_schemas/basic_model
 from pydantic import BaseModel
 from typing import Optional
 
@@ -99,6 +101,7 @@ print(user1.model_dump_json())  # JSON string
 Pydantic automatically converts compatible types:
 
 ```python
+# script_id: day_014_pydantic_schemas/type_coercion
 from pydantic import BaseModel
 
 class User(BaseModel):
@@ -114,6 +117,7 @@ print(type(user.age))  # <class 'int'>
 ### Validation Errors
 
 ```python
+# script_id: day_014_pydantic_schemas/validation_errors
 from pydantic import BaseModel, ValidationError
 
 class User(BaseModel):
@@ -144,6 +148,7 @@ except ValidationError as e:
 ### Nested Models
 
 ```python
+# script_id: day_014_pydantic_schemas/nested_models
 from pydantic import BaseModel
 from typing import List, Optional
 from datetime import datetime
@@ -209,6 +214,7 @@ flowchart TB
 ### Enums and Literals
 
 ```python
+# script_id: day_014_pydantic_schemas/enums_and_literals
 from pydantic import BaseModel
 from enum import Enum
 from typing import Literal
@@ -237,6 +243,7 @@ print(task.priority.value)  # "high"
 ### Field Validators
 
 ```python
+# script_id: day_014_pydantic_schemas/field_validators
 from pydantic import BaseModel, field_validator, Field
 from typing import List
 
@@ -275,6 +282,7 @@ print(product.tags)  # ["electronics", "computers"] (lowercased)
 Pydantic can generate JSON schemas that LLMs understand:
 
 ```python
+# script_id: day_014_pydantic_schemas/json_schema_generation
 from pydantic import BaseModel
 from typing import List, Optional
 import json
@@ -357,6 +365,7 @@ flowchart LR
 ### Basic Implementation
 
 ```python
+# script_id: day_014_pydantic_schemas/llm_basic_implementation
 from pydantic import BaseModel
 from openai import OpenAI
 import json
@@ -422,6 +431,7 @@ print(f"Key Points: {review.key_points}")
 Add descriptions that become part of the JSON schema:
 
 ```python
+# script_id: day_014_pydantic_schemas/field_descriptions
 from pydantic import BaseModel, Field
 from typing import Optional
 
@@ -454,6 +464,7 @@ print(schema["properties"]["priority"])
 ### Examples in Schema
 
 ```python
+# script_id: day_014_pydantic_schemas/examples_in_schema
 from pydantic import BaseModel, Field
 from typing import List
 
@@ -470,6 +481,7 @@ class ProductInfo(BaseModel):
 ## Complete LLM + Pydantic Workflow
 
 ```python
+# script_id: day_014_pydantic_schemas/complete_workflow
 from pydantic import BaseModel, Field, ValidationError
 from openai import OpenAI
 from typing import List, Optional
@@ -590,6 +602,7 @@ mindmap
 ## Quick Reference
 
 ```python
+# script_id: day_014_pydantic_schemas/quick_reference
 from pydantic import BaseModel, Field
 from typing import List, Optional
 

@@ -42,6 +42,7 @@ These terms are often confused. Here's the distinction:
 | Cost to create data | Expensive (human time) | Cheap (API calls) |
 
 ```python
+# script_id: day_082_distillation_routing/finetune_vs_distill
 # Fine-tuning: you provide the gold labels
 finetune_example = {
     "messages": [
@@ -83,6 +84,7 @@ sequenceDiagram
 ```
 
 ```python
+# script_id: day_082_distillation_routing/distillation_pipeline
 from openai import OpenAI
 import json
 import time
@@ -186,6 +188,7 @@ flowchart TD
 Three approaches to routing, from simple to sophisticated:
 
 ```python
+# script_id: day_082_distillation_routing/router_implementations
 import re
 from typing import Callable
 
@@ -257,6 +260,7 @@ def llm_router(prompt: str) -> str:
 ## Cost Analysis: Routing Saves Real Money
 
 ```python
+# script_id: day_082_distillation_routing/cost_analysis
 def calculate_routing_savings(
     total_requests: int = 100_000,
     easy_pct: float = 0.70,
@@ -325,6 +329,7 @@ flowchart TD
 ```
 
 ```python
+# script_id: day_082_distillation_routing/router_implementations
 class ProductionRouter:
     """Production-ready model router with fallback chains."""
 
@@ -393,6 +398,7 @@ class ProductionRouter:
 ## Monitoring Your Router
 
 ```python
+# script_id: day_082_distillation_routing/router_metrics
 from collections import defaultdict
 from datetime import datetime
 
@@ -463,6 +469,7 @@ mindmap
 ## Quick Reference
 
 ```python
+# script_id: day_082_distillation_routing/quick_reference
 # Distillation pipeline
 # 1. Generate teacher outputs:  teacher_model(prompts) -> responses
 # 2. Filter quality:            remove short, refused, low-quality
