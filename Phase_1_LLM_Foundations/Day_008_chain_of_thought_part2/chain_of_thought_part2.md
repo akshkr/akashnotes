@@ -1,3 +1,5 @@
+# Chain of Thought (CoT) and Step-by-Step Reasoning Part 2
+
 > **Coming from Software Engineering?** Self-consistency (running multiple CoT chains) is like running the same test with different random seeds and taking the majority result. If you've built consensus algorithms or voting systems, this pattern will feel familiar — it's ensemble methods applied to reasoning.
 
 ## When CoT Helps Most

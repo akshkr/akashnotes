@@ -1,3 +1,5 @@
+# Using OpenAI and Anthropic Python SDKs Part 2
+
 > **Coming from Software Engineering?** Choosing between OpenAI and Anthropic is like choosing between AWS and GCP — both do similar things with different APIs, pricing, and strengths. The abstraction patterns (provider-agnostic wrapper functions) are the same ones you'd use with any multi-vendor integration.
 
 ## Key Differences: OpenAI vs Anthropic

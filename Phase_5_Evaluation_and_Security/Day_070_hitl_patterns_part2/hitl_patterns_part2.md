@@ -1,3 +1,5 @@
+# Human-in-the-Loop (HITL) Patterns Part 2
+
 > **Coming from Software Engineering?** Multi-stage approval pipelines are exactly like promotion gates in deployment pipelines: dev -> staging -> prod, each requiring sign-off. If you've configured GitHub Actions environments with required reviewers, or set up Spinnaker deployment stages with manual judgments, this is the same pattern applied to agent workflows.
 
 ## Multi-Stage Approval Pipeline

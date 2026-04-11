@@ -1,3 +1,5 @@
+# Streaming Responses: Real-Time LLM Output Part 2
+
 > **Coming from Software Engineering?** Building streaming chat interfaces is like building a real-time log viewer or terminal emulator — data arrives in chunks and you render progressively. The same buffering and display strategies you'd use for a live tail -f view apply here.
 
 ## Building a Streaming Chat Interface

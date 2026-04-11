@@ -1,3 +1,5 @@
+# Temperature, Top-P, and Frequency Penalties Part 2
+
 > **Coming from Software Engineering?** Configuring sampling parameters is like tuning a system's performance knobs — connection pool sizes, cache TTLs, retry intervals. There's no universal best setting; it depends on your use case. The decision tree here is your equivalent of a runbook for model configuration.
 
 ## Temperature vs Top-P: When to Use Which?
