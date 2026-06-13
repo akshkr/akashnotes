@@ -336,3 +336,16 @@ print(agent.chat("What time is it in Tokyo timezone?"))
 ```
 
 ---
+
+## Exercises
+
+1. **Add a tool.** Register a `convert_currency(amount, from_currency, to_currency)` tool and confirm the agent calls it for a relevant question.
+2. **Unknown-tool handling.** Ask for something no tool covers and verify the agent degrades gracefully instead of crashing.
+3. **Inspect the loop.** Log each `tool_call` the model requests and the result you return — trace one full request end to end.
+4. **Bad arguments.** Make the model call a tool with a missing or invalid argument and have your executor return a structured error the model can recover from.
+
+---
+
+## What's Next?
+
+You can now run a single round of tool calls. Next up: **Tool Execution Handling Part 2** — parallel tool calls, timeouts, error categorization, and smart retries for production.

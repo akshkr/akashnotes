@@ -488,4 +488,4 @@ result = crew.kickoff(inputs={"key": "value"})
 
 ## What's Next?
 
-Now let's explore **AG2 (formerly Microsoft AutoGen)** - another powerful framework for multi-agent conversations!
+Next, we'll go deeper into CrewAI's core unit of work: **Task Definitions** — `expected_output`, dependency chaining, structured Pydantic outputs, and task templates.

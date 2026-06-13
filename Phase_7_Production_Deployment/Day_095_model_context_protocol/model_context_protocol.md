@@ -166,6 +166,10 @@ async def handle_call_tool(
 
         try:
             conn = get_db()
+            # `limit` is safe to interpolate because we cast it to int and cap it
+            # above. `sql` itself is NOT parameterized here — we only gate it to
+            # SELECT. For untrusted input, use a real SQL parser/allowlist rather
+            # than a prefix check, and never f-string raw user SQL.
             cursor = conn.execute(f"{sql} LIMIT {limit}")
             rows = cursor.fetchall()
             columns = [desc[0] for desc in cursor.description]

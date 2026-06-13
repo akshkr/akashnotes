@@ -486,6 +486,15 @@ for word in response.split():
 
 ---
 
+## Exercises
+
+1. **Syntax-highlighted code.** Render an agent response containing a fenced code block with correct language highlighting.
+2. **Streaming markdown.** Stream a response token-by-token with a trailing cursor (`▌`), re-rendering markdown only when a block completes to avoid flicker.
+3. **Interactive table.** Display a results table with a progress/score column rendered as a bar.
+4. **Collapsible reasoning.** Put the agent's intermediate steps behind an expander so the final answer stays front and center.
+
+---
+
 ## What's Next?
 
 Now let's deploy your agent to the **cloud** with Docker and production best practices!

@@ -150,9 +150,15 @@ def execute_tool(name: str, args: dict) -> dict:
         }
     return {"error": "Unknown tool"}
 
+class GenerativeChatRequest(BaseModel):
+    message: str
+
 @app.post("/api/chat/generative")
-async def generative_chat(message: str):
+async def generative_chat(request: GenerativeChatRequest):
     """Chat endpoint that streams UI components for tool calls."""
+    # Take the message from a JSON body (a bare `message: str` param would be
+    # parsed as a query string, breaking normal JSON POST clients).
+    message = request.message
 
     async def generate():
         response = client.chat.completions.create(

@@ -57,7 +57,15 @@ def count_message_tokens(messages: list[dict], model: str = "gpt-4o") -> int:
     for message in messages:
         total += tokens_per_message
         for key, value in message.items():
-            total += len(enc.encode(value))
+            # `content` can be a list for multimodal messages (text + image
+            # parts); tiktoken.encode only accepts a str, so guard for it.
+            if isinstance(value, str):
+                total += len(enc.encode(value))
+            elif isinstance(value, list):
+                for part in value:
+                    if isinstance(part, dict) and part.get("type") == "text":
+                        total += len(enc.encode(part.get("text", "")))
+                    # image parts are priced separately, not by tiktoken
             if key == "name":
                 total += tokens_per_name
     

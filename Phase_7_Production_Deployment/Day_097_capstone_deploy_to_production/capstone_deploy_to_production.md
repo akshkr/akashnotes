@@ -660,7 +660,7 @@ Your service is live. Now you need to know when it breaks.
 # api/routers/health.py (expanded)
 import os
 import time
-import psutil
+import psutil  # add `psutil` to requirements.txt — it's a third-party package
 from fastapi import APIRouter
 from pydantic import BaseModel
 from typing import Optional

@@ -372,6 +372,15 @@ def execute_with_smart_retry(
 
 ---
 
+## Exercises
+
+1. **Force a parallel call.** Prompt the model with a question that needs two independent tools and confirm your loop executes both before replying.
+2. **Add a timeout.** Wrap a deliberately slow tool and verify it's cancelled at the timeout instead of hanging the request.
+3. **Categorize an error.** Trigger a transient failure (e.g. a 429) and a permanent one (bad input) and confirm only the transient one is retried.
+4. **Tune backoff.** Log the wait times across retries and confirm they grow exponentially with jitter.
+
+---
+
 ## What's Next?
 
 You've mastered tool calling! Next up: **Multimodal Agent Inputs** — giving your agents eyes and ears with vision and audio (Cost Engineering follows in Day 33).

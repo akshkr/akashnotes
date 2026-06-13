@@ -388,15 +388,20 @@ Secure your WebSocket:
 
 ```python
 # script_id: day_085_websockets_streaming/websocket_auth
+import os
 from fastapi import WebSocket, Query, HTTPException
-import jwt
+import jwt  # pip install PyJWT
+
+# Never hardcode the signing secret — load it from the environment / a secrets
+# manager. Hardcoding "secret" means anyone can forge a valid token.
+JWT_SECRET = os.environ["JWT_SECRET"]
 
 async def get_current_user(token: str):
     """Validate JWT token."""
     try:
-        payload = jwt.decode(token, "secret", algorithms=["HS256"])
+        payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
         return payload["user_id"]
-    except:
+    except Exception:
         return None
 
 @app.websocket("/ws/secure")

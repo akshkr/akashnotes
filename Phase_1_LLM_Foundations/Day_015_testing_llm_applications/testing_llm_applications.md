@@ -73,6 +73,7 @@ import pytest
 from unittest.mock import MagicMock, AsyncMock, patch
 from openai.types.chat import ChatCompletion, ChatCompletionMessage
 from openai.types.chat.chat_completion import Choice
+from openai.types import CompletionUsage
 
 
 @pytest.fixture
@@ -94,7 +95,9 @@ def mock_openai_response():
                     finish_reason="stop",
                 )
             ],
-            usage={"prompt_tokens": 10, "completion_tokens": 20, "total_tokens": 30},
+            # Use the typed CompletionUsage rather than a raw dict — it's what the
+            # real response carries, so your assertions exercise the actual type.
+            usage=CompletionUsage(prompt_tokens=10, completion_tokens=20, total_tokens=30),
         )
     return _create
 
@@ -406,18 +409,12 @@ class TestPromptSnapshots:
         """
         Snapshot test: catches unintentional prompt changes.
 
-        Uses pytest-snapshot or syrupy. First run creates the snapshot.
-        Subsequent runs compare against it.
+        Uses syrupy (the `snapshot` fixture). The first run records the prompt;
+        later runs fail if it changes. Run `pytest --snapshot-update` to accept
+        an intentional change.
         """
         prompt = load_prompt("extraction_system")
-        # With syrupy: assert prompt == snapshot
-        # Without a snapshot library, use hash comparison:
-        import hashlib
-        prompt_hash = hashlib.sha256(prompt.encode()).hexdigest()
-
-        # Store expected hash (update when you intentionally change the prompt)
-        expected_hash = "a1b2c3d4..."  # Update this when prompt changes
-        # assert prompt_hash == expected_hash  # Uncomment in real usage
+        assert prompt == snapshot
 
     def test_prompt_structure(self):
         """Test that prompt building produces the right structure."""

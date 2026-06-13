@@ -535,4 +535,4 @@ result = crew.kickoff(inputs={"topic": "AI"})
 
 ## What's Next?
 
-Now let's explore **AG2 (formerly Microsoft AutoGen)** - another powerful framework for multi-agent conversations!
+That wraps Phase 4. Next we move into **Phase 5: Evaluation & Security**, starting with **LangSmith and Phoenix** — tracing and observability so you can see what your multi-agent systems are actually doing.

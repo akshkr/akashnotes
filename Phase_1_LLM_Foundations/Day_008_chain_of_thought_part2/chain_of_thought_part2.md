@@ -176,6 +176,20 @@ print(f"\nFull reasoning:\n{result['reasoning']}")  # For debugging/logging
 
 ---
 
+## When CoT Doesn't Help (and What It Costs)
+
+Chain-of-thought isn't free, and it isn't always a win. Reach for it deliberately:
+
+- **Simple lookups and classification.** "What's the capital of France?" or "Is this review positive or negative?" don't benefit from reasoning — CoT just adds latency and tokens for the same answer.
+- **Format-constrained extraction.** If you need a single label or a JSON object, free-form reasoning can actually *hurt* by leaking prose into the output. Use structured outputs / tool calling instead.
+- **When latency matters.** CoT can multiply output tokens 3–10×. On a user-facing path where every 100ms counts, that tradeoff is often not worth a marginal accuracy gain.
+
+**The cost tradeoff:** you pay for every reasoning token, and self-consistency multiplies that by the number of samples (5 samples ≈ 5× the cost). The decision rule: use CoT when an error is *expensive* (math, multi-step logic, anything you'd double-check by hand) and skip it when the task is shallow or the output is tightly formatted. A useful middle ground is to reason internally but return only the final answer (the extraction pattern above), so callers don't pay to render the reasoning.
+
+> **Coming from Software Engineering?** Treat CoT like adding logging or assertions to a hot path: invaluable when debugging hard logic, pure overhead on a trivial getter. Turn it on where correctness is worth the cost, off where it isn't.
+
+---
+
 ## Summary
 
 ```mermaid

@@ -544,7 +544,7 @@ flowchart TD
 |----------|--------|-------------|------|
 | OpenAI | Fine-tune API | ~50-100 | ~$0.008/1K tokens |
 | Open-source | LoRA/QLoRA | 500+ | GPU time only |
-| Anthropic | Not available | N/A | N/A |
+| Anthropic | Varies — check current docs | N/A | N/A |
 
 ### The 80/20 Rule
 
