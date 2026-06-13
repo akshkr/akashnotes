@@ -4,6 +4,8 @@ While LangChain focuses on composable chains, **LlamaIndex** specializes in conn
 
 > **Coming from Software Engineering?** Choosing between LangChain, LlamaIndex, and vanilla Python is like choosing between Django, Flask, and raw WSGI. Each trades off differently on flexibility vs batteries-included. If you've made framework decisions before, apply the same criteria: team familiarity, project complexity, long-term maintenance.
 
+> **This is a two-part day.** **Part 1** is a hands-on tour of LlamaIndex (ingestion, indexing, query/chat engines). **Part 2** ("When to Use a Framework vs. Vanilla Python") is the decision guide — read it once for the mental model, then use it as a reference. If you're short on time, do Part 1 now and skim Part 2.
+
 ---
 
 ## LlamaIndex vs LangChain
@@ -526,13 +528,7 @@ chat.chat("Follow-up")
 
 ---
 
-## What's Next?
-
-You've learned both LangChain and LlamaIndex! Next, we'll look at **PydanticAI** — a lightweight, type-first agent framework — before diving into LangGraph state machines.
-
----
-
-# When to Use a Framework vs. Vanilla Python
+## Part 2 — When to Use a Framework vs. Vanilla Python
 
 You've learned LangChain, LlamaIndex, and built agents from scratch. Now the important question: **when should you use each approach?**
 

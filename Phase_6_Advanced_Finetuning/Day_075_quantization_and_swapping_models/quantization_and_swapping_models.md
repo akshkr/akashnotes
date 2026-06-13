@@ -4,6 +4,8 @@ Want to run large models on your laptop? Quantization makes models smaller and f
 
 > **Coming from Software Engineering?** Quantization is like image compression (JPEG vs. PNG) or video encoding (bitrate settings) applied to neural network weights. You're trading precision for size/speed — going from 32-bit floats to 8-bit or 4-bit integers, just like going from lossless to lossy compression. The quality-vs-size tradeoff curves behave similarly: the first rounds of compression are nearly free, but aggressive compression eventually degrades output quality noticeably.
 
+> **This is a two-part day.** **Part 1** covers quantization formats (GGUF / AWQ / GPTQ) and choosing one for your hardware. **Part 2** ("Swapping OpenAI for Local Models") shows how to point existing code at a local model with minimal changes. Part 1 is the concepts; Part 2 is the migration recipe.
+
 ---
 
 ## What is Quantization?
@@ -404,15 +406,9 @@ model = AutoModelForCausalLM.from_pretrained("model-gptq")
 
 ---
 
-## What's Next?
+## Part 2 — Swapping OpenAI for Local Models
 
-Now let's learn how to **swap OpenAI for local models** in your existing code!
-
----
-
-# Swapping OpenAI for Local Models
-
-You've built with OpenAI. Now run locally for free! This guide shows you how to swap in local models with minimal code changes.
+You've built with OpenAI. Now run locally for free! This part shows you how to swap in local models with minimal code changes.
 
 ---
 

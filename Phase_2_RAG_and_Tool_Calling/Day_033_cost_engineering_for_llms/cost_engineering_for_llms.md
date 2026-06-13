@@ -6,6 +6,8 @@ You have built a working RAG chatbot. It answers questions, users love it. Then 
 
 Cost engineering is the discipline that prevents that moment. It is not about being cheap — it is about knowing exactly what things cost, predicting those costs, and building systems that stay within budget while delivering value.
 
+> **How to read this (it's a long one).** The **core path** is: count tokens → calculate real costs → model routing → caching. That's the 80/20 of cost control. The later sections (Batch API, cost-tracking middleware, embedding-vs-LLM cost) are **optional deep-dives** — skim them now and come back when you need them.
+
 ---
 
 ## Token Pricing: The Reality Check
