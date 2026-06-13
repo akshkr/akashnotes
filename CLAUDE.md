@@ -188,8 +188,12 @@ Messages API for this reason).
 - A full content-refinement pass fixed runnable-code bugs, cross-reference rot,
   the truncated Day 3, duplicated sections, and model/pricing accuracy. See
   `CHANGELOG.md`.
-- The checker currently reports **0 hard errors, ~13 fragment warnings** (the
-  warnings are intentional cheat-sheet/fragment blocks).
+- **P0 consistency backfill done:** all 100 days now have the standard sections
+  (Summary → Quick Reference → Exercises with collapsible solutions → What's
+  Next). See `IMPROVEMENT_PLAN.md` for remaining workstreams (P1–P3).
+- The checker reports **0 errors, 0 warnings** and CI runs in **`--strict`**.
+  Intentional non-runnable blocks carry a `# fragment` marker that the checker
+  skips — keep that marker when editing cheat-sheet/pseudo-code blocks.
 - **Day 096** is deliberately implemented on the Messages API (patterns), with
   an accurate high-level pointer to the real Claude Agent SDK — not fabricated
   SDK code.
