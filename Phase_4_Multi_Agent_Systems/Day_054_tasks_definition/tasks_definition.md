@@ -454,6 +454,7 @@ editing_task = Task(description="Edit and polish...", context=[writing_task])
 
 ```python
 # script_id: day_054_tasks_definition/match_tasks_to_agents
+# fragment: illustrative cheat-sheet / not standalone-runnable
 # Good: Task matches agent's role
 researcher = Agent(role="Research Specialist", ...)
 research_task = Task(description="Research market trends", agent=researcher)

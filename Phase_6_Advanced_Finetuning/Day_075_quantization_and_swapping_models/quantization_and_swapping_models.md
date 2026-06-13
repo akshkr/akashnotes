@@ -838,6 +838,7 @@ mindmap
 
 ```python
 # script_id: day_075_quantization_and_swapping_models/swap_quick_ref
+# fragment: illustrative cheat-sheet / not standalone-runnable
 # Quick swap using base_url
 client = OpenAI(
     base_url="http://localhost:11434/v1",  # Ollama

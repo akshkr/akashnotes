@@ -54,7 +54,11 @@ def extract_python_blocks(text: str):
                 mid = SCRIPT_ID_RE.search(code)
                 if mid:
                     sid = mid.group(1)
-                yield sid, code
+                # A `# fragment` marker opts a block out of the parse-check —
+                # for cheat-sheets, lone methods, and pseudo-code that are not
+                # meant to run standalone.
+                is_fragment = "# fragment" in code
+                yield sid, code, is_fragment
             in_block = False
             continue
         if in_block:
@@ -87,17 +91,23 @@ def check_file(path: Path) -> tuple[list[str], list[str]]:
     #    fragments (cheat-sheets, lone methods, pseudo-code), so a parse failure
     #    is a review hint, not a build breaker.
     groups: dict[str, list[str]] = {}
-    anon: list[str] = []
-    for sid, code in extract_python_blocks(text):
+    group_is_fragment: dict[str, bool] = {}
+    anon: list[tuple[str, bool]] = []
+    for sid, code, is_fragment in extract_python_blocks(text):
         if sid:
             groups.setdefault(sid, []).append(code)
+            group_is_fragment[sid] = group_is_fragment.get(sid, False) or is_fragment
         else:
-            anon.append(code)
+            anon.append((code, is_fragment))
 
     for sid, blocks in groups.items():
+        if group_is_fragment[sid]:
+            continue  # explicitly marked as a non-runnable fragment
         if not parses("\n".join(blocks)):
-            soft.append(f"script_id '{sid}' does not parse standalone (fragment?)")
-    for i, code in enumerate(anon):
+            soft.append(f"script_id '{sid}' does not parse standalone (mark '# fragment' if intentional)")
+    for i, (code, is_fragment) in enumerate(anon):
+        if is_fragment:
+            continue
         if not parses(code):
             first = code.strip().splitlines()[0] if code.strip() else "<empty>"
             soft.append(f"un-id'd python block #{i + 1} does not parse: {first!r}")

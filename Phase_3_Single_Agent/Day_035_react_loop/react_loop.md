@@ -129,6 +129,7 @@ Instead of parsing free-text with regex, you can ask the LLM to return structure
 
 ```python
 # script_id: day_035_react_loop/structured_response_json_mode
+# fragment: illustrative cheat-sheet / not standalone-runnable
     def _get_structured_response(self, messages: list) -> dict:
         """Get a structured response using JSON mode instead of regex parsing."""
         json_system_prompt = """You are a helpful assistant that solves problems step by step.

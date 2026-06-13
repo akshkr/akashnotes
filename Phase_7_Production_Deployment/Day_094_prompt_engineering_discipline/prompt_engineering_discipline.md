@@ -54,6 +54,7 @@ prompts/
 
 ```python
 # script_id: day_094_prompt_engineering_discipline/sentiment_prompt_template
+# fragment: illustrative cheat-sheet / not standalone-runnable
 # prompts/v1/sentiment_analysis.txt
 You are a sentiment analysis expert. Analyze the sentiment of the following text.
 

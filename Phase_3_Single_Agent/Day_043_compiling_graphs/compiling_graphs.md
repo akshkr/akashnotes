@@ -297,6 +297,7 @@ app.get_graph().draw_png("my_graph.png")
 
 ```python
 # script_id: day_043_compiling_graphs/debug_stream
+# fragment: illustrative cheat-sheet / not standalone-runnable
 def debug_stream(app, initial_state):
     """Run with detailed debugging."""
     print("=" * 50)

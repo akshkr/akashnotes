@@ -13,8 +13,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      # Fails the build on hard errors (unbalanced code fences). Python parse
-      # failures are printed as warnings only — add --strict to gate on those too
-      # once the intentional fragment blocks are annotated/cleaned up.
+      # --strict: fail on unbalanced fences AND on any Python block that doesn't
+      # parse. Intentional non-runnable blocks are marked with a `# fragment`
+      # comment and skipped. Remove --strict only if fragment annotation lapses.
       - name: Check fences and parse Python blocks
-        run: python tools/check_snippets.py
+        run: python tools/check_snippets.py --strict

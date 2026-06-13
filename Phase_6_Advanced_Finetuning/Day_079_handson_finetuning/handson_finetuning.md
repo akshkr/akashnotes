@@ -551,6 +551,7 @@ mindmap
 
 ```python
 # script_id: day_079_handson_finetuning/quick_reference
+# fragment: illustrative cheat-sheet / not standalone-runnable
 # Load model
 from unsloth import FastLanguageModel
 model, tokenizer = FastLanguageModel.from_pretrained(

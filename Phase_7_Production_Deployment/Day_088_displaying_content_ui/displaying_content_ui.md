@@ -12,6 +12,7 @@ Make your agent's output beautiful and understandable! This guide shows you how 
 
 ```python
 # script_id: day_088_displaying_content_ui/streamlit_markdown
+# fragment: illustrative cheat-sheet / not standalone-runnable
 import streamlit as st
 
 # Basic markdown

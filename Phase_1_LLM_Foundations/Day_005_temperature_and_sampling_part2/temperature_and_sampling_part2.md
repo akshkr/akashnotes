@@ -230,6 +230,7 @@ flowchart TB
 
 ```python
 # script_id: day_005_temperature_and_sampling_part2/conflicting_settings_mistake
+# fragment: illustrative cheat-sheet / not standalone-runnable
 # BAD: Conflicting settings
 response = client.chat.completions.create(
     model="gpt-4o-mini",

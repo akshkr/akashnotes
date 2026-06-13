@@ -460,6 +460,7 @@ mindmap
 
 ```python
 # script_id: day_066_docker_sandboxing_part2/quick_reference
+# fragment: illustrative cheat-sheet / not standalone-runnable
 # Basic Docker sandbox
 result = client.containers.run(
     image="python:3.11-slim",

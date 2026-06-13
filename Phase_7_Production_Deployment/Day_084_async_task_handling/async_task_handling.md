@@ -468,6 +468,7 @@ mindmap
 
 ```python
 # script_id: day_084_async_task_handling/quick_reference
+# fragment: illustrative cheat-sheet / not standalone-runnable
 # Submit task
 POST /agent/submit
 {"prompt": "..."}

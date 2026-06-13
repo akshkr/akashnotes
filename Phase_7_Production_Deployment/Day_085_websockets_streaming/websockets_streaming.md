@@ -447,6 +447,7 @@ mindmap
 
 ```python
 # script_id: day_085_websockets_streaming/quick_reference
+# fragment: illustrative cheat-sheet / not standalone-runnable
 # Server
 @app.websocket("/ws")
 async def ws(websocket: WebSocket):

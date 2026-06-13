@@ -370,6 +370,7 @@ mindmap
 
 ```python
 # script_id: day_064_llm_guardrails/quick_reference
+# fragment: illustrative cheat-sheet / not standalone-runnable
 # Guardrails AI — input/output validation
 from guardrails import Guard
 from guardrails.hub import ToxicLanguage, DetectPII

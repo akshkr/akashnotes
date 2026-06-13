@@ -118,6 +118,7 @@ For local development:
 
 ```python
 # script_id: day_067_api_key_security/dotenv_file_example
+# fragment: illustrative cheat-sheet / not standalone-runnable
 # .env file (add to .gitignore!)
 OPENAI_API_KEY=sk-your-key-here
 ANTHROPIC_API_KEY=sk-ant-your-key-here
