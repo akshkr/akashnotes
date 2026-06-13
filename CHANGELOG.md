@@ -17,6 +17,17 @@ Notable changes to the course content. Newest first.
 - Added Exercises sections to Days 30, 31, 88; expanded Day 8 (when CoT doesn't
   help + cost tradeoff).
 - Strengthened the Day 96 disclaimer / grounded its code in a verified API.
+- **Quality push (P0–P1 of `IMPROVEMENT_PLAN.md`):**
+  - P0: standard sections (Summary → Quick Reference → Exercises w/ collapsible
+    solutions → What's Next) backfilled across all 100 days; 13 intentional
+    fragment blocks marked `# fragment`; CI now runs `--strict` (checker 0/0).
+  - P1: a runnable `## Checkpoint` added to every hands-on day (~95); the two
+    double-lessons (039, 075) given explicit Part-1/Part-2 framing (mis-placed
+    mid-file footers fixed); the 5 capstones threaded into one "Portfolio thread
+    (N of 5)" narrative; `GLOSSARY.md` added; native structured-outputs section
+    added to Day 029.
+  - Declined as quality-negative: provider rip-out (kept the deliberate
+    OpenAI+Anthropic coverage) and per-day difficulty chips (noise).
 - Added this CHANGELOG and `REFERENCE.md` (central models/pricing/day-map).
 - Removed `main.py` and `scripts/` (publish/extract tooling now lives outside
   the content repo).
