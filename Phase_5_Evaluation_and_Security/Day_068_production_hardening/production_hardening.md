@@ -683,7 +683,7 @@ def log_llm_call(
 
 ## Practice Exercises
 
-1. Add the `retry_with_backoff` decorator to your Day 84 FastAPI agent and verify it retries on 429 errors
+1. Add the `retry_with_backoff` decorator to your Day 73 capstone pipeline and verify it retries on 429 errors
 2. Implement `CircuitBreaker` and write a test that opens the circuit after 5 failures
 3. Build a `FallbackChain` that tries GPT-4o, falls back to GPT-4o-mini, then returns a static message
 4. Add structured JSON logging to your capstone project and verify the output in a log viewer

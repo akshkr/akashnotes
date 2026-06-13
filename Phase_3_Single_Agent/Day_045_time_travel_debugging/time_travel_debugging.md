@@ -425,16 +425,24 @@ config = {"configurable": {"thread_id": "abc123"}}
 
 ```python
 # script_id: day_045_time_travel_debugging/checkpointing_setup
-def cleanup_old_checkpoints(checkpointer, thread_id: str, keep_last: int = 10):
-    """Remove old checkpoints to save space."""
+def count_old_checkpoints(thread_id: str, keep_last: int = 10):
+    """Inspect how many checkpoints exceed the retention window.
+
+    NOTE: `MemorySaver` keeps everything in memory and does NOT expose a public
+    `delete()` method — `checkpointer.delete(...)` would raise AttributeError.
+    Checkpoint pruning is only available on persistent savers (SqliteSaver /
+    PostgresSaver), and the exact method name varies by LangGraph version
+    (e.g. `delete_thread(thread_id)`), so check your saver's API before relying
+    on it. For in-memory runs, simply start a new thread_id to drop old state.
+    """
     config = {"configurable": {"thread_id": thread_id}}
     checkpoints = list(app.get_state_history(config))
 
-    if len(checkpoints) > keep_last:
-        # Delete older checkpoints
-        for cp in checkpoints[keep_last:]:
-            checkpointer.delete(cp.config)
-        print(f"Deleted {len(checkpoints) - keep_last} old checkpoints")
+    excess = max(0, len(checkpoints) - keep_last)
+    print(f"{excess} checkpoints exceed the keep_last={keep_last} window")
+    # On a persistent saver you'd prune here, e.g.:
+    #   checkpointer.delete_thread(thread_id)   # API varies; MemorySaver has none
+    return excess
 ```
 
 ### 3. Log Checkpoint Events

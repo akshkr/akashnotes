@@ -130,9 +130,12 @@ flowchart TB
 |-------|---------------|
 | GPT-4o | 128,000 tokens |
 | GPT-4o mini | 128,000 tokens |
-| Claude 3.5 Sonnet | 200,000 tokens |
+| Claude Opus 4.x / Sonnet 4.6 | 1,000,000 tokens |
+| Claude Haiku 4.5 | 200,000 tokens |
 | Llama 3.1 (8B/70B) | 128,000 tokens |
 | Gemini 2.0 | 1,000,000 tokens |
+
+*(Context windows and model lineups change often — treat these as ballpark figures and check the provider's docs for current limits.)*
 
 ### Why Context Windows Matter
 

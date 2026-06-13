@@ -12,7 +12,7 @@ Today we take the content pipeline from Day 81, wrap it in a FastAPI backend, ad
 
 ## What You're Deploying
 
-The Day 81 multi-agent content pipeline, now with:
+The Day 73 multi-agent content pipeline, now with:
 - **FastAPI backend** with streaming responses
 - **Streamlit UI** for human review
 - **Docker** for consistent, portable deployment

@@ -374,4 +374,4 @@ def execute_with_smart_retry(
 
 ## What's Next?
 
-You've mastered tool calling! Next up: **Cost Engineering for LLMs** — understanding what all these API calls actually cost and how to build systems that stay within budget.
+You've mastered tool calling! Next up: **Multimodal Agent Inputs** — giving your agents eyes and ears with vision and audio (Cost Engineering follows in Day 33).

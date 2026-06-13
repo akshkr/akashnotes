@@ -41,7 +41,7 @@ pip install claude-agent-sdk
 # The Agent SDK is a separate package from the base anthropic SDK
 ```
 
-> **API status note (April 2026):** The Claude Agent SDK is in active development and the package name, import paths, and class names shown here may have changed since these notes were written. Anthropic has also released an open-source "Agents SDK" (package: `agents`) with a similar but not identical API. Always check the [official docs](https://docs.anthropic.com/en/docs/agents) and the [GitHub repo](https://github.com/anthropics/anthropic-sdk-python) for the current installation instructions and import paths before using any code from this page.
+> **⚠️ Important — the code on this page is illustrative, not the real Claude Agent SDK.** The `Agent` / `Runner` / `Handoff` / `InputGuardrail` style shown below follows the **OpenAI Agents SDK** pattern (package: `openai-agents`), which is a useful conceptual model for orchestration/handoffs/guardrails. The **actual Claude Agent SDK** (`pip install claude-agent-sdk`) has a different surface centered on `query()` and `ClaudeSDKClient`, with `@tool`, `create_sdk_mcp_server`, and `ClaudeAgentOptions`. Treat this lesson as patterns, not runnable Claude code — check the [official Agent SDK docs](https://docs.claude.com/en/api/agent-sdk/overview) for current installation, imports, and signatures before building.
 
 ---
 
@@ -541,4 +541,4 @@ async def chat(user_id: str, message: str):
 
 ---
 
-**Next up:** Model Context Protocol (MCP), where we move beyond ad-hoc prompting to systematic, measurable prompt management.
+**Next up:** the **Capstone — Deploy to Production**, where you bring the whole content pipeline together behind FastAPI, Docker, monitoring, and a cloud deployment.

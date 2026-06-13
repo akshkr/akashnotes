@@ -85,9 +85,15 @@ def retry_with_backoff(
     raise last_exception
 
 # Usage
+from openai import OpenAI
+
+client = OpenAI()  # openai v1: call methods on a client instance, not the module
+
 def call_api():
-    response = openai.chat.completions.create(...)
-    return response
+    return client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[{"role": "user", "content": "Hello!"}],
+    )
 
 result = retry_with_backoff(call_api)
 ```
@@ -133,6 +139,10 @@ def retry(
     return decorator
 
 # Usage
+from openai import OpenAI, RateLimitError, APIError
+
+client = OpenAI()
+
 @retry(max_retries=3, exceptions=(RateLimitError, APIError))
 def call_openai(prompt: str) -> str:
     response = client.chat.completions.create(

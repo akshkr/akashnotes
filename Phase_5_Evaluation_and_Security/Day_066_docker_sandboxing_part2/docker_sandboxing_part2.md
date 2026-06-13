@@ -74,7 +74,8 @@ def run_with_secrets(code: str, secrets: dict) -> dict:
         # Inject secrets as environment variables
         result = client.containers.run(
             image="python:3.11-slim",
-            command=["python", "/code/script.py"],
+            # Use the temp file's actual basename (it's not literally "script.py")
+            command=["python", f"/code/{os.path.basename(code_path)}"],
             volumes={os.path.dirname(code_path): {'bind': '/code', 'mode': 'ro'}},
             environment=secrets,  # Secrets passed here
             remove=True,
@@ -258,7 +259,8 @@ class SecureSandbox:
         try:
             container = self.client.containers.run(
                 image=self.image,
-                command=["python", "/sandbox/script.py"],
+                # Use the temp file's actual basename (it's not literally "script.py")
+                command=["python", f"/sandbox/{os.path.basename(code_path)}"],
                 volumes={
                     os.path.dirname(code_path): {'bind': '/sandbox', 'mode': 'ro'}
                 },

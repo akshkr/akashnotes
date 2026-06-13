@@ -44,10 +44,10 @@ You built these. Now make them findable and understandable.
 
 | Capstone | Day | What it demonstrates |
 |---|---|---|
-| Data Extraction Pipeline | Day 26 | Structured output, Pydantic, retry logic, testing |
-| RAG Chatbot | Day 40 | Embeddings, vector DB, retrieval, cost management |
-| Autonomous Research Agent | Day 53 | ReAct loop, tool use, agent debugging, tracing |
-| Multi-Agent Pipeline | Day 81 | Orchestration, handoffs, production hardening |
+| Data Extraction Pipeline | Day 18 | Structured output, Pydantic, retry logic, testing |
+| RAG Chatbot | Day 34 | Embeddings, vector DB, retrieval, cost management |
+| Autonomous Research Agent | Day 48 | ReAct loop, tool use, agent debugging, tracing |
+| Multi-Agent Pipeline | Day 73 | Orchestration, handoffs, production hardening |
 | Production Deployment | Day 97 | FastAPI, Docker, monitoring, prompt management |
 
 Each project should have its own repository (or a clear subdirectory in a monorepo) with a README that a hiring manager can understand in 3 minutes.
@@ -154,7 +154,8 @@ services:
   chromadb:
     image: chromadb/chroma:latest
     ports:
-      - "8001:8001"
+      # host:container — Chroma listens on 8000 inside the container
+      - "8001:8000"
     volumes:
       - chroma_data:/chroma/chroma
 

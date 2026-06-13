@@ -129,7 +129,7 @@ Not all generated examples are good. Filter aggressively.
 
 ```python
 # script_id: day_077_synthetic_data/synthetic_data_pipeline
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, field_validator
 from openai import OpenAI
 import hashlib
 
@@ -140,13 +140,15 @@ class TrainingExample(BaseModel):
     input: str
     output: str
 
-    @validator("instruction")
+    @field_validator("instruction")
+    @classmethod
     def instruction_not_empty(cls, v):
         if len(v.strip()) < 10:
             raise ValueError("Instruction too short")
         return v
 
-    @validator("output")
+    @field_validator("output")
+    @classmethod
     def output_has_substance(cls, v):
         if len(v.strip()) < 20:
             raise ValueError("Output too short to be useful")

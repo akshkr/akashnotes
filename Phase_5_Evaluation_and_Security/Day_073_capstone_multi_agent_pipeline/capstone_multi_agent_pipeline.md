@@ -59,12 +59,12 @@ content_pipeline/
 ---
 
 > **Prerequisites for this capstone:**
-> - LangGraph state machines, nodes, edges (Phase 3, Days 47-49)
-> - Tool calling and execution (Phase 2, Days 35-38)
-> - LLM-as-judge evaluation (Phase 4, Days 72-73)
-> - Prompt injection defense (Phase 4, Day 76)
+> - LangGraph state machines, nodes, edges (Phase 3, Days 41-43)
+> - Tool calling and execution (Phase 2, Days 28-31)
+> - LLM-as-judge evaluation (Phase 5, Days 58-59)
+> - Prompt injection defense (Phase 5, Day 62)
 > - Python `asyncio` for concurrent agent execution
-> - Basic familiarity with Pydantic models (Phase 1, Days 19-20)
+> - Basic familiarity with Pydantic models (Phase 1, Day 14)
 
 ## Step 1: State Definition
 

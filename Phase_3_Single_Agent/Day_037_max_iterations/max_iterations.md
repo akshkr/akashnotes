@@ -277,8 +277,6 @@ flowchart TB
 
 ---
 
----
-
 ## Graceful Termination
 
 When stopping, clean up properly:

@@ -317,8 +317,10 @@ def merge_results(state: ParallelState) -> dict:
     combined = f"{state['branch_a_result']} | {state['branch_b_result']}"
     return {"final_result": combined}
 
-# Note: True parallel execution requires specific LangGraph setup
-# This shows the logical structure
+# Two edges out of "start" make branch_a and branch_b run in parallel within the
+# same superstep; the two edges into "merge" make it wait for BOTH to finish.
+# (This static fan-out is built in. Use the `Send` API only when the number of
+# branches is dynamic — e.g. one branch per item in a list.)
 workflow = StateGraph(ParallelState)
 
 workflow.add_node("start", start_node)

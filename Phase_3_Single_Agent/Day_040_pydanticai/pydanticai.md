@@ -143,9 +143,16 @@ async def get_weather(ctx: RunContext[None], city: str) -> str:
         )
         return resp.text
 
-# The agent can now call get_weather when it decides to
-result = await agent.run("What's the weather in London?")
-print(result.data)
+# The agent can now call get_weather when it decides to.
+# agent.run(...) is a coroutine, so it must be awaited inside an async function.
+# Use asyncio.run() to drive it from a top-level script (or call agent.run_sync()).
+import asyncio
+
+async def main():
+    result = await agent.run("What's the weather in London?")
+    print(result.data)
+
+asyncio.run(main())
 ```
 
 ### Multiple Tools
@@ -170,7 +177,9 @@ def calculate(ctx: RunContext[None], expression: str) -> str:
     """Evaluate a mathematical expression."""
     try:
         # WARNING: eval() is never fully safe even with restricted builtins.
-        # In production, use ast.literal_eval() or a math parser like numexpr.
+        # Don't reach for ast.literal_eval() here — it only parses literals and
+        # raises on operators like "2 + 2". For arithmetic use a math parser
+        # (e.g. numexpr) or a small ast.parse-based evaluator (see Day 35).
         result = eval(expression, {"__builtins__": {}})
         return str(result)
     except Exception as e:

@@ -370,7 +370,10 @@ def calculate_few_shot_cost(
 
     tokens = len(encoder.encode(prompt))
 
-    # Cost per 1K tokens (GPT-4o pricing, ~$2.50/1M input)
+    # Input-token cost per 1K tokens (~$2.50/1M input for GPT-4o; verify current pricing).
+    # NOTE: this counts INPUT tokens only. Output tokens are billed separately and
+    # are typically several times more expensive, so output-heavy calls cost more
+    # than this estimate suggests.
     cost_per_1k = 0.0025
 
     return {

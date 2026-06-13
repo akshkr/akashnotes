@@ -586,7 +586,7 @@ You've now completed Phase 1. You can:
 
 In Phase 2, we're going to give your LLM a long-term memory. Instead of putting all your knowledge in the prompt (which is expensive and has limits), you'll learn to store knowledge in a vector database and retrieve only what's relevant. This is the foundation of every RAG system.
 
-See you on Day 27.
+See you on Day 19.
 
 ---
 

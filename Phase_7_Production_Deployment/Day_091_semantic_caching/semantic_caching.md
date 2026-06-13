@@ -362,7 +362,11 @@ cache.init(
     similarity_evaluation=SearchDistanceEvaluation()
 )
 
-# Use like normal OpenAI — caching is automatic
+# NOTE: this uses GPTCache's `openai` ADAPTER imported above (not the real
+# openai module). Its drop-in `ChatCompletion.create` mirrors the legacy
+# openai<1.0 surface; with the openai>=1.0 client you instead wrap your own
+# `client.chat.completions.create` calls with a cache lookup (the pattern built
+# earlier in this lesson). Check the GPTCache docs for current adapter support.
 response = openai.ChatCompletion.create(
     model="gpt-4o",
     messages=[{"role": "user", "content": "What is Python?"}]

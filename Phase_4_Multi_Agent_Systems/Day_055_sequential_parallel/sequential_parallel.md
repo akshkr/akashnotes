@@ -469,12 +469,13 @@ crew = Crew(
     verbose=True  # See what's happening
 )
 
-# Or verbose level 2 for more detail
-# > **Note:** CrewAI 0.70+ changed verbose to accept True/False only, not integer levels. Check the [CrewAI docs](https://docs.crewai.com) for the latest syntax.
+# Note: older CrewAI accepted integer verbosity levels (verbose=2). Current
+# CrewAI (0.70+) takes a boolean only — use verbose=True. Check the
+# [CrewAI docs](https://docs.crewai.com) for the latest syntax.
 crew = Crew(
     agents=[...],
     tasks=[...],
-    verbose=2
+    verbose=True
 )
 ```
 

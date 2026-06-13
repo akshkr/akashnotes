@@ -173,35 +173,43 @@ Here's the full map of what you'll build and learn:
 ```mermaid
 flowchart TB
     P0["Phase 0 · Day 1\nGetting Started"]
-    P1["Phase 1 · Days 2–26\nLLM Foundations\n+ Capstone: Extraction Pipeline"]
-    P2["Phase 2 · Days 27–40\nExternal Knowledge & RAG\n+ Capstone: RAG Chatbot"]
-    P3["Phase 3 · Days 41–54\nSingle Agent Architectures\n+ Capstone: Research Agent"]
-    P4["Phase 4 · Days 55–81\nMulti-Agent, Eval & Security\n+ Capstone: Content Pipeline"]
-    P5["Phase 5 · Days 82–97\nProduction Deployment\n+ Capstone: Deploy to Production"]
-    P6["Phase 6 · Days 98–100\nCareer Launch"]
+    P1["Phase 1 · Days 2–18\nLLM Foundations\n+ Capstone: Extraction Pipeline"]
+    P2["Phase 2 · Days 19–34\nRAG & Tool Calling\n+ Capstone: RAG Chatbot"]
+    P3["Phase 3 · Days 35–49\nSingle Agent Architectures\n+ Capstone: Research Agent"]
+    P4["Phase 4 · Days 50–55\nMulti-Agent Systems"]
+    P5["Phase 5 · Days 56–73\nEvaluation & Security\n+ Capstone: Content Pipeline"]
+    P6["Phase 6 · Days 74–82\nFine-tuning & Optimization"]
+    P7["Phase 7 · Days 83–97\nProduction Deployment\n+ Capstone: Deploy to Production"]
+    P8["Phase 8 · Days 98–100\nCareer Launch"]
 
-    P0 --> P1 --> P2 --> P3 --> P4 --> P5 --> P6
+    P0 --> P1 --> P2 --> P3 --> P4 --> P5 --> P6 --> P7 --> P8
 ```
 
 **Phase 0 (Day 1): Getting Started**
 Career map, understanding the ecosystem. This is where you are now.
 
-**Phase 1 (Days 2-26): LLM Foundations**
+**Phase 1 (Days 2-18): LLM Foundations**
 How LLMs work, calling APIs, prompt engineering, structured output with Pydantic. You'll build your first data extraction pipeline.
 
-**Phase 2 (Days 27-40): External Knowledge**
-Embeddings, vector databases, RAG systems. You'll build a chatbot that answers questions from documents.
+**Phase 2 (Days 19-34): RAG & Tool Calling**
+Embeddings, vector databases, RAG systems, function/tool calling. You'll build a chatbot that answers questions from documents.
 
-**Phase 3 (Days 41-54): Single Agents**
-Tool calling, ReAct loops, LangGraph state machines, memory and persistence. You'll build an autonomous research agent.
+**Phase 3 (Days 35-49): Single Agents**
+ReAct loops, conversation history, LangChain/LlamaIndex, LangGraph state machines, memory and persistence. You'll build an autonomous research agent.
 
-**Phase 4 (Days 55-81): Multi-Agent, Eval, and Security**
-Multi-agent architectures, evaluation pipelines, prompt injection defense, human-in-the-loop. You'll build a multi-agent content pipeline.
+**Phase 4 (Days 50-55): Multi-Agent Systems**
+Agent topologies, supervisor-worker delegation, adversarial debate, and CrewAI orchestration.
 
-**Phase 5 (Days 82-97): Production**
-FastAPI, streaming, Docker, deployment, monitoring, cost tracking. You'll deploy your capstone to the real internet.
+**Phase 5 (Days 56-73): Evaluation & Security**
+Tracing, LLM-as-judge, RAGAS, prompt injection defense, guardrails, sandboxing, and human-in-the-loop. You'll build a multi-agent content pipeline.
 
-**Phase 6 (Days 98-100): Career Launch**
+**Phase 6 (Days 74-82): Fine-tuning & Optimization**
+Local models, quantization, vLLM, synthetic data, LoRA/QLoRA fine-tuning, distillation, and routing.
+
+**Phase 7 (Days 83-97): Production**
+FastAPI, streaming, Docker, deployment, monitoring, cost tracking, MCP. You'll deploy your capstone to the real internet.
+
+**Phase 8 (Days 98-100): Career Launch**
 Portfolio review, resume updating, job search strategy, community engagement.
 
 By the end, you'll have 5 capstone projects in your portfolio and the practical skills to back them up in interviews.
@@ -250,7 +258,7 @@ Before we start, let's get honest about where you are. Rate yourself 1-5 on each
 - **46-80:** You've dabbled. This journey will fill in the gaps and add depth.
 - **81-110:** You have real experience. Use this journey to fill blind spots and build portfolio projects.
 
-Write down your scores somewhere. You'll revisit this on Day 54 (the career checkpoint) and Day 100. The progress will surprise you.
+Write down your scores somewhere. You'll revisit this on Day 49 (the career checkpoint) and Day 100. The progress will surprise you.
 
 ---
 

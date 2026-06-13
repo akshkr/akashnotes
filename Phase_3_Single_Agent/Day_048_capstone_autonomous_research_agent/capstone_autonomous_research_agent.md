@@ -550,7 +550,7 @@ if __name__ == "__main__":
 openai>=1.30.0
 langchain>=0.2.0
 langchain-openai>=0.1.0
-langgraph>=0.1.0
+langgraph>=0.2.0
 ```
 
 ```bash
@@ -621,7 +621,7 @@ A production-pattern autonomous research agent with:
 
 ## What's Next
 
-Tomorrow is Day 54 — the career checkpoint. We're pausing the technical content for a day to take stock of what you've built, map it to job requirements, and talk about what to put on your resume right now.
+Tomorrow is Day 49 — the career checkpoint. We're pausing the technical content for a day to take stock of what you've built, map it to job requirements, and talk about what to put on your resume right now.
 
 It's worth the pause. See you there.
 

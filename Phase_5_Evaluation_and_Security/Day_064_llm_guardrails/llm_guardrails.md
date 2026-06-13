@@ -250,7 +250,7 @@ from anthropic import Anthropic
 client = Anthropic()
 
 response = client.messages.create(
-    model="claude-sonnet-4-20250514",
+    model="claude-sonnet-4-6",
     max_tokens=1024,
     system="""You are a helpful programming assistant.
 
@@ -386,7 +386,7 @@ response = client.moderations.create(input=text)
 flagged = response.results[0].flagged
 
 # Claude system prompt guardrails
-response = client.messages.create(model="claude-sonnet-4-20250514", system="GUARDRAILS: ...", ...)
+response = client.messages.create(model="claude-sonnet-4-6", system="GUARDRAILS: ...", ...)
 ```
 
 ---

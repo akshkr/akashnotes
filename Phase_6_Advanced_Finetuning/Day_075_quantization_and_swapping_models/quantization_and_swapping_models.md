@@ -99,8 +99,8 @@ cd llama.cpp && make
 # Download GGUF model
 wget https://huggingface.co/TheBloke/Llama-2-7B-Chat-GGUF/resolve/main/llama-2-7b-chat.Q4_K_M.gguf
 
-# Run inference
-./main -m llama-2-7b-chat.Q4_K_M.gguf -p "Hello, how are you?"
+# Run inference (the CLI binary was renamed from `main` to `llama-cli`)
+./llama-cli -m llama-2-7b-chat.Q4_K_M.gguf -p "Hello, how are you?"
 ```
 
 ### Using with Python
@@ -271,10 +271,11 @@ git clone https://github.com/ggerganov/llama.cpp
 cd llama.cpp
 
 # Convert HuggingFace model to GGUF
-python convert.py /path/to/model --outfile model-f16.gguf
+# (the script was renamed from convert.py to convert_hf_to_gguf.py)
+python convert_hf_to_gguf.py /path/to/model --outfile model-f16.gguf
 
-# Quantize to desired level
-./quantize model-f16.gguf model-q4_K_M.gguf Q4_K_M
+# Quantize to desired level (binary renamed from `quantize` to `llama-quantize`)
+./llama-quantize model-f16.gguf model-q4_K_M.gguf Q4_K_M
 ```
 
 ### Create AWQ Model
@@ -840,4 +841,4 @@ export LLM_PROVIDER=ollama
 
 ## What's Next?
 
-Now let's learn how to **wrap agents in APIs** using FastAPI for production deployment!
+Next up: **vLLM for Production Inference** — PagedAttention, continuous batching, and serving open-weight models at scale.

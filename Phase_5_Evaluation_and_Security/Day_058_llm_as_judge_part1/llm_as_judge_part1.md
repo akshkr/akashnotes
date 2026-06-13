@@ -243,52 +243,52 @@ flowchart TB
 Ragas is a framework specifically designed to evaluate RAG pipelines:
 
 ```bash
-pip install ragas
+pip install "ragas>=0.2"
 ```
 
 ### Key Ragas Metrics
 
 ```python
 # script_id: day_058_llm_as_judge_part1/ragas_basic_eval
-from ragas import evaluate
+# Ragas 0.2+ API: build an EvaluationDataset from per-sample dicts. The field
+# names changed from the older API — it's now user_input / response /
+# retrieved_contexts / reference (not question / answer / contexts / ground_truth).
+from ragas import evaluate, EvaluationDataset
 from ragas.metrics import (
     faithfulness,
     answer_relevancy,
     context_precision,
     context_recall
 )
-from datasets import Dataset
 
-# Prepare evaluation data
-eval_data = {
-    "question": [
-        "What is the capital of France?",
-        "Who wrote Romeo and Juliet?"
-    ],
-    "answer": [
-        "The capital of France is Paris.",
-        "Romeo and Juliet was written by William Shakespeare."
-    ],
-    "contexts": [
-        ["Paris is the capital and largest city of France."],
-        ["William Shakespeare wrote many plays including Romeo and Juliet, Hamlet, and Macbeth."]
-    ],
-    "ground_truth": [
-        "Paris",
-        "William Shakespeare"
-    ]
-}
+# Prepare evaluation data (one dict per sample)
+samples = [
+    {
+        "user_input": "What is the capital of France?",
+        "response": "The capital of France is Paris.",
+        "retrieved_contexts": ["Paris is the capital and largest city of France."],
+        "reference": "Paris",
+    },
+    {
+        "user_input": "Who wrote Romeo and Juliet?",
+        "response": "Romeo and Juliet was written by William Shakespeare.",
+        "retrieved_contexts": [
+            "William Shakespeare wrote many plays including Romeo and Juliet, Hamlet, and Macbeth."
+        ],
+        "reference": "William Shakespeare",
+    },
+]
 
-dataset = Dataset.from_dict(eval_data)
+dataset = EvaluationDataset.from_list(samples)
 
 # Run evaluation
 results = evaluate(
-    dataset,
+    dataset=dataset,
     metrics=[
-        faithfulness,        # Is answer grounded in context?
-        answer_relevancy,    # Is answer relevant to question?
-        context_precision,   # Are contexts relevant?
-        context_recall       # Do contexts contain ground truth?
+        faithfulness,        # Is the response grounded in the retrieved context?
+        answer_relevancy,    # Is the response relevant to the question?
+        context_precision,   # Are the retrieved contexts relevant?
+        context_recall       # Do the contexts contain the reference answer?
     ]
 )
 

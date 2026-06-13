@@ -2,6 +2,8 @@
 
 Now that you have vector databases set up, let's master the core operations: adding data efficiently, searching smartly, and keeping your database up to date.
 
+> Day 22 used **pgvector** (vectors inside Postgres). Today we use **ChromaDB** — a lightweight, embedded vector DB that needs no separate server, which keeps the examples focused on the *operations* rather than database setup. The patterns (index, query, filter, update, delete) are identical across vector stores; only the client API changes.
+
 > **Coming from Software Engineering?** CRUD operations on vector DBs work exactly like any database — insert, query, update, delete. If you've built data access layers with SQLAlchemy or Mongoose, the patterns are identical. The only new concept is 'similarity search' instead of 'exact match' queries.
 
 ---
@@ -33,7 +35,13 @@ import chromadb
 from openai import OpenAI
 
 client = chromadb.PersistentClient(path="./vectordb")
-collection = client.get_or_create_collection("documents")
+# ChromaDB defaults to L2 (squared Euclidean) distance. We explicitly request
+# cosine so that `1 - distance` below is a valid cosine-similarity score. With
+# the default L2 space, `1 - distance` is meaningless (it can go negative).
+collection = client.get_or_create_collection(
+    "documents",
+    metadata={"hnsw:space": "cosine"},
+)
 openai_client = OpenAI()
 
 def batch_index(
@@ -146,7 +154,7 @@ def semantic_search(query: str, n_results: int = 5) -> list[dict]:
         {
             "document": results["documents"][0][i],
             "metadata": results["metadatas"][0][i],
-            "similarity": 1 - results["distances"][0][i]  # Convert distance to similarity
+            "similarity": 1 - results["distances"][0][i]  # valid because the collection uses cosine space
         }
         for i in range(len(results["ids"][0]))
     ]
@@ -419,7 +427,10 @@ class OptimizedVectorStore:
 
     def __init__(self, persist_dir: str = "./vectordb"):
         self.client = chromadb.PersistentClient(path=persist_dir)
-        self.collection = self.client.get_or_create_collection("documents")
+        # cosine space so the `1 - distance` similarity below is valid (default is L2)
+        self.collection = self.client.get_or_create_collection(
+            "documents", metadata={"hnsw:space": "cosine"}
+        )
         self.openai = OpenAI()
         self._embedding_cache = {}
 

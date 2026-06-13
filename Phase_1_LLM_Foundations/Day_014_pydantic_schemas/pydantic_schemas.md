@@ -149,7 +149,7 @@ except ValidationError as e:
 
 ```python
 # script_id: day_014_pydantic_schemas/nested_models
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import List, Optional
 from datetime import datetime
 
@@ -168,7 +168,10 @@ class Person(BaseModel):
     name: str
     email: str
     companies: List[Company]
-    created_at: datetime = datetime.now()
+    # Use default_factory, NOT `datetime.now()`. A bare `datetime.now()` is
+    # evaluated once at class-definition time, so every Person would share the
+    # same timestamp. default_factory runs the callable per instance.
+    created_at: datetime = Field(default_factory=datetime.now)
 
 # Usage
 data = {

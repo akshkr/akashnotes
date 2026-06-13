@@ -367,52 +367,6 @@ def check_database():
 
 ---
 
-## Congratulations! 🎉
+## What's Next?
 
-You've completed the 6-month AI Engineering curriculum!
-
-### What You've Learned
-
-```mermaid
-mindmap
-  root((AI Engineering))
-    Month 1
-      LLM basics
-      Prompting
-      APIs
-      Structured output
-    Month 2
-      Embeddings
-      Vector DBs
-      RAG
-      Tool calling
-    Month 3
-      ReAct agents
-      LangChain
-      LangGraph
-      Memory
-    Month 4
-      Multi-agent
-      CrewAI
-      AutoGen
-      HITL
-    Month 5
-      Observability
-      Evaluation
-      Security
-      Guardrails
-    Month 6
-      Local models
-      APIs
-      UIs
-      Deployment
-```
-
-### Next Steps
-
-1. **Build Projects**: Apply what you've learned
-2. **Stay Updated**: Follow AI news and papers
-3. **Contribute**: Share your knowledge
-4. **Experiment**: Try new models and techniques
-
-**You're now an AI Engineer!** 🚀
+Your service is containerized — but containers alone don't survive real traffic. Next up: **Rate Limits and Backoffs** — exponential backoff with jitter, token-bucket rate limiting, and the circuit-breaker state machine that keeps you online when a provider degrades.

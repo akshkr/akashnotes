@@ -32,6 +32,7 @@ Feedback injection enables:
 
 ```python
 # script_id: day_072_injecting_feedback/basic_feedback_injection
+from datetime import datetime
 from openai import OpenAI
 
 client = OpenAI()
@@ -91,7 +92,6 @@ Please incorporate this feedback from the reviewer:
         return self.generate(enhanced_task)
 
 # Usage
-from datetime import datetime
 
 agent = FeedbackableAgent()
 
@@ -550,4 +550,4 @@ store.add(task, output, feedback)
 
 ## What's Next?
 
-You've mastered HITL patterns! Next month, we'll explore **Evaluation & Observability** - measuring and monitoring agent performance!
+You've learned to inject human feedback into agent state. Next, we'll bring Phase 5 together in the **Capstone — Multi-Agent Content Pipeline**: research, writing, review, LLM-as-judge evaluation, a human approval gate, and prompt-injection defenses.

@@ -534,7 +534,7 @@ def print_trace(trace: AgentTrace):
 
 ## Practice Exercises
 
-1. Add `AgentTrace` and `TraceableAgent` to your Day 55 capstone and print a trace for each run
+1. Add `AgentTrace` and `TraceableAgent` to your Day 48 capstone and print a trace for each run
 2. Write a test that triggers the "repeated tool call" detection in `agent_debugging_checklist`
 3. Implement `trim_messages` and verify it stays under 100K tokens after 200 simulated iterations
 4. Use LangGraph's state history to replay an execution step-by-step and print state at each checkpoint

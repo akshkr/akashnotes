@@ -467,4 +467,4 @@ result = app.invoke({"data": "input"})
 
 ## What's Next?
 
-Now let's learn about **Memory and Persistence** - saving agent state across sessions!
+Now let's go deeper on LangGraph's building blocks: **Nodes and Edges** — how to structure node functions and route between them with simple and conditional edges.

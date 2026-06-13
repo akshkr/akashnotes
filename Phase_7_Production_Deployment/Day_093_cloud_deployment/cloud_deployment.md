@@ -516,18 +516,18 @@ def rag_pipeline(query: str) -> str:
 
 ```python
 # script_id: day_093_cloud_deployment/cost_optimization
-# Caching to reduce API calls
+# Caching to reduce API calls. lru_cache keys on the function arguments, so
+# cache directly on the text — the earlier version cached on a hash but then
+# called generate_embedding(text) with `text` out of scope (a NameError).
 from functools import lru_cache
-import hashlib
 
 @lru_cache(maxsize=1000)
-def cached_embedding(text_hash: str):
-    # Only called if not in cache
+def cached_embedding(text: str):
+    # Only called on a cache miss
     return generate_embedding(text)
 
 def get_embedding(text: str):
-    text_hash = hashlib.md5(text.encode()).hexdigest()
-    return cached_embedding(text_hash)
+    return cached_embedding(text)
 ```
 
 ---
@@ -577,14 +577,6 @@ docker run -p 8000:8000 agent
 
 ---
 
-## Congratulations!
+## What's Next?
 
-You've completed the 6-month AI Agent curriculum! You now know how to:
-
-- Build LLM-powered applications
-- Create RAG systems with vector databases
-- Design single and multi-agent architectures
-- Evaluate and secure your agents
-- Deploy to production
-
-**Keep building amazing AI agents!** 🚀
+Your app is deployed to the cloud. Next, we make the prompts behind it maintainable: **Prompt Engineering Discipline** — versioning prompts as files, A/B testing with traffic splitting, LLM-as-judge evaluation, and the anti-patterns to avoid.

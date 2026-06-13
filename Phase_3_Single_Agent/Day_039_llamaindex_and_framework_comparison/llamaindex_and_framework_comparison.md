@@ -121,12 +121,14 @@ docs = dir_reader.load_data()
 web_reader = SimpleWebPageReader()
 web_docs = web_reader.load_data(urls=["https://example.com/article"])
 
-# Load from various sources using LlamaHub
-# pip install llama-hub
+# Load from various sources using LlamaHub.
+# In LlamaIndex 0.10+, loaders ship as separate namespace packages — install
+# the one you need (the old monolithic `llama-hub` package is deprecated):
+#   pip install llama-index-readers-github llama-index-readers-notion
 from llama_index.readers.github import GithubRepositoryReader
 from llama_index.readers.notion import NotionPageReader
 
-# Over 100+ loaders available on LlamaHub!
+# 100+ loaders available on LlamaHub, each as its own llama-index-readers-* package.
 ```
 
 ### 3. Index Types
@@ -514,7 +516,7 @@ response = index.as_query_engine().query("Question?")
 
 # Persistence
 index.storage_context.persist("./storage")
-index = load_index_from_storage(StorageContext.from_defaults("./storage"))
+index = load_index_from_storage(StorageContext.from_defaults(persist_dir="./storage"))
 
 # Chat
 chat = index.as_chat_engine()
@@ -526,7 +528,7 @@ chat.chat("Follow-up")
 
 ## What's Next?
 
-You've learned both LangChain and LlamaIndex! Next, we'll explore **LangGraph** for building stateful agent workflows.
+You've learned both LangChain and LlamaIndex! Next, we'll look at **PydanticAI** — a lightweight, type-first agent framework — before diving into LangGraph state machines.
 
 ---
 

@@ -257,6 +257,11 @@ class TaskQueue:
 app = FastAPI()
 task_queue = TaskQueue(max_workers=3)
 
+# NOTE: @app.on_event("startup") is deprecated in modern FastAPI. New code should
+# use a lifespan context manager (see Day 97 for the lifespan pattern):
+#   @asynccontextmanager
+#   async def lifespan(app): await task_queue.start_workers(); yield
+#   app = FastAPI(lifespan=lifespan)
 @app.on_event("startup")
 async def startup():
     await task_queue.start_workers()
@@ -420,6 +425,8 @@ async def run_agent_with_progress(task: Task):
 
 ```python
 # script_id: day_084_async_task_handling/cleanup_old_tasks
+from datetime import datetime, timedelta
+
 async def cleanup_old_tasks(task_queue: TaskQueue, max_age_hours: int = 24):
     """Remove old completed tasks."""
     cutoff = datetime.now() - timedelta(hours=max_age_hours)

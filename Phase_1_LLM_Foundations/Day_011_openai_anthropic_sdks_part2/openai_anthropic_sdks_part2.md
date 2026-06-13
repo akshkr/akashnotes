@@ -239,8 +239,8 @@ flowchart TB
 
 | Model | Best For | Context | Cost |
 |-------|----------|---------|------|
-| claude-opus-4-6 | Highest capability | 200K | $$$ |
-| claude-sonnet-4-5 | Balance of speed/quality | 200K | $$ |
+| claude-opus-4-6 | Highest capability | 1M | $$$ |
+| claude-sonnet-4-6 | Balance of speed/quality | 1M | $$ |
 | claude-haiku-4-5 | Fast, efficient | 200K | $ |
 
 ---
@@ -343,4 +343,4 @@ print(response.content[0].text)
 
 ## What's Next?
 
-Now that you can make basic API calls, let's speed things up with **Async LLM Calls** using `asyncio`!
+Now that you can make basic API calls, let's make them feel faster with **Streaming Responses** — showing output token-by-token as it's generated (async patterns included).

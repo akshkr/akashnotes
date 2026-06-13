@@ -188,16 +188,20 @@ asyncio.run(main())
 # script_id: day_021_generating_embeddings_api/cohere_embeddings
 import cohere
 
-co = cohere.Client("YOUR_COHERE_API_KEY")
+# Cohere SDK v5+ uses ClientV2. (The older `cohere.Client` still exists but the
+# v2 client is the current API.)
+co = cohere.ClientV2("YOUR_COHERE_API_KEY")
 
 def get_cohere_embeddings(texts: list[str]) -> list[list[float]]:
     """Get embeddings from Cohere."""
     response = co.embed(
         texts=texts,
         model="embed-english-v3.0",
-        input_type="search_document"  # or "search_query" for queries
+        input_type="search_document",   # or "search_query" for queries
+        embedding_types=["float"],      # required in v2 — pick the embedding type
     )
-    return response.embeddings
+    # In v5, embeddings are grouped by type; float vectors live under `.float_`
+    return response.embeddings.float_
 
 # Usage
 texts = ["Hello world", "Machine learning"]
@@ -217,7 +221,7 @@ def get_voyage_embeddings(texts: list[str]) -> list[list[float]]:
     """Get embeddings from Voyage AI."""
     result = vo.embed(
         texts,
-        model="voyage-2",
+        model="voyage-3",   # voyage-2 is legacy; voyage-3 / voyage-3-lite are current
         input_type="document"
     )
     return result.embeddings

@@ -8,7 +8,7 @@ Yesterday you built basic LLM-as-judge scoring and pairwise comparison. Today we
 
 ## The Problem with Naive LLM Judges
 
-Your Day 72 judge works — until it doesn't. LLM judges have well-documented biases that produce unreliable scores if you don't account for them.
+Your Day 58 judge works — until it doesn't. LLM judges have well-documented biases that produce unreliable scores if you don't account for them.
 
 ### Position Bias
 
@@ -56,7 +56,11 @@ Which response is better? Return JSON: {{"winner": "A" or "B", "reasoning": "...
     )
     order_2 = json.loads(result_2.choices[0].message.content)
 
-    consistent = order_1["winner"] != order_2["winner"]  # Should flip if unbiased
+    # We keep the labels "A"/"B" but swap which response sits behind each. An
+    # UNBIASED judge therefore reports a *different* winning label across the two
+    # runs (it followed the response, not the slot). The label staying the same
+    # means the judge favored a position -> position bias.
+    consistent = order_1["winner"] != order_2["winner"]  # True == unbiased (label flipped)
 
     return {
         "a_first_winner": order_1["winner"],

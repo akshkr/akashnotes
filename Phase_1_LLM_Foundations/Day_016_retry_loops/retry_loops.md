@@ -435,7 +435,10 @@ Return only valid JSON matching the schema."""
                 delay = self._calculate_delay(rate_attempt)
                 logger.warning(f"Rate limited, waiting {delay:.2f}s")
                 time.sleep(delay)
-        raise RateLimitError("Rate limit retry exhausted")
+        # Note: don't re-raise openai.RateLimitError directly — its constructor
+        # requires an httpx response object, so RateLimitError("...") would itself
+        # raise a TypeError. Use a plain exception to signal exhaustion.
+        raise RuntimeError("Rate limit retry exhausted after 3 attempts")
 
     def _calculate_delay(self, attempt: int) -> float:
         """Calculate delay with exponential backoff and jitter."""

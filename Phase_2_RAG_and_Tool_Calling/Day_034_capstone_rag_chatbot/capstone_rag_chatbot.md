@@ -94,11 +94,14 @@ def init_db():
             char_count INTEGER NOT NULL
         )
     """)
-    # Index for fast cosine similarity search
+    # Index for fast cosine similarity search.
+    # We use HNSW rather than IVFFlat here: IVFFlat must be built AFTER data is
+    # loaded (it clusters existing vectors, so building it on an empty table
+    # produces a useless index), whereas HNSW builds incrementally and works on
+    # an empty table at init time. See Day 22 for the IVFFlat vs HNSW tradeoffs.
     cur.execute("""
         CREATE INDEX IF NOT EXISTS documents_embedding_idx
-        ON documents USING ivfflat (embedding vector_cosine_ops)
-        WITH (lists = 100)
+        ON documents USING hnsw (embedding vector_cosine_ops)
     """)
     conn.commit()
     cur.close()

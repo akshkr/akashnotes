@@ -332,7 +332,7 @@ optimizer = dspy.BootstrapFewShot(metric=exact_match)
 classifier = optimizer.compile(SentimentClassifier(), trainset=train_data)
 
 # Switch models? Just recompile.
-dspy.configure(lm=dspy.LM("anthropic/claude-sonnet-4-20250514"))
+dspy.configure(lm=dspy.LM("anthropic/claude-sonnet-4-6"))
 classifier_claude = optimizer.compile(SentimentClassifier(), trainset=train_data)
 ```
 

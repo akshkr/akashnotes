@@ -224,10 +224,13 @@ from openai import OpenAI
 client = OpenAI()
 
 def chat(message, history):
-    """Chat function for Gradio."""
-    messages = [{"role": "user" if i % 2 == 0 else "assistant", "content": m}
-                for i, m in enumerate([item for pair in history for item in pair if item])]
-    messages.append({"role": "user", "content": message})
+    """Chat function for Gradio.
+
+    With type="messages" (the Gradio 5 default), `history` is already a list of
+    {"role": ..., "content": ...} dicts — the same shape the OpenAI API wants —
+    so we can pass it straight through instead of un-pairing tuples.
+    """
+    messages = history + [{"role": "user", "content": message}]
 
     response = client.chat.completions.create(
         model="gpt-4o-mini",
@@ -239,8 +242,9 @@ def chat(message, history):
 # Create the interface
 demo = gr.ChatInterface(
     chat,
+    type="messages",  # pass OpenAI-style {role, content} dicts (Gradio 5 default)
     title="🤖 AI Assistant",
-    description="Chat with an AI assistant powered by GPT-3.5",
+    description="Chat with an AI assistant powered by GPT-4o mini",
     examples=["Hello!", "Explain Python", "Write a haiku"],
     theme="soft"
 )
@@ -259,13 +263,14 @@ import base64
 client = OpenAI()
 
 def analyze_image(image, question):
-    """Analyze an image with GPT-4 Vision."""
+    """Analyze an image with GPT-4o vision."""
     # Encode image
     with open(image, "rb") as f:
         image_data = base64.b64encode(f.read()).decode()
 
     response = client.chat.completions.create(
-        model="gpt-4-vision-preview",
+        # gpt-4-vision-preview was deprecated; vision is built into gpt-4o / gpt-4o-mini
+        model="gpt-4o",
         messages=[
             {
                 "role": "user",

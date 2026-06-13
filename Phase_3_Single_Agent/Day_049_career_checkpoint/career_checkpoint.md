@@ -4,9 +4,9 @@ Stop. Before you write another line of code, take a breath.
 
 > **Coming from Software Engineering?** This checkpoint is your performance review with yourself. As a SWE making the AI transition, you have a unique advantage: you're not learning to code *and* learning AI — you're layering AI skills on top of battle-tested engineering fundamentals. Today, map what you've built to job requirements you've seen. You'll find that your SWE background makes your AI projects more impressive than those from someone who learned coding and AI simultaneously.
 
-You're 56 days in. You've built three real projects. You've gone from "I've used ChatGPT in the browser" to "I can build autonomous agents with LangGraph and persistent state." That's not a small thing. Today we're going to take stock of what you've actually learned, map it to what employers are looking for, and figure out what to do right now to capitalize on the progress you've made.
+You're 48 days in. You've built three real projects. You've gone from "I've used ChatGPT in the browser" to "I can build autonomous agents with LangGraph and persistent state." That's not a small thing. Today we're going to take stock of what you've actually learned, map it to what employers are looking for, and figure out what to do right now to capitalize on the progress you've made.
 
-This is also a day to refuel. The next 44 days are the hardest part — multi-agent systems, evaluation, security, and production deployment. You'll want to go into them with clarity about why you're doing this.
+This is also a day to refuel. The rest of the journey is the hardest part — multi-agent systems, evaluation, security, fine-tuning, and production deployment. You'll want to go into them with clarity about why you're doing this.
 
 ---
 
@@ -16,7 +16,7 @@ Remember the skills audit from Day 1? Pull it out. Here's how your capabilities 
 
 ```mermaid
 radar
-    title Skills Progress: Day 1 vs Day 54
+    title Skills Progress: Day 1 vs Day 49
     "LLM API Integration"
     "Prompt Engineering"
     "Structured Output"
@@ -38,7 +38,7 @@ radar
 - State Machines (LangGraph): 0/5
 - Python/SWE: 4/5
 
-*Day 54 (where you should be):*
+*Day 49 (where you should be):*
 - LLM API Integration: 4/5
 - Prompt Engineering: 3/5
 - Structured Output: 4/5
@@ -54,9 +54,9 @@ That's a significant shift. Let's make it concrete.
 
 ## What You Can Now Build
 
-Let's be specific. After 55 days, here's what you can do from scratch:
+Let's be specific. By Day 49, here's what you can do from scratch:
 
-### 1. Structured Data Extraction Pipeline (Day 26 Capstone)
+### 1. Structured Data Extraction Pipeline (Day 18 Capstone)
 
 You can take any unstructured text — job postings, product reviews, legal documents, support tickets — and extract structured, validated data using Pydantic models. You know how to:
 - Design Pydantic schemas with field descriptions that guide the LLM
@@ -67,7 +67,7 @@ You can take any unstructured text — job postings, product reviews, legal docu
 
 **Real-world equivalent:** This is the core of any document processing pipeline. It's used in recruiting, legal tech, e-commerce data enrichment, and healthcare data extraction.
 
-### 2. RAG Chatbot (Day 40 Capstone)
+### 2. RAG Chatbot (Day 34 Capstone)
 
 You can build a chatbot that answers questions from a document collection with cited sources. You know how to:
 - Chunk and embed documents into ChromaDB
@@ -78,7 +78,7 @@ You can build a chatbot that answers questions from a document collection with c
 
 **Real-world equivalent:** Customer support bots, internal knowledge base assistants, document Q&A for legal and compliance, product documentation chatbots.
 
-### 3. Autonomous Research Agent (Day 53 Capstone)
+### 3. Autonomous Research Agent (Day 48 Capstone)
 
 You can build an agent that autonomously researches a topic and produces a report. You know how to:
 - Define LangGraph state machines with conditional routing
@@ -106,14 +106,14 @@ Requirements:
 ✅ Pydantic/structured outputs — Built the extraction pipeline
 
 Nice to have:
-⚠️  Multi-agent systems — Coming in Phase 4 (Days 55-81)
-⚠️  LLM evaluation and testing — Coming in Phase 4
-⚠️  Production deployment — Coming in Phase 5
-❌  Fine-tuning experience — Not in this course (advanced)
+⚠️  Multi-agent systems — Coming in Phase 4 (Days 50-55)
+⚠️  LLM evaluation and testing — Coming in Phase 5 (Days 56-73)
+⚠️  Fine-tuning experience — Coming in Phase 6 (Days 74-82)
+⚠️  Production deployment — Coming in Phase 7 (Days 83-97)
 ❌  ML model training — Not the focus of AI Engineering
 ```
 
-You're already above the threshold for many "AI Engineer" postings. The gaps (multi-agent, eval, deployment) are exactly what the next 44 days cover.
+You're already above the threshold for many "AI Engineer" postings. The gaps (multi-agent, eval, fine-tuning, deployment) are exactly what Phases 4–8 cover.
 
 ---
 
@@ -246,7 +246,7 @@ The engineers who develop deep expertise in this area now will be the senior peo
 
 The field is also young enough that there are no "senior AI engineers" with 20 years of experience, because the field didn't exist 20 years ago. Everyone who's senior got there by learning, building, and shipping. The same path is open to you.
 
-The next 44 days will add multi-agent systems, evaluation, security, and production deployment to your toolkit. That's the difference between "can build a demo" and "can build a production system." It's the difference between a junior hire and a senior hire.
+The rest of the journey will add multi-agent systems, evaluation, security, fine-tuning, and production deployment to your toolkit. That's the difference between "can build a demo" and "can build a production system." It's the difference between a junior hire and a senior hire.
 
 Keep going.
 
@@ -268,27 +268,39 @@ Keep going.
 
 ---
 
-## What the Next 44 Days Add
+## What the Rest of the Journey Adds
 
 Here's the preview of what's coming:
 
-**Phase 4 (Days 55-81): Multi-Agent, Eval, and Security**
-- Multi-agent architectures (supervisor, collaboration, debate)
-- Building evaluation pipelines that catch regressions
-- Prompt injection and AI security
+**Phase 4 (Days 50-55): Multi-Agent Systems**
+- Agent topologies (hierarchical, networked, adversarial)
+- Supervisor-worker delegation
+- Adversarial debate (proposer/critic/judge)
+- CrewAI orchestration
+
+**Phase 5 (Days 56-73): Evaluation & Security**
+- Tracing and observability (LangSmith, Phoenix)
+- LLM-as-judge and RAGAS evaluation
+- Prompt injection defense and output sanitization
+- Guardrails, Docker sandboxing, API-key security
 - Human-in-the-loop systems
 - Capstone: Multi-agent content pipeline with human review
 
-**Phase 5 (Days 82-97): Production**
-- FastAPI for AI service APIs
-- Streaming responses
+**Phase 6 (Days 74-82): Fine-tuning & Optimization**
+- Local models (Ollama), quantization, vLLM
+- Synthetic data generation
+- LoRA/QLoRA fine-tuning with Unsloth
+- Distillation and model routing
+
+**Phase 7 (Days 83-97): Production Deployment**
+- FastAPI for AI service APIs, streaming, WebSockets
 - Docker and containerization
-- Cloud deployment (Render, Railway, AWS)
-- Monitoring, observability, and alerting
-- Cost tracking and optimization
+- Cloud deployment (Render, Railway, AWS, GCP)
+- Rate limits, caching, fallbacks, monitoring, cost tracking
+- Model Context Protocol (MCP)
 - Capstone: Deploy everything to production
 
-**Phase 6 (Days 98-100): Career Launch**
+**Phase 8 (Days 98-100): Career Launch**
 - Portfolio finalization
 - Resume and LinkedIn review
 - Job search strategy
@@ -296,7 +308,7 @@ Here's the preview of what's coming:
 
 By Day 100, you won't just have skills — you'll have a production-deployed portfolio of 5 projects that anyone can use and evaluate. That's how you compete for senior roles.
 
-See you on Day 55.
+See you on Day 50.
 
 ---
 

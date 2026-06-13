@@ -157,46 +157,16 @@ Return your response as JSON with this exact schema:
     #     result = self.tools[parsed["action"]](parsed["action_input"])
 ```
 
-The regex approach above is valuable for understanding how ReAct works under the hood, but structured output eliminates an entire class of parsing bugs.
+The regex approach above is valuable for understanding how ReAct works under the hood, but structured output eliminates an entire class of parsing bugs. With JSON mode, `_parse_response` becomes a simple dictionary lookup — no regex, no parsing failures.
 
-> **Production Tip:** In production, use OpenAI's native function calling or `response_format={"type": "json_object"}` instead of regex parsing. This eliminates parsing failures.
+---
 
-### Modern Alternative: Structured JSON Output
+## Putting It Together: The Run Loop
 
-The regex approach above is great for learning how ReAct works under the hood, but it is fragile -- the LLM might format its output slightly differently and break the regex. Modern APIs let you enforce structured output directly:
+Here's the full ReAct loop and a runnable example tying the pieces together:
 
 ```python
-# script_id: day_035_react_loop/structured_response_system_inject
-    def _get_structured_response(self, messages: list) -> dict:
-        """Get a structured response using JSON mode instead of regex parsing."""
-
-        # Add instruction for JSON output to the last message
-        json_messages = messages.copy()
-        json_messages[0] = {
-            "role": "system",
-            "content": messages[0]["content"] + """
-
-IMPORTANT: Always respond in this exact JSON format:
-{
-    "thought": "your reasoning about what to do next",
-    "action": "tool_name or null if you have the final answer",
-    "action_input": {"param": "value"} or null,
-    "final_answer": "your answer if action is null, otherwise null"
-}"""
-        }
-
-        response = client.chat.completions.create(
-            model="gpt-4o",
-            messages=json_messages,
-            temperature=0,
-            response_format={"type": "json_object"}
-        )
-
-        return json.loads(response.choices[0].message.content)
-```
-
-With this approach, `_parse_response` becomes a simple dictionary lookup -- no regex needed, no parsing failures.
-
+# script_id: day_035_react_loop/react_agent_core
     def run(self, task: str) -> str:
         """Run the agent on a task."""
         messages = [
@@ -569,6 +539,25 @@ Final Answer: [your answer]"""
 # Usage
 agent = ReActAgent(verbose=True)
 
+# Safe arithmetic: ast.literal_eval CANNOT evaluate expressions like "25 * 4"
+# (it only parses literals and raises ValueError on operators). Use a small
+# AST walker that allows only arithmetic nodes — same idea as the `calculate`
+# tool earlier in this lesson.
+import ast, operator
+_OPS = {ast.Add: operator.add, ast.Sub: operator.sub,
+        ast.Mult: operator.mul, ast.Div: operator.truediv, ast.Pow: operator.pow}
+
+def safe_calculate(expression: str) -> str:
+    def _eval(node):
+        if isinstance(node, ast.Constant):
+            return node.value
+        if isinstance(node, ast.BinOp):
+            return _OPS[type(node.op)](_eval(node.left), _eval(node.right))
+        if isinstance(node, ast.UnaryOp) and isinstance(node.op, ast.USub):
+            return -_eval(node.operand)
+        raise ValueError("Unsupported expression")
+    return str(_eval(ast.parse(expression, mode="eval").body))
+
 agent.add_tool(
     "search",
     "Search for information",
@@ -578,7 +567,7 @@ agent.add_tool(
 agent.add_tool(
     "calculate",
     "Do math calculations",
-    lambda expression: str(__import__('ast').literal_eval(expression))  # safer than eval()
+    safe_calculate  # NOT ast.literal_eval — that can't do arithmetic
 )
 
 result = agent.run("What is 25 * 4, and search for 'Python programming'")
@@ -611,4 +600,4 @@ mindmap
 
 ## What's Next?
 
-Now that you can build agents from scratch, let's explore **LangChain and LlamaIndex** - frameworks that make agent building easier!
+Now that you can build agents from scratch, let's give them better memory: **Conversation History** — managing the message list so agents stay coherent across many turns without blowing the context window.

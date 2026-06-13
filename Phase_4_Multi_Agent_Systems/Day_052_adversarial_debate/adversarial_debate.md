@@ -55,7 +55,7 @@ Benefits:
 
 ### Choosing the Right Agent Topology
 
-Before diving into code, here's a decision tree for picking the right multi-agent pattern. Refer back to this after you've seen all topologies (Days 57-59):
+Before diving into code, here's a decision tree for picking the right multi-agent pattern. Refer back to this after you've seen all topologies (Days 50-52):
 
 ```mermaid
 flowchart TD
@@ -69,7 +69,7 @@ flowchart TD
     D -->|Consensus| G["Adversarial Debate\n(this lesson)"]
     D -->|Best output| H{"Tasks\ndecomposable?"}
 
-    H -->|Yes| I["Supervisor/Worker\n(Day 58)"]
+    H -->|Yes| I["Supervisor/Worker\n(Day 51)"]
     H -->|No| J["Parallel + Judge\n(fan-out, vote)"]
 
     style G fill:#90EE90

@@ -57,7 +57,7 @@ class ModelFallbackChain:
         """Send a chat request with automatic fallback."""
 
         providers = [
-            ("claude-sonnet", self._call_anthropic, "claude-sonnet-4-5"),
+            ("claude-sonnet", self._call_anthropic, "claude-sonnet-4-6"),
             ("gpt-4o", self._call_openai, "gpt-4o"),
             ("gpt-4o-mini", self._call_openai, "gpt-4o-mini"),
         ]
@@ -102,12 +102,13 @@ class ModelFallbackChain:
             else:
                 anthropic_msgs.append(msg)
 
-        response = self.anthropic.messages.create(
+        # The Anthropic SDK doesn't take `timeout` as a messages.create() kwarg —
+        # set it per-request via with_options() (or on the client constructor).
+        response = self.anthropic.with_options(timeout=timeout).messages.create(
             model=model,
             max_tokens=4096,
             system=system,
             messages=anthropic_msgs,
-            timeout=timeout
         )
         return response.content[0].text
 

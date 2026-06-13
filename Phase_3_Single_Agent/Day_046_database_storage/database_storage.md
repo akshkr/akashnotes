@@ -596,4 +596,4 @@ app = workflow.compile(checkpointer=checkpointer)
 
 ## What's Next?
 
-You've mastered single-agent architectures! Next month, we'll explore **Multi-Agent Systems** where multiple agents work together!
+Your agents now have durable storage. Next, we'll tackle **Debugging AI Agents** — structured tracing, common failure modes, and how to find out why an agent went wrong.

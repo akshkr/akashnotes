@@ -88,20 +88,22 @@ def parse_markdown(file_path: str) -> dict:
 
 PDFs are trickier - they're designed for display, not extraction.
 
-> **Recommendation:** For new projects, start with **PyMuPDF** (`fitz`) as your default PDF parser -- it is the fastest and handles most layouts accurately. Use **pdfplumber** when you need precise table extraction. PyPDF2 is shown first below for simplicity, but PyMuPDF is the better production choice.
+> **Recommendation:** For new projects, start with **PyMuPDF** (`fitz`) as your default PDF parser -- it is the fastest and handles most layouts accurately. Use **pdfplumber** when you need precise table extraction. `pypdf` is shown first below for simplicity, but PyMuPDF is the better production choice.
 
-### Using PyPDF2
+### Using pypdf
+
+`PyPDF2` is unmaintained; its successor is the `pypdf` package (same API). Install and import `pypdf`:
 
 ```bash
-pip install pypdf2
+pip install pypdf
 ```
 
 ```python
-# script_id: day_024_document_parsing/parse_pdf_pypdf2
-from pypdf2 import PdfReader
+# script_id: day_024_document_parsing/parse_pdf_pypdf
+from pypdf import PdfReader
 
-def parse_pdf_pypdf2(file_path: str) -> dict:
-    """Parse PDF using PyPDF2."""
+def parse_pdf_pypdf(file_path: str) -> dict:
+    """Parse PDF using pypdf."""
     reader = PdfReader(file_path)
 
     pages = []
@@ -123,7 +125,7 @@ def parse_pdf_pypdf2(file_path: str) -> dict:
     }
 
 # Usage
-result = parse_pdf_pypdf2("document.pdf")
+result = parse_pdf_pypdf("document.pdf")
 print(f"Extracted {result['num_pages']} pages")
 print(f"Total text: {len(result['full_text'])} characters")
 ```
@@ -457,7 +459,7 @@ mindmap
       Markdown parsing
       Clean extraction
     PDFs
-      PyPDF2
+      pypdf
       pdfplumber
       PyMuPDF
     Web Pages

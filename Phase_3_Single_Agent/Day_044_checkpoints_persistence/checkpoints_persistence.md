@@ -245,14 +245,11 @@ result = app.invoke({"messages": ["Retry from here"]}, config=old_config)
 
 ---
 
-## What's Next
+## Part 2: Making Checkpoints Durable
 
-Now that you can save and restore agent state in memory, let's make it durable. In Part 2, you'll persist checkpoints to SQLite and PostgreSQL databases — so your agents survive restarts and can serve multiple users.
-
----
+Now that you can save and restore agent state in memory, let's make it durable. Below, you'll persist checkpoints to SQLite and PostgreSQL databases — so your agents survive restarts and can serve multiple users.
 
 ---
-
 
 ## Database Persistence
 
@@ -656,4 +653,4 @@ mindmap
 
 ## What's Next?
 
-You've mastered single agents! Next month, we'll explore **Multi-Agent Systems** - teams of agents working together!
+You can now persist agent state. Next, we'll use those checkpoints for **Time-Travel Debugging** — rewinding to any past state and replaying execution to understand what your agent did.

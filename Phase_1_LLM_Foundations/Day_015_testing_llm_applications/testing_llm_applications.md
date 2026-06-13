@@ -292,7 +292,7 @@ class TestSentimentSchema:
 
 ## Testing Retry Logic
 
-You built retry loops in Days 23-24. Now test them.
+You'll build retry loops in Day 16. Here's how to test them.
 
 ```python
 # script_id: day_015_testing_llm_applications/unit_tests_with_mocks
@@ -309,7 +309,7 @@ class UserInfo(BaseModel):
 
 
 def extract_with_retry(client, text: str, max_retries: int = 3) -> UserInfo | None:
-    """The function under test (simplified from Day 23)."""
+    """The function under test (simplified from Day 16)."""
     for attempt in range(max_retries):
         try:
             response = client.chat.completions.create(
@@ -721,4 +721,4 @@ def test_sample_integration():
 
 ---
 
-**Next up:** Capstone — Data Extraction Pipeline: Data Extraction Pipeline, where you will put together everything from Phase 1 into a complete, tested project.
+**Next up:** Retry Loops and Error Handling (Day 16) — turning the failures you now know how to test for into automatic recovery, before DSPy (Day 17) and the Phase 1 capstone (Day 18).

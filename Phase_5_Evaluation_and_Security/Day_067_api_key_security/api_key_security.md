@@ -522,4 +522,4 @@ logger.info(f"Using key: {mask_key(api_key)}")
 
 ## What's Next?
 
-You've secured your agents! Next month, we'll explore **Production Deployment** - taking your agents from development to the real world!
+You've secured your API keys! Next, we'll tackle **Production Hardening** — retries, circuit breakers, rate limiting, and graceful degradation so your agents survive real-world failure modes.

@@ -76,18 +76,22 @@ def run_code_in_sandbox(code: str, timeout: int = 30) -> dict:
     # Initialize Docker client
     client = docker.from_env()
 
-    # Create temp file with the code
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
+    # Write the code to a file LITERALLY named script.py inside a temp directory,
+    # then mount that directory at /code. (NamedTemporaryFile would give a random
+    # name like tmpXXXX.py, which wouldn't match the `python /code/script.py`
+    # command — the container would fail with "can't open file '/code/script.py'".)
+    tmp_dir = tempfile.mkdtemp()
+    code_file = os.path.join(tmp_dir, "script.py")
+    with open(code_file, "w") as f:
         f.write(code)
-        code_file = f.name
 
     try:
         # Run in container
         result = client.containers.run(
             image="python:3.11-slim",
-            command=f"python /code/script.py",
+            command=["python", "/code/script.py"],
             volumes={
-                os.path.dirname(code_file): {'bind': '/code', 'mode': 'ro'}
+                tmp_dir: {'bind': '/code', 'mode': 'ro'}
             },
             working_dir="/code",
             remove=True,  # Auto-remove container after execution
@@ -116,7 +120,9 @@ def run_code_in_sandbox(code: str, timeout: int = 30) -> dict:
             "exit_code": -1
         }
     finally:
-        os.unlink(code_file)
+        # Clean up the temp directory and its contents
+        import shutil
+        shutil.rmtree(tmp_dir, ignore_errors=True)
 
 # Example usage
 code = """
@@ -183,7 +189,9 @@ def run_in_secure_sandbox(code: str, timeout: int = 30) -> dict:
     try:
         container = client.containers.run(
             image="sandbox:latest",  # Our custom image
-            command=f"python /sandbox/script.py",
+            # Reference the temp file's real basename (NamedTemporaryFile names
+            # it randomly, e.g. tmpXXXX.py — it is NOT "script.py").
+            command=["python", f"/sandbox/{os.path.basename(code_file)}"],
             volumes={
                 os.path.dirname(code_file): {'bind': '/sandbox', 'mode': 'ro'}
             },
@@ -357,7 +365,8 @@ if 'result' in dir():
         try:
             output = self.client.containers.run(
                 image="python:3.11-slim",
-                command=["python", "/code/script.py"],
+                # Use the temp file's actual basename (it's not literally "script.py")
+                command=["python", f"/code/{os.path.basename(code_path)}"],
                 volumes={os.path.dirname(code_path): {'bind': '/code', 'mode': 'ro'}},
                 remove=True,
                 network_disabled=True,

@@ -243,3 +243,84 @@ print(f"Code ({len(code)} chars): {len(code_tokens)} tokens")
 Code often requires more tokens than natural language!
 
 ---
+
+## Counting Tokens Before You Call the API
+
+The most practical use of tokenization is estimating cost and staying under context limits *before* you send a request. Count first, then decide.
+
+```python
+# script_id: day_003_tokenization/estimate_cost
+import tiktoken
+
+encoder = tiktoken.encoding_for_model("gpt-4o")
+
+def estimate_cost(text: str, price_per_1m_input: float = 2.50) -> dict:
+    """Estimate input-token cost for a prompt. Verify current pricing before relying on it."""
+    n_tokens = len(encoder.encode(text))
+    cost = (n_tokens / 1_000_000) * price_per_1m_input
+    return {"tokens": n_tokens, "estimated_input_cost_usd": round(cost, 6)}
+
+prompt = "Summarize the following article:\n\n" + ("lorem ipsum " * 500)
+print(estimate_cost(prompt))
+# {'tokens': 1012, 'estimated_input_cost_usd': 0.00253}
+```
+
+> **A note on tokenizers:** `tiktoken` is OpenAI's tokenizer. Other providers tokenize differently — Anthropic's Claude models, for example, use their own tokenizer, so a `tiktoken` count is only an approximation for non-OpenAI models. For an exact Claude count, use the Anthropic SDK's token-counting endpoint (`client.messages.count_tokens(...)`) rather than `tiktoken`.
+
+---
+
+## Summary
+
+```mermaid
+mindmap
+  root((Tokenization))
+    What
+      Text split into tokens
+      Not words — sub-word pieces
+      BPE merges common pairs
+    Why
+      Smaller vocabulary
+      Handles unseen words
+      Efficient encoding
+    Cost & Limits
+      Billed per token
+      Count before you call
+      Code & non-English cost more
+    Tools
+      tiktoken for OpenAI
+      count_tokens for Claude
+```
+
+**Key takeaways:**
+- LLMs see **tokens**, not words. One word ≠ one token.
+- Tokens are billed and counted against the context window — tokenization is a cost and capacity concern, not just a curiosity.
+- English is cheapest; code and non-English text use noticeably more tokens for the same content.
+- Count tokens **before** calling the API to estimate cost and avoid blowing the context limit.
+
+---
+
+## Quick Reference
+
+| Task | Code |
+|------|------|
+| Get an OpenAI tokenizer | `enc = tiktoken.encoding_for_model("gpt-4o")` |
+| Count tokens | `len(enc.encode(text))` |
+| Encode → tokens | `enc.encode(text)` |
+| Decode tokens → text | `enc.decode(tokens)` |
+| Inspect one token | `enc.decode([token_id])` |
+| Count tokens for Claude | `client.messages.count_tokens(model=..., messages=[...])` |
+
+**Rules of thumb (English):** ~1 token ≈ 4 characters ≈ ¾ of a word. ~100 tokens ≈ 75 words.
+
+---
+
+## Exercises
+
+1. **Measure your own prompts.** Take a prompt you actually use and count its tokens. Then estimate the cost per call at current pricing.
+2. **Compare languages.** Tokenize the same sentence translated into three languages. How much more does the most expensive one cost?
+3. **Code vs prose.** Count tokens for a 50-line Python file and a 50-line prose document of similar character length. Which is more token-dense, and why?
+4. **Context budgeting.** Given a 128K-token context window, how many ~500-word documents could you fit if you also reserve 4K tokens for the system prompt and response?
+
+---
+
+*Next up: Temperature and Sampling Part 1 — how LLMs turn token probabilities into the words you actually see, and how the temperature dial reshapes that distribution.*

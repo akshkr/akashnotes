@@ -18,9 +18,9 @@ Every LLM call costs money based on tokens. Here is the current landscape:
 |---|---|---|---|
 | GPT-4o | $2.50 | $10.00 | OpenAI flagship |
 | GPT-4o-mini | $0.15 | $0.60 | 17x cheaper than GPT-4o |
-| Claude Sonnet 4.5 | $3.00 | $15.00 | Anthropic flagship |
-| Claude Haiku 4.5 | $0.80 | $4.00 | Fast, cheap Anthropic model |
-| Claude Opus 4.6 | $15.00 | $75.00 | Most capable, most expensive |
+| Claude Sonnet 4.6 | $3.00 | $15.00 | Balanced Anthropic model |
+| Claude Haiku 4.5 | $1.00 | $5.00 | Fast, cheap Anthropic model |
+| Claude Opus 4.6 | $5.00 | $25.00 | Most capable Opus-tier |
 | Gemini 2.0 Flash | $0.075 | $0.30 | Very cheap, good for high volume |
 | Llama 3.1 70B (self-hosted) | ~$0.50-1.00 | ~$0.50-1.00 | Depends on your GPU costs |
 
@@ -95,7 +95,7 @@ PRICING = {
     "gpt-4o": ModelPricing(input_per_million=2.50, output_per_million=10.00),
     "gpt-4o-mini": ModelPricing(input_per_million=0.15, output_per_million=0.60),
     "claude-sonnet-4-5": ModelPricing(input_per_million=3.00, output_per_million=15.00),
-    "claude-haiku-4-5": ModelPricing(input_per_million=0.80, output_per_million=4.00),
+    "claude-haiku-4-5": ModelPricing(input_per_million=1.00, output_per_million=5.00),
 }
 
 
@@ -526,7 +526,7 @@ print(f"Cache creation tokens: {response.usage.cache_creation_input_tokens}")
 
 | Scenario | Input tokens | Cost per 1K requests | Savings |
 |---|---|---|---|
-| No caching (Claude 3.5 Sonnet) | 4,000 tokens @ $3.00/1M | $12.00 | — |
+| No caching (Claude Sonnet 4.6) | 4,000 tokens @ $3.00/1M | $12.00 | — |
 | With prompt caching (90% of prefix cached) | 4,000 tokens, 3,600 cached | ~$9.30 | ~$2.70 per 1K requests |
 
 Over 150,000 monthly queries, that is roughly **$405/month saved** — just from marking your system prompt as cacheable.
@@ -787,7 +787,7 @@ def optimize_context(chunks: list[str], query: str, max_tokens: int = 800) -> li
 
 1. Build a cost calculator that takes a system prompt, expected user messages, and daily user count — and outputs monthly cost for three different models
 2. Implement model routing for a customer support bot: simple greetings use Haiku, complex technical questions use Sonnet
-3. Add a semantic cache to your Day 40 RAG chatbot and measure the cache hit rate after 50 test queries
+3. Add a semantic cache to your Day 34 RAG chatbot and measure the cache hit rate after 50 test queries
 4. Build a cost dashboard that tracks spend by hour and alerts when you hit 50% of your daily budget
 
 ---

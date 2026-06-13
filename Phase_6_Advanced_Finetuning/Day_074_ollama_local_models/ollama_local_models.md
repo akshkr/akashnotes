@@ -320,8 +320,11 @@ class LLMProvider:
         """Get embeddings."""
         if self.provider == "ollama":
             import ollama
-            response = ollama.embeddings(model="nomic-embed-text", prompt=text)
-            return response["embedding"]
+            # ollama.embed (input=) is the current API; it returns a list of
+            # vectors under "embeddings". (The legacy ollama.embeddings(prompt=)
+            # with a singular "embedding" key still exists but is deprecated.)
+            response = ollama.embed(model="nomic-embed-text", input=text)
+            return response["embeddings"][0]
         else:
             response = self.client.embeddings.create(
                 model="text-embedding-3-small",
@@ -347,11 +350,11 @@ def local_embed(texts: list) -> list:
     """Generate embeddings locally."""
     embeddings = []
     for text in texts:
-        response = ollama.embeddings(
+        response = ollama.embed(
             model="nomic-embed-text",
-            prompt=text
+            input=text
         )
-        embeddings.append(response["embedding"])
+        embeddings.append(response["embeddings"][0])
     return embeddings
 
 # Usage
@@ -445,4 +448,4 @@ client = OpenAI(base_url="http://localhost:11434/v1", api_key="ollama")
 
 ## What's Next?
 
-Now let's learn about **Wrapping Agents in APIs** - deploying your AI systems with FastAPI!
+Now let's go deeper on **Quantization and Model Swapping** — the GGUF/AWQ/GPTQ formats, bit-level tradeoffs, and choosing the right quantization for your hardware.

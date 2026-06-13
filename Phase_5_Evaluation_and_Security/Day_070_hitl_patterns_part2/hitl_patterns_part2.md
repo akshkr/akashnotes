@@ -349,4 +349,4 @@ if agent_confidence < threshold:
 
 ## What's Next?
 
-You've mastered multi-agent systems! Next month, we'll explore **Evaluation & Observability** - measuring how well your agents perform!
+You've built multi-stage approval pipelines. Next, we'll cover **Breakpoints Design** — placing conditional and risk-based breakpoints so agents pause only when a high-risk operation actually warrants human review.
