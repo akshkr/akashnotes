@@ -377,6 +377,12 @@ parsing-and-hoping.**
 
 ---
 
+## Checkpoint
+
+Run `to_openai` and `to_anthropic` on the same Pydantic model and confirm: both emit valid tool schemas with your fields, types, and descriptions intact — one Pydantic class, two provider formats, no hand-written JSON. If a constraint like an enum or `Field(description=...)` is missing from the output, check that you generated the schema with `model_json_schema()` rather than copying field names by hand.
+
+---
+
 ## Summary
 
 ```mermaid

@@ -503,6 +503,10 @@ print(loaded_history.messages)  # Previous conversation loaded!
 
 ---
 
+## Checkpoint
+
+Run the `SlidingWindowHistory` example: add 15 user/assistant pairs to a window of `max_messages=10` and print `len(history.messages)`. You should see exactly `10`, not `30` — the oldest messages were silently evicted by `deque(maxlen=...)`, just like the system session stores you've capped before. If you see `30`, you're appending to a plain list somewhere instead of the bounded `deque`.
+
 ## Summary
 
 ```mermaid

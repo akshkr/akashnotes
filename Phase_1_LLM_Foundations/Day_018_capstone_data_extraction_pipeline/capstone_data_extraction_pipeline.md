@@ -575,6 +575,12 @@ That's a concrete, specific answer that demonstrates you understand both the AI 
 
 ---
 
+## Checkpoint
+
+Run the pipeline's `__main__` block on a sample document and confirm: it auto-detects the input type, prints a running cost estimate, and writes a validated JSON file to disk. If the run aborts on a single bad record, check that `extract_with_retry` is catching `ValidationError` per item so one malformed input doesn't sink the whole batch — the batch summary should report partial success (e.g. `4/5 succeeded`).
+
+---
+
 ## Summary
 
 ```mermaid

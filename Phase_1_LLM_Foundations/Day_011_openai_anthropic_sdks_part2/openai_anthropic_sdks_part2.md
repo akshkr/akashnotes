@@ -280,6 +280,12 @@ print(response.text)
 
 ---
 
+## Checkpoint
+
+Run the `UnifiedLLM` wrapper with the same prompt routed to both providers and confirm: you get a coherent answer from each through one identical `chat(...)` call, with the provider-specific request shapes hidden inside the wrapper. If one provider errors while the other works, check that the wrapper is mapping shared args (system prompt, `max_tokens`) into each SDK's expected location — Anthropic takes `system` as a top-level arg, not a message.
+
+---
+
 ## Summary
 
 ```mermaid

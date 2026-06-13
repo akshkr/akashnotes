@@ -289,6 +289,10 @@ def get_approval_with_timeout(action: str, timeout: int = 300) -> bool:
     return result["approved"]
 ```
 
+## Checkpoint
+
+Call `get_approval_with_timeout("test action", timeout=3)` and just don't type anything — after ~3 seconds it should print the "Timeout! ... Defaulting to reject." message and return `False`. That fail-closed default is the whole point: if a human walks away, a high-risk action must NOT proceed. If it instead hangs forever waiting for input, the `thread.join(timeout=...)` argument isn't being passed, so the timeout never fires.
+
 ---
 
 ## Summary

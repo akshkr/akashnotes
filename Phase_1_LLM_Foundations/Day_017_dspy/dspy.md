@@ -338,6 +338,12 @@ classifier_claude = optimizer.compile(SentimentClassifier(), trainset=train_data
 
 ---
 
+## Checkpoint
+
+Run the optimizer-and-evaluator example and confirm: the compiled module scores higher on your eval set than the same module before optimization — DSPy earned that lift by tuning the prompt for you, not by you hand-editing it. If the score doesn't move, check that you configured `dspy.configure(lm=...)` with a working model and that your metric function actually returns a comparable value rather than always `True`.
+
+---
+
 ## Summary
 
 ```mermaid

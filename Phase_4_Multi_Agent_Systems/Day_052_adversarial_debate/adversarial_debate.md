@@ -517,6 +517,10 @@ Provide your revised opinion."""}
 
 ---
 
+## Checkpoint
+
+Run the Basic Debate on a question with a non-obvious answer, e.g. `debate("Should companies adopt a 4-day work week?")`. The returned dict gives you `initial_answer` and `final_answer` side by side — the judge's `final_answer` should incorporate at least one fix the critic raised, not just echo the proposer. If the two are nearly identical, the critic is being too soft; sharpen its system prompt to demand specific factual/logical flaws before the judge will have anything to act on.
+
 ## Summary
 
 ```mermaid

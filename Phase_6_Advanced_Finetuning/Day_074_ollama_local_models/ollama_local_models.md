@@ -398,6 +398,10 @@ async def process_batch(prompts: list, model: str = "llama3.2"):
 
 ---
 
+## Checkpoint
+
+Run the `benchmark_models` script (or just `ollama run llama3.2` from the shell) and confirm you get a coherent completion back with a tokens-per-second number printed. If the call hangs or you get a connection-refused error, check that the Ollama daemon is actually running (`ollama serve`) and that you've pulled the model first (`ollama pull llama3.2`).
+
 ## Summary
 
 ```mermaid

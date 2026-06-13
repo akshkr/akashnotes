@@ -577,6 +577,10 @@ print(f"\nFinal: {result}")
 
 ---
 
+## Checkpoint
+
+Run the Complete ReAct Agent at the end of this lesson on `"What is 25 * 4, and search for 'Python programming'"`. With `verbose=True` you should see numbered `[Step N]` blocks where the agent emits a Thought/Action, the `calculate` tool returns `100`, and the loop ends with a `status: success` dict — not `max_iterations`. If it loops forever or never calls a tool, the most likely cause is the model not emitting the exact `Action:` / `Action Input:` format the regex expects — tighten the system prompt or switch to the JSON-mode approach shown above.
+
 ## Summary
 
 ```mermaid

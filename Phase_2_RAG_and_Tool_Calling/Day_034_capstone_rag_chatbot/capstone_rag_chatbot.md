@@ -770,6 +770,12 @@ Once you have this RAG chatbot working, there are several ways to extend it:
 
 ---
 
+## Checkpoint
+
+Run `ingest` to load your documents, then start the `RAGChatbot` loop and ask a question your corpus answers: confirm it retrieves relevant chunks, optionally fires a tool (you'll see `[Tool: ...]`), and grounds its reply in the sources. Then run `run_eval` and confirm it prints aggregate correctness/completeness scores. If ingestion reports zero chunks, check that the documents directory path is right and that `chunk_text` is actually splitting the files before they're embedded and stored.
+
+---
+
 ## Summary
 
 ```mermaid

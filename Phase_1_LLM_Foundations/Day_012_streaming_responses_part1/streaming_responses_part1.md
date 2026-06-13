@@ -317,6 +317,12 @@ asyncio.run(parallel_streams())
 
 ---
 
+## Checkpoint
+
+Run `stream_chat` and confirm: text appears token-by-token in your terminal instead of all at once after a pause. If it still arrives in one lump, check that you passed `stream=True` and that your `print(..., end="", flush=True)` uses `flush=True` — without the flush, Python buffers stdout and hides the streaming effect.
+
+---
+
 ## Summary
 
 ```mermaid

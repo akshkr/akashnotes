@@ -328,6 +328,12 @@ print(generate_with_top_p(prompt, 0.95))
 
 ---
 
+## Checkpoint
+
+Run the `generate_with_temperature` loop a few times and confirm: at `temperature=0` the same prompt gives you the same (or nearly identical) completion every time, while at `temperature=1.0+` the wording drifts run to run. If even the high-temperature runs come back identical, check that you're not passing `seed` or that some caching layer isn't returning a stored response.
+
+---
+
 ## Summary
 
 ```mermaid

@@ -564,6 +564,10 @@ result = agent.run("Task")
 
 ---
 
+## Checkpoint
+
+Run the Iteration Tracking Class example with `IterationState(max_iterations=5, ...)`. The `while True` loop should print iterations 1 through 5 and then halt with `Stopping: Max iterations (5) reached` — a clean exit, never an infinite spin. If it runs forever, check that you're actually calling `state.increment()` each pass and breaking on `should_stop()`; the counter has to advance for the circuit breaker to trip.
+
 ## Summary
 
 ```mermaid

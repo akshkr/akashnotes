@@ -337,6 +337,12 @@ print(agent.chat("What time is it in Tokyo timezone?"))
 
 ---
 
+## Checkpoint
+
+Run `complete_tool_call` (or the `multi_tool_agent`) on a weather question and confirm: the parsed tool call's `arguments` come back as a real dict, `execute_function` dispatches to the right Python function, and the result is appended to the message list with the matching `tool_call_id` before the model speaks again. If the second model turn errors, check that every tool call you received got a corresponding tool-result message back — providers reject a follow-up that leaves a tool call unanswered.
+
+---
+
 ## Summary
 
 ```mermaid

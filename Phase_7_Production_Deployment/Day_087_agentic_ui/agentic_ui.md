@@ -467,6 +467,10 @@ class GenerativeUIHandler:
 
 ---
 
+## Checkpoint
+
+Run the `generative_ui_app` and confirm the agent's response renders as actual UI components (cards, buttons, etc.) rather than a wall of raw JSON. If you see the JSON instead, check that the `server_side_render` step is parsing the model's structured output and mapping each component type to a renderer.
+
 ## Summary
 
 ```mermaid

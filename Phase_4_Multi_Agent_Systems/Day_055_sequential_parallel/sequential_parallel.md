@@ -481,6 +481,10 @@ crew = Crew(
 
 ---
 
+## Checkpoint
+
+Run the Async Task Execution example: mark `task1`/`task2`/`task3` with `async_execution=True` and give the `synthesis_task` `context=[task1, task2, task3]`. The three research tasks should run concurrently while the synthesis task waits for all three before starting — time it against a fully sequential version and the parallel run should be noticeably faster. If the synthesis task starts before the others finish (or errors on missing context), confirm it has `async_execution=False` and lists all three upstream tasks in its `context`.
+
 ## Summary
 
 ```mermaid

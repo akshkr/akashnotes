@@ -650,6 +650,12 @@ def hybrid_rag(question: str, n_chunks: int = 5, context_padding: int = 2) -> st
 
 ---
 
+## Checkpoint
+
+Run the `RAGSystem` end to end on a question your documents can answer and confirm: the answer cites real retrieved chunks (check `result.sources`) rather than the model's own memory. Now ask something *not* in your corpus and confirm it declines or flags low confidence instead of confabulating. If answers ignore the context entirely, check that `format_context` is actually injecting the retrieved chunks into the prompt and that the token budget didn't truncate them all away.
+
+---
+
 ## Summary
 
 ```mermaid

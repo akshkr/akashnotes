@@ -398,6 +398,10 @@ The SDK saves you the boilerplate; the raw loop gives you total control and zero
 
 ---
 
+## Checkpoint
+
+Run the `support_agent` example and confirm it completes a multi-turn tool-using loop — calling a tool, getting a result, and returning a final answer — with the `guardrails` rejecting any disallowed action. If the loop never terminates, check that you're feeding each tool result back into the next Messages API call and stopping once `stop_reason` is `end_turn`.
+
 ## Summary
 
 ```mermaid

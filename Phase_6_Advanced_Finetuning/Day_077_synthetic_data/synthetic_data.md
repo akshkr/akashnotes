@@ -464,6 +464,10 @@ Mitigations:
 
 ---
 
+## Checkpoint
+
+Run the `synthetic_data_pipeline` and confirm it writes out a batch of generated examples, then that `to_alpaca_format`/`to_sharegpt_format` turn them into valid JSON records with the expected keys. If the file is empty or the formatter throws a KeyError, check that the generation step actually returned parseable JSON (log one raw response) before it reaches the formatter.
+
 ## Summary
 
 ```mermaid

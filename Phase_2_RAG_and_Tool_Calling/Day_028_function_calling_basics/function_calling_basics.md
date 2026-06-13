@@ -566,6 +566,12 @@ print(system.chat("What's 42 + 17?"))
 
 ---
 
+## Checkpoint
+
+Run `chat_with_tools("What's the weather in Paris?")` and confirm the full loop fires: the model returns a tool call, your code prints `Calling get_weather with {...}`, executes it, and the model folds the result into a natural-language final answer. If the model answers the weather directly without ever calling the tool, check that you passed your `tools` list into the request and that the function descriptions clearly state when to use them.
+
+---
+
 ## Summary
 
 ```mermaid

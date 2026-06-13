@@ -416,6 +416,10 @@ except Exception as e:
 
 ---
 
+## Checkpoint
+
+Run the Content Creation Pipeline: assemble the researcher/strategist/writer crew and call `crew.kickoff(inputs={"topic": "AI in Healthcare"})`. With `verbose=True` you should watch each agent run *in order* — researcher, then strategist, then writer — with each one's output flowing into the next via `context=[...]`, and a final content piece returned. If the writer runs before research finishes (or ignores the research), check that you listed `context=[research, strategy]` on the content task; that's what enforces the dependency.
+
 ## Summary
 
 ```mermaid

@@ -437,6 +437,10 @@ tracked_call([{"role": "user", "content": "Hello"}])
 monitor.stop()
 ```
 
+## Checkpoint
+
+Run the `call_with_metrics(...)` example and confirm the printed `prompt_tokens` and `completion_tokens` are both greater than zero and that `latency_ms` is a realistic number (typically a few hundred to a couple thousand). If `latency_ms` comes back near zero, you probably wrapped `time.time()` around something other than the actual API call; if tokens are zero, check that you're reading `response.usage` and not a cached/mocked response.
+
 ---
 
 ## Summary

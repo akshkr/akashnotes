@@ -449,6 +449,10 @@ def compare_trajectories(trajectories: List[AgentTrajectory], optimal_steps: int
     }
 ```
 
+## Checkpoint
+
+Run the `evaluate_efficiency(...)` example — it's plain arithmetic, no API call. With `optimal_steps=2`, an agent that took more than two steps should print an `efficiency_score` below 100%, and one that took two or fewer should print exactly 100%. If a slow trajectory still shows 100%, check that you're counting `len(trajectory.steps)` and not the number of unique tools — the penalty only kicks in when actual steps exceed the optimal count.
+
 ---
 
 ## Summary

@@ -688,6 +688,10 @@ def log_llm_call(
 3. Build a `FallbackChain` that tries GPT-4o, falls back to GPT-4o-mini, then returns a static message
 4. Add structured JSON logging to your capstone project and verify the output in a log viewer
 
+## Checkpoint
+
+Wrap a function that raises a transient error (e.g. `RateLimitError`) with `@retry_with_backoff` and enable logging — you should see the "Retrying in ..." warnings with the delay roughly doubling each attempt (1s, 2s, 4s) before it finally re-raises. The key thing to confirm: a 4xx client error (like a bad request) is NOT retried, while a 5xx is. If you see it retrying a 4xx, your `APIStatusError` branch is missing the `>= 500` check — retrying a malformed request just burns time and quota.
+
 ---
 
 ## Summary

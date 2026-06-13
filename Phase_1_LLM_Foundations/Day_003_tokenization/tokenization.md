@@ -269,6 +269,12 @@ print(estimate_cost(prompt))
 
 ---
 
+## Checkpoint
+
+Run the `estimate_cost` example and confirm: the same string reports more tokens as code than as prose, and the dollar figure scales with token count (double the text, roughly double the tokens). If a very long input shows suspiciously few tokens, check that you're encoding with `tiktoken.encoding_for_model(...)` for the model you're actually billing against, not a default encoder.
+
+---
+
 ## Summary
 
 ```mermaid

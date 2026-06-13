@@ -404,6 +404,10 @@ Your SWE background is an advantage, not a liability. Here is how to frame it:
 
 ---
 
+## Checkpoint
+
+Run the `structured_output_extraction` example on a sample job posting and confirm it returns a validated `JobPosting` with salary parsed as integers (or `None`) and skills as a list — then try the `tool_calling_agent` and watch it actually invoke `get_stock_price`. If Pydantic raises a validation error, check that your system prompt is telling the model to emit salary as bare numbers (no `$` or commas) so the `int` fields parse.
+
 ## Summary
 
 ```mermaid

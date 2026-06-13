@@ -398,6 +398,10 @@ flowchart TB
 
 ---
 
+## Checkpoint
+
+Run the Adversarial (Debate) example: `AdversarialSystem(max_rounds=3).run("Write a compelling product description for a smart water bottle")`. You should see per-round `Score: N/10` lines that trend upward, and the loop break early with "Content approved!" once the critic returns `approved: true` (score >= 8) — not always run all three rounds. If it always burns all three rounds, the critic isn't returning the `approved` flag; confirm you set `response_format={"type": "json_object"}` and that the critic's JSON actually includes `"approved"`.
+
 ## Summary
 
 ```mermaid

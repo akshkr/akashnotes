@@ -190,6 +190,12 @@ Chain-of-thought isn't free, and it isn't always a win. Reach for it deliberatel
 
 ---
 
+## Checkpoint
+
+Run `cot_with_extraction` and confirm: the returned dict gives you a clean `answer` field for programmatic use *and* a separate `reasoning` field for logging — so downstream code never has to regex the final number out of a paragraph. If `answer` comes back as the whole reasoning blob, check that your prompt asks the model to emit the final answer on its own clearly delimited line.
+
+---
+
 ## Summary
 
 ```mermaid

@@ -265,6 +265,12 @@ presence_penalty=0.3
 
 ---
 
+## Checkpoint
+
+Run `smart_generate` across the three task types and confirm: the factual-QA call comes back tight and consistent while the brainstorming call produces varied, non-repeating ideas — because the function dials temperature and the penalties differently per task. If brainstorming output still loops on the same phrase, check that `frequency_penalty`/`presence_penalty` are actually being passed through (and aren't cranked so high they degrade into gibberish).
+
+---
+
 ## Summary
 
 ```mermaid

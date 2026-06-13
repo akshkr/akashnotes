@@ -410,6 +410,10 @@ demo.launch()
 
 ---
 
+## Checkpoint
+
+Run the `streamlit_chat_ui` (`streamlit run app.py`) or the `gradio_chat` app and confirm the chat window opens in your browser and a typed message comes back with an assistant reply that persists in the history. If the history resets every message, check that you're storing it in `st.session_state` (Streamlit re-runs the whole script on each interaction).
+
 ## Summary
 
 ```mermaid

@@ -624,6 +624,12 @@ asyncio.run(main())
 
 ---
 
+## Checkpoint
+
+Run the `SmartRetry`/feedback-retry example against an input the model first gets wrong and confirm: it logs the failed attempt, feeds the validation error back into the next prompt, and eventually returns a valid object with `attempts > 1`. If it gives up immediately or loops forever, check that you're retrying only on `ValidationError` (not on every exception) and that `max_retries` is finite.
+
+---
+
 ## Summary
 
 ```mermaid

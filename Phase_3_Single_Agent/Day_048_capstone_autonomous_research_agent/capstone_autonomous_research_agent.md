@@ -619,6 +619,10 @@ A production-pattern autonomous research agent with:
 
 ---
 
+## Checkpoint
+
+Run `python main.py` with `OPENAI_API_KEY` set. You should see a session ID, then a stream of `[Iteration N] Tool: web_search(...)` / `fetch_article(...)` lines as the agent works, and finally `Session ... complete after N iterations` followed by a structured FINAL REPORT — with `N` strictly less than your `max_iterations`. If it stops exactly at `max_iterations` every time without producing a report, the agent never emitted the `RESEARCH_COMPLETE` signal; loosen the prompt or check that `should_continue` routes to `"end"` (the reporter) on that signal rather than looping back to `tools`.
+
 ## Summary
 
 ```mermaid

@@ -501,6 +501,10 @@ Find them at: `github.com/modelcontextprotocol/servers`
 
 ---
 
+## Checkpoint
+
+Run the `filesystem_mcp_server` and confirm an MCP client can list and call its exposed tools (e.g. read a file) over the protocol. If the client connects but sees no tools, check that each function is registered with the server's tool decorator and that the server finished its startup handshake before the client queried.
+
 ## Summary
 
 ```mermaid

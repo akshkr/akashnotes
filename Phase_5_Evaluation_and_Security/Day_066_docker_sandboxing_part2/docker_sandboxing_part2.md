@@ -430,6 +430,10 @@ print(f"Output: {output.get('stdout')}")
 print(f"Result: {output.get('data')}")
 ```
 
+## Checkpoint
+
+With `OPENAI_API_KEY` exported, run the `SecureAPIClient` example and confirm `client.get_masked_key()` prints something like `sk-ab****wxyz` — first four and last four characters only, middle masked. If you instead see a `ValueError` about a missing key, the env var isn't set in the shell you're running from; if the full key prints unmasked, your `get_masked_key` is returning `self.api_key` directly instead of the sliced version.
+
 ---
 
 ## Summary

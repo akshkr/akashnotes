@@ -374,6 +374,10 @@ for i in range(len(benchmark_results["model"])):
 
 ---
 
+## Checkpoint
+
+Run `validate_schema_compliance` and `evaluate_tool_call_accuracy` against a handful of model outputs and confirm you get a numeric accuracy score back, with malformed tool calls correctly flagged as failures. If everything scores 100% suspiciously fast, check that the validator is actually parsing the tool-call JSON rather than just checking that a string is non-empty.
+
 ## Summary
 
 ```mermaid

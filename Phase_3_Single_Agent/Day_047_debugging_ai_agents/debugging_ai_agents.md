@@ -532,6 +532,10 @@ def print_trace(trace: AgentTrace):
 
 ---
 
+## Checkpoint
+
+Feed `agent_debugging_checklist` a hand-built `AgentTrace` whose `steps` contain the *same* `(tool_name, tool_input)` three times. The returned list should include a `"LOOP DETECTED"` line — the `Counter`-based check fires when an identical call repeats more than twice. Then run a clean trace through `print_trace(...)` and confirm each step shows ✅/❌ with its tool and output. If "LOOP DETECTED" never appears, make sure your duplicate steps serialize to identical `json.dumps(..., sort_keys=True)` strings (same keys, same values).
+
 ## Summary
 
 ```mermaid

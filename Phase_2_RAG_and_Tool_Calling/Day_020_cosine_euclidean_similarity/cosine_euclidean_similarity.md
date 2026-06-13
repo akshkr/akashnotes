@@ -519,6 +519,12 @@ for sim in similarities:
 
 ---
 
+## Checkpoint
+
+Run the `cosine_similarity` sanity checks and confirm the printed values: same direction ≈ 1.0, perpendicular ≈ 0.0, opposite ≈ -1.0. Then run `compare_metrics` and confirm cosine treats `[1,1]` and `[2,2]` as identical while Euclidean does not — that's the magnitude-vs-direction distinction. If your cosine values blow past 1.0, check that you're dividing by the product of the norms, not just the dot product.
+
+---
+
 ## Summary
 
 ```mermaid

@@ -396,6 +396,10 @@ flowchart TB
     style E fill:#FFD700
 ```
 
+## Checkpoint
+
+Run the `agent_with_approval(...)` example and confirm the flow pauses at the `input()` prompt before any action runs: type "no" and the agent should print the rejection message and stop without executing; run it again and type "yes" and you should see "Executing: ...". If the action fires before you're ever asked, the approval gate is being bypassed — make sure `execute_action` is only called inside the `if get_human_approval(...)` branch, not before it.
+
 ---
 
 ## Summary

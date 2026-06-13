@@ -446,6 +446,10 @@ benchmark_results = run_benchmark(rag, test_set)
 print(f"Avg Faithfulness: {benchmark_results['aggregate_metrics']['faithfulness']:.2%}")
 ```
 
+## Checkpoint
+
+Run the basic Ragas evaluation and confirm `results["faithfulness"]` and the other three metrics print as floats between 0 and 1 (the Paris/Bell/photosynthesis samples should score high on faithfulness, since each answer is grounded in its context). If you hit a `KeyError` or empty result, it's almost always the field names: Ragas 0.2+ expects `user_input` / `response` / `retrieved_contexts` / `reference`, not the older `question` / `answer` / `contexts` / `ground_truth`.
+
 ---
 
 ## Summary

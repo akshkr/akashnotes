@@ -532,6 +532,10 @@ def get_embedding(text: str):
 
 ---
 
+## Checkpoint
+
+Run the app locally with the `health_checks` endpoint wired up and confirm `GET /health` returns `200` with a status body — this is exactly what the cloud platform polls to decide your instance is alive. If it returns 200 but your traces never show up, check that `langfuse_tracing`/`langsmith_tracing` has its keys set and the client is flushing before the process exits.
+
 ## Summary
 
 ```mermaid

@@ -477,6 +477,10 @@ def safe_worker_call(worker_fn, task: str, max_retries: int = 2) -> str:
 
 ---
 
+## Checkpoint
+
+Run the Basic Supervisor on `"Write a Python function to calculate prime numbers"`. The supervisor's routing JSON should pick `"code"`, you'll see `Supervisor delegating to: code`, and the final result should be an actual Python function — not an essay or a research summary. If it routes to `research` or `writing` instead, the routing prompt isn't discriminating well; make the worker descriptions in the system prompt more distinct, and confirm you're parsing `routing["worker"]` from valid JSON.
+
 ## Summary
 
 ```mermaid

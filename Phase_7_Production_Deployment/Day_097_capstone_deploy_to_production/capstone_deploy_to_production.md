@@ -725,6 +725,10 @@ A production-deployed AI system with:
 
 ---
 
+## Checkpoint
+
+Run the `api_main` service and confirm the full path works end to end: a request passes through the rate-limit and cost-tracking middleware, hits `/pipeline`, and returns a result while `/health` and `/health/detailed` report green. If a request is rejected with a 429 on the very first call, check that the rate-limit middleware's window/counter is initialized per-client and not pre-exhausted.
+
 ## Summary
 
 ```mermaid

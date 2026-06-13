@@ -480,6 +480,10 @@ The `[DONE]` sentinel signals the end of the stream — this convention is also 
 
 ---
 
+## Checkpoint
+
+Run the `complete_agent_api` with `uvicorn`, then `curl` the agent endpoint — you should get a JSON response back and see the request logged in the server console. If you get a 500, check the server logs for a missing `ANTHROPIC_API_KEY`; if the connection refuses, confirm uvicorn is bound to the host/port you're curling.
+
 ## Summary
 
 ```mermaid

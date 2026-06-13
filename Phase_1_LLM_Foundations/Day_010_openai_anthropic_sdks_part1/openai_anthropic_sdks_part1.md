@@ -425,6 +425,12 @@ response = client.messages.create(
 
 ---
 
+## Checkpoint
+
+Run `advanced_chat` (OpenAI) and `advanced_claude_chat` (Anthropic) on the same message and confirm: both return content plus a token count, and the two providers' usage fields differ (OpenAI's `usage.total_tokens` vs. Anthropic's separate `input_tokens`/`output_tokens`). If either call 401s, check that the matching API key env var is exported — each SDK reads its own (`OPENAI_API_KEY` vs. `ANTHROPIC_API_KEY`).
+
+---
+
 ## Summary
 
 ```mermaid

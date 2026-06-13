@@ -533,6 +533,10 @@ Layer 6: Monitoring & Alerts  → Detect ongoing attack campaigns
 
 Each layer catches what the previous layer missed. An attacker must bypass ALL layers to succeed.
 
+## Checkpoint
+
+Run the `SecureLLM` pipeline and confirm the two test calls diverge: the "Ignore your instructions..." attack returns the blocked message, while "What products do you offer?" gets a normal answer. If the attack slips through to a real response, your input-validation patterns aren't matching it — add the phrase, then re-test. If the *normal* query also gets blocked, your patterns are too aggressive (false positives), which is just as bad for users.
+
 ---
 
 ## Summary

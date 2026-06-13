@@ -791,6 +791,12 @@ def optimize_context(chunks: list[str], query: str, max_tokens: int = 800) -> li
 
 ---
 
+## Checkpoint
+
+Run the `model_routing` example over a mix of trivial and hard queries and confirm: simple ones get sent to the cheap model and only the complex ones reach the expensive one — then compare the blended cost against routing everything to the premium model. If everything routes to the expensive tier, check that `classify_query` returns a real complexity label and that your routing table maps "simple" to the cheaper model id.
+
+---
+
 ## Summary
 
 ```mermaid

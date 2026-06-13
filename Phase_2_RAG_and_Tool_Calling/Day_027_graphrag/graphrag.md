@@ -520,6 +520,12 @@ ALLOWED_RELATIONS = [
 
 ---
 
+## Checkpoint
+
+Run the entity-extraction pipeline on a couple of sentences and confirm: it returns typed `Entity` and `Relationship` objects (subject–predicate–object triples), and `resolve_entities` collapses surface variants ("Apple Inc." and "Apple") onto one canonical name. If the same real-world entity shows up as two separate nodes, check that `normalize_entity` is being applied before you write to the graph, not after.
+
+---
+
 ## Summary
 
 ```mermaid

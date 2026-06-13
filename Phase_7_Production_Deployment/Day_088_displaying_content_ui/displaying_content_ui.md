@@ -442,6 +442,10 @@ if st.button("Run Agent"):
 
 ---
 
+## Checkpoint
+
+Run the `gradio_streaming` (or `streamlit_streaming`) demo and confirm markdown renders formatted, code blocks get syntax highlighting, and the `expandable_reasoning` section collapses/expands. If markdown shows up as literal asterisks and backticks, check that you're sending it to a markdown component rather than a plain text box.
+
 ## Summary
 
 ```mermaid

@@ -433,6 +433,10 @@ flowchart TB
 
 ---
 
+## Checkpoint
+
+Run the LCEL basic chain (`chain = prompt | model | parser`) with `chain.invoke({"topic": "programming"})`. You should get back a plain Python string — a joke — not a `ChatMessage` object or a dict. That's the `StrOutputParser` doing its job at the end of the pipe. If you get an object with a `.content` attribute instead of a string, you left `StrOutputParser()` off the end of the chain.
+
 ## Summary
 
 ```mermaid

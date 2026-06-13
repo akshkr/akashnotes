@@ -442,6 +442,10 @@ async def cleanup_old_tasks(task_queue: TaskQueue, max_age_hours: int = 24):
 
 ---
 
+## Checkpoint
+
+Run the `background_tasks` API: POST a job and confirm you get back a task ID immediately (not a blocked request), then poll the status endpoint with the `polling_client` and watch it flip from `pending` to `completed`. If the status never changes, check that the background worker is actually running and writing back to the same task store the status endpoint reads from.
+
 ## Summary
 
 ```mermaid

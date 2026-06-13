@@ -449,6 +449,12 @@ print(f"Loaded {len(docs)} documents")
 
 ---
 
+## Checkpoint
+
+Point the `DocumentLoader` at a PDF and a webpage and confirm: each returns extracted text plus a `type` reflecting the source, and the character counts are non-zero. If a PDF comes back empty, check whether it's a scanned image (no text layer) — `pypdf` extracts text, not pixels, so those need OCR before parsing.
+
+---
+
 ## Summary
 
 ```mermaid

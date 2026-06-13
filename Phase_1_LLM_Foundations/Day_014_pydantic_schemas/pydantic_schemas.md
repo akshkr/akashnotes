@@ -577,6 +577,12 @@ except json.JSONDecodeError as e:
 
 ---
 
+## Checkpoint
+
+Run `extract_review` and confirm: a valid blurb returns a typed `MovieReview` object (access `review.rating` as an int, not a string), while malformed JSON raises a `ValidationError` instead of silently passing bad data downstream. If everything parses even when it shouldn't, check that your fields use real types/constraints (e.g. `rating: int = Field(ge=0, le=10)`) rather than bare `str`.
+
+---
+
 ## Summary
 
 ```mermaid

@@ -532,6 +532,12 @@ for chunk in chunks:
 
 ---
 
+## Checkpoint
+
+Run the `DocumentChunker` on a long document and confirm: you get multiple chunks, each carries its `chunk_index`/`total_chunks`, and consecutive chunks share the overlap you configured (the tail of one reappears at the head of the next). If chunks have no overlap, check that your `overlap` parameter is actually being subtracted from the stride — a stride equal to chunk size means zero overlap and lost context at the seams.
+
+---
+
 ## Summary
 
 ```mermaid

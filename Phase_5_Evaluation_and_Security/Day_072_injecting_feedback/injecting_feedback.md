@@ -500,6 +500,10 @@ relevant = store.get_relevant_feedback("Write a product description for headphon
 print(f"Found {len(relevant)} relevant feedback entries")
 ```
 
+## Checkpoint
+
+Run the `FeedbackStore` example — no API call, just file I/O and keyword matching. After `store.add(...)` for "Write a product description", the `get_relevant_feedback("Write a product description for headphones")` call should print "Found 1 relevant feedback entries" because the two tasks share words. If you get 0, the keyword overlap is being computed against the wrong field (match `entry["task"]`, not the output text); if a `feedback_history.json` is left behind, that's expected — that's the persistence working.
+
 ---
 
 ## Summary

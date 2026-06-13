@@ -424,6 +424,10 @@ response = agent.generate("Tell me about Python programming")
 print(response)
 ```
 
+## Checkpoint
+
+Run the `sanitize_json_output(...)` example — pure Python, no API. Confirm the printed dict shows `password` and `api_key` as `[REDACTED]` while `user` and the nested `profile.email` are left untouched. If a nested secret survives, your `redact` helper isn't recursing into sub-dicts; if `email` got redacted too, your `sensitive_keys` substring match is too loose (e.g. matching "ail" inside "email").
+
 ---
 
 ## Summary

@@ -398,6 +398,10 @@ print(f"Result: {output.get('data')}")
 # Result: {'sum': 15, 'average': 3.0, 'count': 5}
 ```
 
+## Checkpoint
+
+Run the `run_code_in_sandbox(...)` example with Docker running and confirm `result["stdout"]` contains "Hello from sandbox!" and "4", with `exit_code` 0. If you get a "Cannot connect to the Docker daemon" error, Docker Desktop (or the `docker` daemon) isn't started — that's the prerequisite, not a bug in the code. A non-zero exit code with empty stdout usually means the sandbox image failed to build or pull.
+
 ---
 
 ## Summary

@@ -374,6 +374,10 @@ flowchart TB
 
 ---
 
+## Checkpoint
+
+Run the Structured Results example: define the `CityInfo` model and `agent.run_sync("Tell me about Tokyo")`. `result.data` should come back as a fully-typed `CityInfo` instance — you can do `city.population:,` and iterate `city.famous_for` without any manual `json.loads`. PydanticAI validated the LLM's JSON against your schema for you. If you get a raw string or a `ValidationError`, confirm you passed `result_type=CityInfo` to the `Agent(...)` constructor.
+
 ## Summary
 
 ```mermaid

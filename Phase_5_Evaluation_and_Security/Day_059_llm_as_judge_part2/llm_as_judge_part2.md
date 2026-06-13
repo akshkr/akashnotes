@@ -410,6 +410,10 @@ Return JSON: {{"score": 1-5, "reasoning": "..."}}"""}],
 # Blended cost: ~$0.002/eval vs $0.006/eval for always using gpt-4o (3x cheaper)
 ```
 
+## Checkpoint
+
+Run the `cohens_kappa(...)` example — it's pure Python with no API call, so it's fully deterministic. With the sample `human_scores`/`llm_scores` (7 of 10 ratings match) you should see a printed kappa of about 0.615 — "substantial" agreement — not 0.7. If you got exactly 0.7 you returned raw agreement instead of chance-corrected agreement; the whole point of kappa is subtracting `p_expected`, so double-check that term is in your formula.
+
 ---
 
 ## Summary

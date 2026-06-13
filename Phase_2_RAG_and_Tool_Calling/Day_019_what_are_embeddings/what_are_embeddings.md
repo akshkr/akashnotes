@@ -414,6 +414,12 @@ for cluster_id, docs in clusters.items():
 
 ---
 
+## Checkpoint
+
+Run `find_most_similar` with a query against your document list and confirm: the top hits are the ones that *mean* the same thing as your query, even when they share no exact keywords (e.g. "feline" surfaces "cat" sentences). If results look random, check that every text was embedded with the same model and that you're sorting by descending cosine similarity, not ascending.
+
+---
+
 ## Summary
 
 ```mermaid

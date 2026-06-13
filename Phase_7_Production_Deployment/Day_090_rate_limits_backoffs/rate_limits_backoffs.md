@@ -454,6 +454,10 @@ async def async_api_call():
 
 ---
 
+## Checkpoint
+
+Run the `basic_retry_with_backoff` (or `tenacity_retry`) example against a function that raises a simulated 429 and confirm the logs show the wait time roughly doubling between attempts before it finally succeeds. If it retries instantly with no delay, check that you're actually `sleep`-ing the computed backoff and that jitter isn't collapsing the interval to near-zero.
+
 ## Summary
 
 ```mermaid

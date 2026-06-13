@@ -746,6 +746,10 @@ A production-pattern multi-agent content pipeline with:
 
 *"I built a multi-agent content pipeline with a researcher, writer, and reviewer agent orchestrated by a supervisor. It includes LLM-as-judge quality evaluation with automated revision loops, prompt injection defenses on user input, and a human approval checkpoint before publishing. This pattern is used in production AI content and document generation systems."*
 
+## Checkpoint
+
+Run the full `ContentPipeline` (the `if __name__ == "__main__"` block) and confirm three things happen in order: the researcher/writer/reviewer steps log their progress, the LLM judge produces a `normalized_score`, and — because `require_human_review=True` — execution pauses at the "HUMAN REVIEW REQUIRED" prompt before anything is "published". Approve it and you should see the "FINAL PUBLISHED CONTENT" banner with a final score at or above your 0.72 threshold. If it publishes without ever pausing, `require_human_review` isn't being threaded into the orchestrator; if it loops forever, your `max_revisions` cap isn't stopping the revise-then-re-judge cycle.
+
 ---
 
 ## Summary

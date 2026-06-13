@@ -433,6 +433,12 @@ print(f"Vote Distribution: {result['vote_distribution']}")
 
 ---
 
+## Checkpoint
+
+Run `self_consistency_cot` on a multi-step word problem and confirm: it prints a final answer plus a confidence and vote distribution, and the majority-vote answer is more reliable than any single sample. If confidence is always 100% with one vote, check that `num_samples > 1` and that temperature is high enough (not 0) for the samples to actually diverge.
+
+---
+
 ## Summary
 
 ```mermaid

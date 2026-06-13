@@ -522,6 +522,10 @@ ollama run my-coding-assistant "Write a Python decorator for caching"
 
 ---
 
+## Checkpoint
+
+Run the `finetune_workflow` end to end on the tiny sample dataset and confirm the training loss prints and trends downward across steps, and that a checkpoint directory gets written at the end. If loss is flat or NaN, check that your data made it through the formatter (`format_alpaca`/`format_sharegpt`) and that the tokenizer's pad token is set.
+
 ## Summary
 
 ```mermaid

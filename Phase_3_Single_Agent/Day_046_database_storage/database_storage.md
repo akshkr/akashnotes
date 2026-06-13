@@ -544,6 +544,10 @@ migrate_sqlite_to_postgres("local.db", "postgresql://localhost/production")
 
 ---
 
+## Checkpoint
+
+Run the SQLite example: create a `SQLiteConversationStore`, `create_conversation(...)`, add a user and an assistant message, then call `get_conversation(conv_id)`. You should get back a dict whose `messages` list contains both turns in insertion order — and the same data survives if you reopen the `.db` file in a fresh process. If `get_conversation` returns `None`, you're querying a different `conversation_id` than the one `create_conversation` returned.
+
 ## Summary
 
 ```mermaid

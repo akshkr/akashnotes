@@ -475,6 +475,10 @@ Before deploying:
 - [ ] Least-privilege key scoping
 - [ ] Alerts for suspicious activity
 
+## Checkpoint
+
+Run the `get_api_key("OPENAI_API_KEY")` validation helper two ways: once with the env var set to a value starting with `sk-`, and once with it unset. The first should return the key; the second should raise a clear `ValueError` instead of letting a `None` slip downstream into the OpenAI client. If an unset key returns `None` without raising, you're missing the `if not key` guard — that's the difference between a readable startup error and a confusing 401 deep in your call stack.
+
 ---
 
 ## Summary

@@ -199,6 +199,12 @@ for block in response.content:
 
 ---
 
+## Checkpoint
+
+Call `safe_execute_tool` with arguments that make the tool throw and confirm: you get back a structured error dict (with `error_type`) instead of an unhandled exception that kills the agent loop. Then trip `execute_tool_with_timeout` on a slow function and confirm it returns a timeout result rather than hanging. If a bad tool call still crashes the whole run, check that the try/except wraps the *execution*, not just the dispatch lookup.
+
+---
+
 ## Summary
 
 ```mermaid

@@ -329,6 +329,10 @@ flowchart TB
 
 ---
 
+## Checkpoint
+
+Run the `qlora_peft_workflow` and confirm that `print_trainable_parameters()` reports only a small fraction (typically <1%) of weights as trainable — that's the whole point of LoRA. If it reports nearly 100%, check that the LoRA adapter was actually attached (`get_peft_model(...)`) before you built the trainer.
+
 ## Summary
 
 ```mermaid

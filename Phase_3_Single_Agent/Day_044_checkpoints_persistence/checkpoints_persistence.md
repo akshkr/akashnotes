@@ -630,6 +630,10 @@ print(agent.chat(session, "Where do I work?"))  # Still remembers!
 
 ---
 
+## Checkpoint
+
+Run the LangGraph Checkpoints example: compile with `MemorySaver()`, invoke once under `config = {"configurable": {"thread_id": "user-123"}}`, then invoke a second time with the *same* config. The second run should pick up the `step_count` from the first (you'll see it continue, not reset to 0) because state is keyed by `thread_id`. If the second run starts fresh, check that you passed the same `config` to both `invoke` calls and that the checkpointer was actually passed to `workflow.compile(checkpointer=...)`.
+
 ## Summary
 
 ```mermaid

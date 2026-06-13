@@ -488,6 +488,12 @@ if embedding:
 
 ---
 
+## Checkpoint
+
+Run the `EmbeddingCache` example twice on the same text and confirm: the first call prints "Cache miss" and hits the API, the second prints "Cache hit" and returns instantly with no API call. If it misses every time, check that your cache key hashes both the text *and* the model name consistently — a trailing newline or a different model id will look like a new entry.
+
+---
+
 ## Summary
 
 ```mermaid

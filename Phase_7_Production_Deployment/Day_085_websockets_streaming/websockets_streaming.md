@@ -422,6 +422,10 @@ async def secure_websocket(
 
 ---
 
+## Checkpoint
+
+Run the `basic_websocket_server`, connect with the `python_websocket_client`, and confirm tokens stream in one chunk at a time rather than arriving as one big block at the end. If you only get the full response at the end, check that you're `await`-ing and forwarding each chunk inside the stream loop instead of accumulating before sending.
+
 ## Summary
 
 ```mermaid

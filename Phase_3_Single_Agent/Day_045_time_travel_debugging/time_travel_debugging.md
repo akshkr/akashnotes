@@ -457,6 +457,10 @@ def log_checkpoint(state, checkpoint_id):
 
 ---
 
+## Checkpoint
+
+Run the Complete Time-Travel Example: invoke once with `choice="A"` (you'll get "Result A"), then rewind to `checkpoints[1]` and re-invoke with `choice="B"`. The second result should be "Result B - better!" — proof you replayed from a past checkpoint down a different branch. If the second run still says "Result A", your `resume_config` isn't carrying the `checkpoint_id` (check the `checkpoints[1].config["configurable"]["checkpoint_id"]` path), so it ran fresh instead of resuming.
+
 ## Summary
 
 ```mermaid

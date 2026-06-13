@@ -433,6 +433,10 @@ def log_breakpoint_decision(
         f.write(json.dumps(log_entry) + "\n")
 ```
 
+## Checkpoint
+
+Run `risk_based_breakpoint(...)` (pure Python, no API) with two states: a `{"operation": "delete", "reversible": False, "external_effects": True}` op should score 0.7 and return `True` (breakpoint triggered), while a harmless read-only op scores 0.0 and returns `False`. If a destructive op slips through with a low score, check that your factor weights actually sum — the point is that several moderate-risk signals stack up past the 0.5 threshold even when no single one is alarming on its own.
+
 ---
 
 ## Summary

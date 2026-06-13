@@ -459,6 +459,10 @@ def test_agent_streaming():
 
 ---
 
+## Checkpoint
+
+Run the same compiled graph through both `app.invoke(initial_state)` and `for step in app.stream(initial_state): print(step)`. `invoke` returns one final merged-state dict; `stream` prints one event per node as it fires, keyed by node name. Seeing the per-node breakdown from `stream` but only the end result from `invoke` confirms compilation worked and both execution modes are wired up. If `stream` prints nothing, you likely forgot `workflow.set_entry_point(...)` before `compile()`.
+
 ## Summary
 
 ```mermaid

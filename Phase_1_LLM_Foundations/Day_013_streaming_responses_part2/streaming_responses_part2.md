@@ -345,6 +345,12 @@ for key, value in metrics.items():
 
 ---
 
+## Checkpoint
+
+Run `measure_streaming` and confirm: it reports a time-to-first-token that's noticeably smaller than the total completion time — that gap is exactly the latency win streaming buys you. If first-token time equals total time, check that you're timing inside the chunk loop (stamping the first chunk's arrival) rather than after the stream has fully drained.
+
+---
+
 ## Summary
 
 ```mermaid

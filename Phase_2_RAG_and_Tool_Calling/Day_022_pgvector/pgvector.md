@@ -466,6 +466,12 @@ Use ChromaDB when you need a quick prototype or are working in a notebook. Move 
 
 ---
 
+## Checkpoint
+
+Store a few documents with `store_documents_batch`, then run `search_documents` for a related query and confirm: the most relevant row comes back with the smallest distance. If the query errors with a dimension mismatch, check that your `vector(N)` column width matches your embedding model's output length (e.g. 1536 for `text-embedding-3-small`) — pgvector rejects vectors of the wrong size.
+
+---
+
 ## Summary
 
 ```mermaid

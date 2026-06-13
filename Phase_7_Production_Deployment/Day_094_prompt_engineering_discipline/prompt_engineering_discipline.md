@@ -566,6 +566,10 @@ In practice, 80% of use cases are solved by better prompting + RAG. Fine-tuning 
 
 ---
 
+## Checkpoint
+
+Run the `prompt_management_system` and confirm it loads the `sentiment_prompt_template` from its versioned file and renders it with your variables substituted in. If you see literal `{placeholder}` text in the final prompt, check that the template variables match the keys you're passing to the render call.
+
 ## Summary
 
 ```mermaid

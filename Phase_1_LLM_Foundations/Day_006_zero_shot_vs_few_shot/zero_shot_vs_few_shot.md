@@ -622,6 +622,12 @@ for query in test_queries:
 
 ---
 
+## Checkpoint
+
+Run the `compare_approaches` side-by-side on a tricky input and confirm: the few-shot version lands on the label/format your examples demonstrate, while the zero-shot version is looser or off-format. If few-shot doesn't visibly beat zero-shot, check that your examples actually cover the hard case you're testing — three near-duplicate examples teach the model less than three diverse ones.
+
+---
+
 ## Summary
 
 ```mermaid

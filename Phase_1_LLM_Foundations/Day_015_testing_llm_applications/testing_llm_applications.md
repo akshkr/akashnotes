@@ -718,6 +718,12 @@ def test_sample_integration():
 
 ---
 
+## Checkpoint
+
+Run the mocked unit tests (`pytest` on the `TestExtractUser`/`TestRetryLogic` classes) and confirm: they pass in well under a second and make zero real API calls — that's the whole point of the `mock_openai_client` fixture. If the run is slow or your bill ticks up, check that the test is injecting the mock client rather than constructing a real `OpenAI()` inside the function under test.
+
+---
+
 ## Summary
 
 ```mermaid

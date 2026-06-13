@@ -828,6 +828,10 @@ graph LR
 
 ---
 
+## Checkpoint
+
+Run the LlamaIndex Quick Start: drop a couple of `.txt` files in `./data`, build a `VectorStoreIndex.from_documents(...)`, and `query_engine.query("What is this document about?")`. You should get a coherent answer grounded in your files in well under ten lines of code — LlamaIndex chunked, embedded, and retrieved for you. If you get an empty or "I don't know" answer, check that `./data` actually contains readable text files and that `OPENAI_API_KEY` is set for the embedding call.
+
 ## Summary
 
 ```mermaid

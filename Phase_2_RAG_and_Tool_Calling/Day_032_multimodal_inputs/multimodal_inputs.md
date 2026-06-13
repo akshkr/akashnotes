@@ -521,6 +521,12 @@ Understanding cost differences helps you decide when vision is worth it:
 
 ---
 
+## Checkpoint
+
+Run `analyze_image` on a local screenshot with a concrete question and confirm: the model answers about what's actually in the picture, not a generic guess. If you get a 400/invalid-image error, check that `encode_image` base64-encodes the bytes *and* that you set the correct media type in the request (`image/png` vs. `image/jpeg`) — a mismatched type is the usual culprit.
+
+---
+
 ## Summary
 
 ```mermaid

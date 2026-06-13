@@ -558,6 +558,12 @@ Begin each conversation fresh and helpful."""
 
 ---
 
+## Checkpoint
+
+Run the `ConversationManager` through a few turns and confirm: the assistant stays in the persona set by your system prompt across all turns, and earlier messages stay in context (ask it to recall something from turn one). If it forgets persona or history, check that the system prompt is being prepended on every call and that `max_messages` isn't trimming so aggressively that the system prompt or early turns get dropped.
+
+---
+
 ## Summary
 
 ```mermaid

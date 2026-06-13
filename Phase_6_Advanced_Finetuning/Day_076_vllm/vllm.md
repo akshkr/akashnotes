@@ -369,6 +369,10 @@ async def check_vllm_health(base_url: str = "http://localhost:8000") -> bool:
 
 ---
 
+## Checkpoint
+
+Start the vLLM OpenAI-compatible server (`vllm serve <model>`) and run the `openai_compatible_api` client against it — you should get a normal chat completion back, just pointed at `localhost:8000` instead of OpenAI. If the request 404s or refuses the connection, check that the server finished loading weights (watch its startup logs for "Uvicorn running") and that your `base_url` ends in `/v1`.
+
 ## Summary
 
 ```mermaid

@@ -332,6 +332,10 @@ def compare_quantizations(prompt: str, original_model, quantized_model):
 
 ---
 
+## Checkpoint
+
+Run the `compare_quantizations` example and confirm the quantized model loads with a noticeably smaller memory footprint than the full-precision one while still returning sensible text. If you hit an out-of-memory error or the load fails, check that you've installed the matching backend (`autoawq`/`auto-gptq` or a `llama.cpp` build) and that the GGUF/AWQ file path actually points to the quantized weights, not the original checkpoint.
+
 ## Summary
 
 ```mermaid

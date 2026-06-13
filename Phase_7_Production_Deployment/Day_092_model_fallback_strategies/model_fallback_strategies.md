@@ -404,6 +404,10 @@ flowchart TB
 
 ---
 
+## Checkpoint
+
+Run the `fallback_chain_with_health` with the primary provider forced to fail and confirm the request transparently falls through to the secondary model and still returns an answer. If the whole call errors out instead, check that the `provider_circuit_breaker` is catching the primary's exception rather than letting it propagate past the fallback loop.
+
 ## Summary
 
 ```mermaid

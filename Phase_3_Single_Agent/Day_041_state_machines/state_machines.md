@@ -417,6 +417,10 @@ print(f"Iterations: {result['iterations']}")
 
 ---
 
+## Checkpoint
+
+Run the Cycles and Iteration example with an initial `quality_score` of `0.3` and `max_iterations` of `5`. The `improve` node should loop back into itself, bumping the score by `0.15` each pass, and exit once it crosses `0.9` (or hits the iteration cap) — printing a final score around `0.9` after roughly four iterations. If it exits immediately after one pass, check your `should_improve_more` router: it has to return `"improve"` (mapped back to the same node) until a stop condition is met.
+
 ## Summary
 
 ```mermaid

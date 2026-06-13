@@ -367,6 +367,10 @@ def check_database():
 
 ---
 
+## Checkpoint
+
+Build and run the `production_setup` container, then hit the app's port from your host and confirm you get a healthy response back. If the container exits immediately or the port isn't reachable, check that `EXPOSE`/`-p` map the same port your app binds to and that the `ANTHROPIC_API_KEY` was passed in as an env var (not baked into the image).
+
 ## Summary
 
 ```mermaid

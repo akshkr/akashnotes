@@ -444,6 +444,10 @@ response = client.messages.create(
 
 ---
 
+## Checkpoint
+
+Run the `semantic_cache` example, ask the same question twice with slightly different wording, and confirm the second call is served from cache (much faster, no new API spend) rather than hitting the model again. If the paraphrase misses the cache every time, check that your similarity threshold isn't set too strict and that both queries are being embedded with the same model.
+
 ## Summary
 
 ```mermaid

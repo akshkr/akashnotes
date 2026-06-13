@@ -336,6 +336,10 @@ NeMo Guardrails was notable for its dialog-flow approach to safety: rather than 
 
 As of 2025, NeMo Guardrails and Colang are in **maintenance mode** and are not recommended for new projects. The ecosystem has moved toward validator-based frameworks like Guardrails AI, which offer a more composable and Pythonic approach. If you encounter NeMo Guardrails in existing codebases, consider migrating to Guardrails AI or built-in provider safety APIs.
 
+## Checkpoint
+
+Run the `NoCompetitorMention` custom-validator example and confirm `result.validated_output` comes back as `"Our product is better than [Competitor]'s solution"` — the competitor name swapped out by the `fix` path. If the original "Microsoft" survives, your `validate`/`fix` casing isn't covering the title-case form; if it raises instead of fixing, you passed `on_fail="exception"` rather than `on_fail="fix"`.
+
 ---
 
 ## Summary

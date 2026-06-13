@@ -440,6 +440,10 @@ class RouterMetrics:
 
 ---
 
+## Checkpoint
+
+Run the `router_implementations` example with a mix of easy and hard prompts and confirm the cheap model handles the easy ones while the expensive model only gets the hard ones — then check `cost_analysis` shows a lower blended cost than routing everything to the big model. If every request goes to the expensive model, check the routing threshold/classifier logic that decides difficulty.
+
 ## Summary
 
 ```mermaid

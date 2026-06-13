@@ -466,6 +466,10 @@ coding_task = Task(description="Write Python code", agent=researcher)
 
 ---
 
+## Checkpoint
+
+Run the Task Dependencies with Context example: a research -> write -> edit chain where the writing task has `context=[research_task]` and the editing task has `context=[writing_task]`. In a `Process.sequential` crew, confirm the editor's output actually reflects the writer's draft (not a from-scratch rewrite) — that's the upstream output being injected automatically. If a downstream task seems to ignore its predecessor, you almost certainly left the `context=[...]` list off that task.
+
 ## Summary
 
 ```mermaid

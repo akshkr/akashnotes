@@ -477,6 +477,10 @@ def evaluate_go_no_go(results: dict) -> tuple[bool, list[str]]:
 
 ---
 
+## Checkpoint
+
+Run the `eval_pipeline` over the base and fine-tuned models and confirm it prints side-by-side automated metrics plus a go/no-go verdict from `go_no_go_criteria`. If both models score identically, check that you're actually loading the fine-tuned adapter and not pointing both runs at the same base checkpoint.
+
 ## Summary
 
 ```mermaid

@@ -420,6 +420,10 @@ def validate_input(state: AgentState) -> dict:
 
 ---
 
+## Checkpoint
+
+Run the Complete Routing Example and invoke it with `{"messages": ["What's the weather?"], ...}`. The `classify_intent` node should set `intent` to `"weather"`, the `route_by_intent` conditional edge should send it to the `weather` node, and `result["response"]` should be `"The weather is sunny!"`. If every input lands in the `general` handler, your routing function is returning the wrong key — make sure `route_by_intent` reads `state["intent"]` and that the keys in `add_conditional_edges` match the strings it returns.
+
 ## Summary
 
 ```mermaid

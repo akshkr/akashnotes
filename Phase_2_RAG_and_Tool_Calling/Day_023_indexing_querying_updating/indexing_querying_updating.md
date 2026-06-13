@@ -550,6 +550,12 @@ print(f"NDCG: {calculate_ndcg(scores):.3f}")  # < 1.0 because ranking isn't idea
 
 ---
 
+## Checkpoint
+
+Run `index_with_dedup` over a list that contains a duplicate, then `update_document` on one id, and confirm: the dedup pass reports it skipped the duplicate, and a re-query reflects the updated content rather than the old text. If duplicates slip through, check that your `generate_doc_id` hashes the content deterministically (same text in → same id out) so the store can recognize a repeat.
+
+---
+
 ## Summary
 
 ```mermaid

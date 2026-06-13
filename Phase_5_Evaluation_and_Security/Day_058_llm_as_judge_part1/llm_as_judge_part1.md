@@ -449,6 +449,10 @@ print(f"Relevancy: {result['relevancy']:.2%}")
 print(f"Context Quality: {result['context_quality']:.2%}")
 ```
 
+## Checkpoint
+
+Run the `evaluate_with_scores(...)` example and confirm you get back a dict with integer-ish scores from 1 to 5 for `accuracy`, `completeness`, `clarity`, and `overall` — and that the deliberately weak photosynthesis answer scores below 5 on at least one axis. If `json.loads` throws, the judge ignored "Return ONLY valid JSON"; keeping `response_format={"type": "json_object"}` and `temperature=0` is what forces parseable, repeatable output.
+
 ---
 
 ## Summary

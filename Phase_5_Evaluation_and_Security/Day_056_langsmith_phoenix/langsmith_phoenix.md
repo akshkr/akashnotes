@@ -381,6 +381,10 @@ def analyze_trace(trace: dict) -> dict:
     }
 ```
 
+## Checkpoint
+
+Run the `MetricsCollector` example above and call `collector.summary()` after recording a couple of queries — you should see a non-zero `total_queries` and a real `latency.mean` in the printed dict. If it comes back `{"error": "No data"}`, you're almost certainly printing a different collector instance than the one you called `.record(...)` on (or you skipped the `record` step entirely).
+
 ---
 
 ## Summary
