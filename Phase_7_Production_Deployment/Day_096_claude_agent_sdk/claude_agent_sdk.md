@@ -1,543 +1,410 @@
-# Claude Agent SDK
+# Agent SDKs and the Patterns Underneath
 
-You have built agents in three different ways over this journey: raw API calls with a ReAct loop, LangGraph state machines, and CrewAI multi-agent pipelines. Each had trade-offs. Now meet Anthropic's own answer to the question: what is the right way to build Claude-powered agents?
+You have built agents three ways on this journey: a raw ReAct loop, LangGraph state machines, and CrewAI pipelines. Today we look at the **agent SDKs** — higher-level libraries that package the agent loop, tool dispatch, routing, and guardrails — and, just as importantly, at *what they do under the hood* so you can build the same patterns directly on the Messages API when you want full control.
 
-> **Coming from Software Engineering?** The Claude Agent SDK is to Claude what the AWS SDK is to AWS services — a first-party, opinionated library that handles the common patterns so you don't reinvent them. Like choosing between raw HTTP calls, Boto3, and CDK for AWS, you're choosing the right abstraction level. The SDK handles the agent loop, tool dispatch, and guardrails, similar to how a web framework handles routing, middleware, and request lifecycle.
-
-The Claude Agent SDK (also called the Anthropic Agents SDK) is Anthropic's opinionated framework for building production agents. It handles the orchestration, tool execution, safety guardrails, and multi-agent handoffs — so you focus on the logic, not the plumbing.
+> **Coming from Software Engineering?** An agent SDK is to the LLM API what a web framework is to raw sockets. Flask/Express handle routing, middleware, and the request lifecycle so you don't hand-roll them; an agent SDK handles the tool-call loop, multi-agent routing, and input/output validation. And like web frameworks, the value is the *pattern*, not the package — once you've seen the loop, you can implement it on bare HTTP when you need to.
 
 ---
 
-## When to Use What
+## The two SDKs you'll hear about
+
+There are two distinct "agent SDKs" in the Claude ecosystem, and they're easy to confuse:
+
+| | **Claude Agent SDK** | **OpenAI Agents SDK** |
+|---|---|---|
+| Package | `claude-agent-sdk` | `openai-agents` |
+| Origin | Anthropic (the renamed Claude Code SDK) | OpenAI (model-agnostic; works with Claude) |
+| Entry points | `query()`, `ClaudeSDKClient` | `Agent`, `Runner`, `handoff` |
+| Mental model | A managed coding-agent loop with built-in file/bash/MCP tools | `Agent` objects with tools, `handoff`s, and guardrails, run by a `Runner` |
+| Best when | You want Anthropic's managed agent harness (bash, file edits, MCP) | You want the `Agent`/handoff/guardrail ergonomics, possibly across providers |
+
+> ⚠️ **Accuracy note.** SDK APIs move fast, and the two SDKs above have **different** surfaces — don't mix them up (the `Agent`/`Runner`/`Handoff` names belong to the OpenAI Agents SDK, not the Claude Agent SDK). Before writing SDK-specific code, read the current docs: the [Claude Agent SDK docs](https://docs.claude.com/en/api/agent-sdk/overview) and the OpenAI Agents SDK docs. **The runnable code in this lesson uses the plain `anthropic` Messages API** — which is stable and provider-accurate — so you learn the patterns the SDKs automate without depending on a fast-moving wrapper.
+
+### What the Claude Agent SDK gives you (at a glance)
+
+At a high level the Claude Agent SDK exposes:
+
+- **`query(...)`** — fire a prompt and stream the agent's messages back (a one-shot/async-iterator entry point).
+- **`ClaudeSDKClient`** — a stateful client for multi-turn agent sessions.
+- **`ClaudeAgentOptions`** — configuration (model, system prompt, allowed tools, working directory, permission mode, etc.).
+- **custom tools** via a tool decorator + `create_sdk_mcp_server` (your tools are exposed to the agent as an in-process MCP server).
+- built-in **file, bash, and MCP** tools and a managed agent loop.
+
+Reach for it when you want Anthropic to run that loop for you. Reach for the Messages API (below) when you want to own every step. Consult the docs for exact signatures before you build — they change between releases.
+
+---
+
+## When to use what
 
 ```mermaid
 flowchart TD
-    A["What are you building?"] --> B{"Simple agent\nwith tools?"}
-    B -->|Yes| C["Raw Anthropic SDK\n(anthropic Python package)\nFull control, minimal abstraction"]
+    A["What are you building?"] --> B{"Simple agent\nwith a few tools?"}
+    B -->|Yes| C["Raw Messages API loop\nFull control, minimal abstraction"]
     B -->|No| D{"Multi-step workflow\nwith explicit state?"}
-    D -->|Yes| E["LangGraph\nBest for complex state machines,\nvisual graphs, time travel"]
-    D -->|No| F{"Multiple specialized\nagents collaborating?"}
-    F -->|Yes| G["Claude Agent SDK\nBest for multi-agent,\nguardrails, handoffs"]
-    F -->|No| H["CrewAI / AutoGen\nHigh-level abstractions,\nquick prototyping"]
+    D -->|Yes| E["LangGraph\nState machines, visual graphs,\ncheckpoints, time travel"]
+    D -->|No| F{"Want a managed loop\nor handoff/guardrail ergonomics?"}
+    F -->|Managed loop, Claude-native| G["Claude Agent SDK"]
+    F -->|Agent/handoff abstractions| H["OpenAI Agents SDK"]
 
     style C fill:#90EE90
     style E fill:#90EE90
-    style G fill:#90EE90
+    style G fill:#87CEEB
     style H fill:#FFE4B5
 ```
 
-Use the Claude Agent SDK when:
-- You want Anthropic's opinionated best practices baked in
-- You need multi-agent orchestration with handoffs
-- You want built-in guardrails and tracing
-- You are building primarily with Claude (not multi-model)
-
 ---
 
-## Installation and Setup
+## The agent loop, on the Messages API
 
-```bash
-pip install claude-agent-sdk
-# The Agent SDK is a separate package from the base anthropic SDK
-```
-
-> **⚠️ Important — the code on this page is illustrative, not the real Claude Agent SDK.** The `Agent` / `Runner` / `Handoff` / `InputGuardrail` style shown below follows the **OpenAI Agents SDK** pattern (package: `openai-agents`), which is a useful conceptual model for orchestration/handoffs/guardrails. The **actual Claude Agent SDK** (`pip install claude-agent-sdk`) has a different surface centered on `query()` and `ClaudeSDKClient`, with `@tool`, `create_sdk_mcp_server`, and `ClaudeAgentOptions`. Treat this lesson as patterns, not runnable Claude code — check the [official Agent SDK docs](https://docs.claude.com/en/api/agent-sdk/overview) for current installation, imports, and signatures before building.
-
----
-
-## Core Concepts
-
-```mermaid
-flowchart LR
-    A["Runner"] --> B["Agent"]
-    B --> C["Model\n(claude-sonnet-4-5)"]
-    B --> D["Tools\n(functions)"]
-    B --> E["System Prompt"]
-    B --> F["Guardrails"]
-    A --> G["Handoffs\n(to other agents)"]
-    A --> H["Trace\n(observability)"]
-```
-
-- **Agent** — an AI entity with a model, tools, and instructions
-- **Tool** — a Python function the agent can call
-- **Runner** — executes the agent loop (handles turns, tool calls, handoffs)
-- **Handoff** — transfers control from one agent to another
-- **Guardrail** — validation that runs before/after agent responses
-
----
-
-## Building a Basic Agent
+Every agent SDK is wrapping this loop: call the model with tools, execute any tool calls it requests, feed results back, repeat until it stops asking for tools. Here it is directly.
 
 ```python
-# script_id: day_096_claude_agent_sdk/multi_agent_support_system
+# script_id: day_096_claude_agent_sdk/support_agent
 import anthropic
-from claude_agent_sdk import Agent, Tool, Runner
-import json
 
 client = anthropic.Anthropic()
 
 
-# Define tools as decorated functions
+# 1. Tool implementations (plain Python functions)
 def search_web(query: str) -> str:
-    """Search the web for current information on a topic.
-    
-    Args:
-        query: The search query string
-        
-    Returns:
-        Search results as formatted text
-    """
-    # In production, integrate with a real search API
-    # For now, simulate results
-    return f"Search results for '{query}':\n1. Example result 1\n2. Example result 2"
+    """Pretend web search — wire to a real API in production."""
+    return f"Results for '{query}': [result 1], [result 2]"
 
 
 def calculate(expression: str) -> str:
-    """Evaluate a mathematical expression safely.
-    
-    Args:
-        expression: A mathematical expression like '2 + 2' or '100 * 0.15'
-        
-    Returns:
-        The numeric result as a string
-    """
+    """Evaluate arithmetic safely (never eval untrusted input)."""
+    import ast, operator
+    ops = {ast.Add: operator.add, ast.Sub: operator.sub,
+           ast.Mult: operator.mul, ast.Div: operator.truediv, ast.Pow: operator.pow}
+
+    def _eval(node):
+        if isinstance(node, ast.Constant):
+            return node.value
+        if isinstance(node, ast.BinOp):
+            return ops[type(node.op)](_eval(node.left), _eval(node.right))
+        if isinstance(node, ast.UnaryOp) and isinstance(node.op, ast.USub):
+            return -_eval(node.operand)
+        raise ValueError("Unsupported expression")
+
     try:
-        # Safe math evaluation using AST (never use eval with untrusted input!)
-        import ast, operator
-        def safe_eval(node):
-            if isinstance(node, ast.Constant): return node.value
-            elif isinstance(node, ast.BinOp):
-                ops = {ast.Add: operator.add, ast.Sub: operator.sub,
-                       ast.Mult: operator.mul, ast.Div: operator.truediv}
-                return ops[type(node.op)](safe_eval(node.left), safe_eval(node.right))
-            elif isinstance(node, ast.UnaryOp) and isinstance(node.op, ast.USub):
-                return -safe_eval(node.operand)
-            raise ValueError("Unsupported expression")
-        result = safe_eval(ast.parse(expression, mode='eval').body)
-        return str(result)
-    except Exception as e:
+        return str(_eval(ast.parse(expression, mode="eval").body))
+    except Exception as e:  # noqa: BLE001
         return f"Error: {e}"
 
 
-def get_current_date() -> str:
-    """Get the current date and time."""
-    from datetime import datetime, timezone
-    return datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+TOOL_IMPLS = {"search_web": search_web, "calculate": calculate}
 
-
-# Create the agent
-research_agent = Agent(
-    name="Research Assistant",
-    model="claude-sonnet-4-5",
-    instructions="""You are a helpful research assistant. You have access to web search 
-    and calculation tools. Use them to answer questions accurately.
-    
-    Always:
-    - Search for current information before answering factual questions
-    - Show your calculations when doing math
-    - Cite your sources when possible
-    """,
-    tools=[
-        Tool.from_function(search_web),
-        Tool.from_function(calculate),
-        Tool.from_function(get_current_date),
-    ],
-)
-
-# Run the agent
-runner = Runner(client=client)
-
-result = runner.run(
-    agent=research_agent,
-    messages=[
-        {"role": "user", "content": "What is 15% of $847, and when was Python first released?"}
-    ],
-)
-
-print(result.final_output)
-```
-
----
-
-## Adding Custom Tools with Schemas
-
-For tools that need precise input control, define the schema explicitly:
-
-```python
-# script_id: day_096_claude_agent_sdk/multi_agent_support_system
-from claude_agent_sdk import Tool
-import requests
-
-
-def query_internal_api(
-    endpoint: str,
-    method: str = "GET",
-    params: dict | None = None,
-) -> str:
-    """Query the internal company API.
-    
-    Args:
-        endpoint: API endpoint path (e.g., '/users/123' or '/orders')
-        method: HTTP method - GET or POST
-        params: Query parameters as a dict
-        
-    Returns:
-        API response as JSON string
-    """
-    base_url = "https://api.internal.company.com"
-    
-    try:
-        if method.upper() == "GET":
-            response = requests.get(
-                f"{base_url}{endpoint}",
-                params=params or {},
-                headers={"Authorization": "Bearer ..."},
-                timeout=10,
-            )
-        else:
-            return "Only GET requests are supported"
-        
-        response.raise_for_status()
-        return json.dumps(response.json(), indent=2)
-    except requests.Timeout:
-        return "Error: API request timed out"
-    except requests.HTTPError as e:
-        return f"Error: API returned {e.response.status_code}"
-    except Exception as e:
-        return f"Error: {e}"
-
-
-# Create tool with explicit schema for tighter control
-api_tool = Tool(
-    name="query_internal_api",
-    description="Query the company's internal API to look up customer data, orders, and inventory.",
-    input_schema={
-        "type": "object",
-        "properties": {
-            "endpoint": {
-                "type": "string",
-                "description": "API endpoint path starting with /",
-                "examples": ["/customers/search", "/orders/123"],
-            },
-            "method": {
-                "type": "string",
-                "enum": ["GET"],
-                "description": "HTTP method",
-                "default": "GET",
-            },
-            "params": {
-                "type": "object",
-                "description": "Query parameters",
-                "additionalProperties": {"type": "string"},
-            },
+# 2. Tool schemas the model sees
+TOOLS = [
+    {
+        "name": "search_web",
+        "description": "Search the web for current information.",
+        "input_schema": {
+            "type": "object",
+            "properties": {"query": {"type": "string", "description": "Search query"}},
+            "required": ["query"],
         },
-        "required": ["endpoint"],
     },
-    function=query_internal_api,
-)
+    {
+        "name": "calculate",
+        "description": "Evaluate a math expression like '100 * 0.15'.",
+        "input_schema": {
+            "type": "object",
+            "properties": {"expression": {"type": "string"}},
+            "required": ["expression"],
+        },
+    },
+]
+
+
+# 3. The loop the SDKs automate for you
+def run_agent(system: str, tools: list, impls: dict, user_message: str,
+              model: str = "claude-opus-4-8", max_steps: int = 6) -> str:
+    messages = [{"role": "user", "content": user_message}]
+    for _ in range(max_steps):
+        response = client.messages.create(
+            model=model,
+            max_tokens=1024,
+            system=system,
+            tools=tools,
+            messages=messages,
+        )
+        if response.stop_reason != "tool_use":
+            # No more tool calls — return the final text.
+            return "".join(b.text for b in response.content if b.type == "text")
+
+        # Echo the assistant turn (including its tool_use blocks), then run the tools.
+        messages.append({"role": "assistant", "content": response.content})
+        results = []
+        for block in response.content:
+            if block.type == "tool_use":
+                output = impls[block.name](**block.input)
+                results.append({
+                    "type": "tool_result",
+                    "tool_use_id": block.id,
+                    "content": str(output),
+                })
+        messages.append({"role": "user", "content": results})
+    return "Stopped: max steps reached."
+
+
+print(run_agent(
+    system="You are a research assistant. Use tools for facts and math.",
+    tools=TOOLS,
+    impls=TOOL_IMPLS,
+    user_message="What is 15% of 847?",
+))
 ```
+
+That `run_agent` function is, in essence, what `Runner.run()` (OpenAI Agents SDK) or the Claude Agent SDK's managed loop does for you.
 
 ---
 
-## Multi-Agent Orchestration with Handoffs
+## Routing: the "handoff" pattern
 
-This is where the SDK shines. Handoffs let a triage agent route to specialist agents.
+A "handoff" is a triage agent deciding which specialist should handle a request. You can implement it by forcing a routing decision with `tool_choice`, then dispatching to the chosen specialist — each specialist is just another `run_agent` call with its own system prompt and tools.
 
 ```python
-# script_id: day_096_claude_agent_sdk/multi_agent_support_system
-from claude_agent_sdk import Agent, Tool, Runner, Handoff
+# script_id: day_096_claude_agent_sdk/support_agent
+
+SPECIALISTS = {
+    "billing": {
+        "system": "You are a billing specialist. Be precise with amounts and dates; "
+                  "confirm before processing any change.",
+        "model": "claude-haiku-4-5",
+    },
+    "technical": {
+        "system": "You are technical support. Ask for error messages and stack traces "
+                  "when relevant.",
+        "model": "claude-sonnet-4-6",
+    },
+    "general": {
+        "system": "You handle general product and account questions.",
+        "model": "claude-haiku-4-5",
+    },
+}
 
 
-# Specialist agents
-billing_agent = Agent(
-    name="Billing Specialist",
-    model="claude-haiku-4-5",  # Cheaper model for specialized tasks
-    instructions="""You are a billing specialist. You handle:
-    - Invoice questions
-    - Payment processing issues  
-    - Refund requests
-    - Subscription changes
-    
-    Be precise with amounts and dates. Always confirm before processing changes.""",
-    tools=[
-        Tool.from_function(query_internal_api),
-    ],
-)
-
-technical_agent = Agent(
-    name="Technical Support",
-    model="claude-sonnet-4-5",
-    instructions="""You are a technical support specialist. You handle:
-    - Bug reports and error messages
-    - Integration questions
-    - API documentation questions
-    - Performance issues
-    
-    Ask for error messages and stack traces when relevant.""",
-    tools=[
-        Tool.from_function(search_web),
-        Tool.from_function(query_internal_api),
-    ],
-)
-
-general_agent = Agent(
-    name="General Support",
-    model="claude-haiku-4-5",
-    instructions="You handle general product questions, how-to guides, and account management.",
-    tools=[Tool.from_function(search_web)],
-)
+def triage(user_message: str) -> str:
+    """Force the model to pick a specialist via a single-tool choice."""
+    route_tool = {
+        "name": "route",
+        "description": "Route the request to the right specialist.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "specialist": {"type": "string", "enum": list(SPECIALISTS)},
+            },
+            "required": ["specialist"],
+        },
+    }
+    response = client.messages.create(
+        model="claude-haiku-4-5",
+        max_tokens=256,
+        system="Route the customer's request. Do not answer it yourself.",
+        tools=[route_tool],
+        tool_choice={"type": "tool", "name": "route"},  # must call route
+        messages=[{"role": "user", "content": user_message}],
+    )
+    tool_use = next(b for b in response.content if b.type == "tool_use")
+    return tool_use.input["specialist"]
 
 
-# Triage agent routes to specialists
-triage_agent = Agent(
-    name="Support Triage",
-    model="claude-haiku-4-5",
-    instructions="""You are a customer support triage agent. Your job is to:
-    1. Understand the customer's issue
-    2. Route to the appropriate specialist:
-       - Billing questions → billing_specialist
-       - Technical/API issues → technical_support
-       - Everything else → general_support
-    
-    Do NOT attempt to answer questions yourself. Always route to a specialist.""",
-    handoffs=[
-        Handoff(
-            agent=billing_agent,
-            name="billing_specialist",
-            description="Route billing, payment, invoice, and refund questions here",
-        ),
-        Handoff(
-            agent=technical_agent,
-            name="technical_support",
-            description="Route bug reports, API questions, and technical issues here",
-        ),
-        Handoff(
-            agent=general_agent,
-            name="general_support",
-            description="Route general product and account questions here",
-        ),
-    ],
-)
+def handle(user_message: str) -> str:
+    specialist = triage(user_message)
+    cfg = SPECIALISTS[specialist]
+    print(f"Routed to: {specialist}")
+    return run_agent(
+        system=cfg["system"], tools=TOOLS, impls=TOOL_IMPLS,
+        user_message=user_message, model=cfg["model"],
+    )
 
 
-# Run with the triage agent as entry point
-runner = Runner(client=client)
-
-result = runner.run(
-    agent=triage_agent,
-    messages=[
-        {"role": "user", "content": "I was charged twice for my subscription this month"}
-    ],
-)
-
-print(f"Final agent: {result.last_agent.name}")
-print(f"Answer: {result.final_output}")
+print(handle("I was charged twice for my subscription this month"))
 ```
+
+`tool_choice={"type": "tool", "name": "route"}` guarantees the model returns a routing decision rather than free text — the reliable way to get a structured branch.
 
 ---
 
 ## Guardrails
 
-Guardrails run validation before or after agent responses. They are the SDK's answer to "what if the agent says something it shouldn't?"
+Guardrails are just validation that runs **before** the request (block bad input) and **after** the response (block bad output). They're plain functions — no framework required.
 
 ```python
-# script_id: day_096_claude_agent_sdk/guardrails_example
-from claude_agent_sdk import InputGuardrail, OutputGuardrail, GuardrailFunctionOutput
+# script_id: day_096_claude_agent_sdk/guardrails
 import re
 
 
-async def check_for_pii(context, agent, input_data) -> GuardrailFunctionOutput:
-    """Input guardrail: detect and block PII in user messages."""
-    message = str(input_data)
-    
-    pii_patterns = {
-        "SSN": r'\b\d{3}-\d{2}-\d{4}\b',
-        "Credit Card": r'\b(?:4[0-9]{12}(?:[0-9]{3})?|5[1-5][0-9]{14})\b',
-    }
-    
-    for pii_type, pattern in pii_patterns.items():
+class GuardrailTripped(Exception):
+    """Raised when a guardrail blocks the request or response."""
+
+
+PII_PATTERNS = {
+    "SSN": r"\b\d{3}-\d{2}-\d{4}\b",
+    "Credit Card": r"\b(?:4[0-9]{12}(?:[0-9]{3})?|5[1-5][0-9]{14})\b",
+}
+
+
+def input_guardrail(message: str) -> None:
+    """Block PII before it ever reaches the model."""
+    for label, pattern in PII_PATTERNS.items():
         if re.search(pattern, message):
-            return GuardrailFunctionOutput(
-                output_info={"detected_pii": pii_type},
-                tripwire_triggered=True,  # Block the request
-            )
-    
-    return GuardrailFunctionOutput(
-        output_info={"pii_detected": False},
-        tripwire_triggered=False,  # Allow through
-    )
+            raise GuardrailTripped(f"Input blocked: contains {label}")
 
 
-async def check_response_quality(context, agent, output) -> GuardrailFunctionOutput:
-    """Output guardrail: ensure response meets quality standards."""
-    response_text = str(output)
-    
-    # Block responses that are too short to be useful
+def output_guardrail(response_text: str) -> None:
+    """Block low-quality or injection-echoing responses."""
     if len(response_text.strip()) < 20:
-        return GuardrailFunctionOutput(
-            output_info={"issue": "response too short"},
-            tripwire_triggered=True,
-        )
-    
-    # Block responses containing known harmful patterns
-    harmful_patterns = ["ignore previous instructions", "jailbreak"]
-    for pattern in harmful_patterns:
-        if pattern.lower() in response_text.lower():
-            return GuardrailFunctionOutput(
-                output_info={"issue": f"harmful pattern: {pattern}"},
-                tripwire_triggered=True,
-            )
-    
-    return GuardrailFunctionOutput(
-        output_info={"quality": "ok"},
-        tripwire_triggered=False,
-    )
+        raise GuardrailTripped("Output blocked: too short to be useful")
+    for pattern in ("ignore previous instructions", "jailbreak"):
+        if pattern in response_text.lower():
+            raise GuardrailTripped(f"Output blocked: contains '{pattern}'")
 
 
-# Attach guardrails to agent
-guarded_agent = Agent(
-    name="Safe Assistant",
-    model="claude-sonnet-4-5",
-    instructions="You are a helpful assistant.",
-    tools=[],
-    input_guardrails=[
-        InputGuardrail(guardrail_function=check_for_pii),
-    ],
-    output_guardrails=[
-        OutputGuardrail(guardrail_function=check_response_quality),
-    ],
-)
+def guarded_run(run_fn, user_message: str) -> str:
+    """Wrap any agent call with input/output guardrails."""
+    input_guardrail(user_message)            # pre-check
+    result = run_fn(user_message)            # run the agent
+    output_guardrail(result)                 # post-check
+    return result
+
+
+# Usage:
+#   guarded_run(handle, "How do I reset my password?")  -> runs
+#   guarded_run(handle, "My SSN is 123-45-6789")        -> GuardrailTripped
 ```
+
+This is the same pre/post-validation an SDK's `input_guardrails` / `output_guardrails` give you — you just own the policy.
 
 ---
 
-## Tracing and Debugging
+## Async for production
 
-The SDK has built-in tracing. In production, you would send traces to LangSmith or your own observability platform.
-
-```python
-# script_id: day_096_claude_agent_sdk/multi_agent_support_system
-from claude_agent_sdk import Runner, RunConfig
-import json
-
-
-runner = Runner(client=client)
-
-# Enable verbose tracing
-result = runner.run(
-    agent=research_agent,
-    messages=[{"role": "user", "content": "What is the population of Tokyo?"}],
-    run_config=RunConfig(
-        workflow_name="research_query",
-        trace_metadata={"user_id": "user_123", "session_id": "sess_abc"},
-    ),
-)
-
-# Inspect the trace
-for item in result.new_items:
-    item_type = type(item).__name__
-    print(f"\n--- {item_type} ---")
-    
-    if hasattr(item, 'message'):
-        msg = item.message
-        print(f"Role: {msg.role}")
-        if hasattr(msg, 'content'):
-            for block in msg.content:
-                if hasattr(block, 'text'):
-                    print(f"Text: {block.text[:200]}")
-                elif hasattr(block, 'name'):
-                    print(f"Tool: {block.name}({block.input})")
-
-print(f"\nFinal output: {result.final_output}")
-```
-
----
-
-## Async Execution
-
-For production web apps, use the async runner:
+Web apps should not block on the agent loop. Use `AsyncAnthropic` and `await` the calls; the loop structure is identical.
 
 ```python
-# script_id: day_096_claude_agent_sdk/multi_agent_support_system
-import asyncio
-from claude_agent_sdk import Runner
-
-
-async def handle_user_request(user_id: str, message: str) -> str:
-    """Handle a user request asynchronously."""
-    async_runner = Runner(client=client)
-    
-    result = await async_runner.run_async(
-        agent=triage_agent,
-        messages=[{"role": "user", "content": message}],
-        run_config=RunConfig(
-            trace_metadata={"user_id": user_id},
-        ),
-    )
-    
-    return result.final_output
-
-
-# FastAPI integration
+# script_id: day_096_claude_agent_sdk/async_api
+import anthropic
 from fastapi import FastAPI
+from pydantic import BaseModel
 
+aclient = anthropic.AsyncAnthropic()
 app = FastAPI()
 
 
+async def run_agent_async(system: str, tools: list, impls: dict, user_message: str,
+                          model: str = "claude-opus-4-8", max_steps: int = 6) -> str:
+    messages = [{"role": "user", "content": user_message}]
+    for _ in range(max_steps):
+        response = await aclient.messages.create(
+            model=model, max_tokens=1024, system=system, tools=tools, messages=messages,
+        )
+        if response.stop_reason != "tool_use":
+            return "".join(b.text for b in response.content if b.type == "text")
+        messages.append({"role": "assistant", "content": response.content})
+        results = [
+            {"type": "tool_result", "tool_use_id": b.id, "content": str(impls[b.name](**b.input))}
+            for b in response.content if b.type == "tool_use"
+        ]
+        messages.append({"role": "user", "content": results})
+    return "Stopped: max steps reached."
+
+
+class ChatRequest(BaseModel):
+    message: str
+
+
 @app.post("/chat")
-async def chat(user_id: str, message: str):
-    response = await handle_user_request(user_id, message)
-    return {"response": response}
+async def chat(request: ChatRequest):
+    answer = await run_agent_async(
+        system="You are a helpful assistant.",
+        tools=[], impls={}, user_message=request.message,
+    )
+    return {"response": answer}
 ```
 
 ---
 
-## SDK vs LangGraph: The Real Comparison
+## Observability
 
-| Feature | Claude Agent SDK | LangGraph |
+You don't need a framework to trace an agent — log each step of the loop (model, stop reason, tool calls, token usage). Drop these into LangSmith/Phoenix (Day 56) in production.
+
+```python
+# script_id: day_096_claude_agent_sdk/support_agent
+
+def run_agent_traced(system: str, tools: list, impls: dict, user_message: str,
+                     model: str = "claude-opus-4-8", max_steps: int = 6) -> str:
+    messages = [{"role": "user", "content": user_message}]
+    for step in range(max_steps):
+        response = client.messages.create(
+            model=model, max_tokens=1024, system=system, tools=tools, messages=messages,
+        )
+        u = response.usage
+        print(f"[step {step}] stop={response.stop_reason} "
+              f"in={u.input_tokens} out={u.output_tokens}")
+        for b in response.content:
+            if b.type == "tool_use":
+                print(f"  tool_use: {b.name}({b.input})")
+        if response.stop_reason != "tool_use":
+            return "".join(b.text for b in response.content if b.type == "text")
+        messages.append({"role": "assistant", "content": response.content})
+        messages.append({"role": "user", "content": [
+            {"type": "tool_result", "tool_use_id": b.id, "content": str(impls[b.name](**b.input))}
+            for b in response.content if b.type == "tool_use"
+        ]})
+    return "Stopped: max steps reached."
+```
+
+---
+
+## SDK vs. the raw loop: the real comparison
+
+| Concern | Agent SDK | Raw Messages API loop |
 |---|---|---|
-| Learning curve | Low | Medium-High |
-| State management | Automatic | Explicit (TypedDict) |
-| Multi-model support | Claude only | Any model |
-| Visual graph | No | Yes |
-| Checkpointing / time travel | No | Yes |
-| Guardrails | Built-in | Manual |
-| Handoffs | Built-in | Manual routing |
-| Streaming | Yes | Yes |
-| Best for | Claude-native production agents | Complex stateful workflows |
+| Learning curve | Low | Low–Medium |
+| The agent loop | Handled for you | You write `run_agent` (≈30 lines) |
+| Routing / handoffs | Built-in primitive | `tool_choice` + dispatch |
+| Guardrails | Built-in hooks | Plain pre/post functions |
+| Built-in tools (bash, file, MCP) | Yes (Claude Agent SDK) | You provide them |
+| Control over every step | Lower | Total |
+| Multi-provider | OpenAI Agents SDK: yes | Anthropic-only here |
+
+The SDK saves you the boilerplate; the raw loop gives you total control and zero version risk. Knowing both means you can start fast and drop down when you hit a wall.
 
 ---
 
 ## SWE to AI Engineering Bridge
 
-| Software Pattern | SDK Equivalent |
+| Software pattern | Agent equivalent |
 |---|---|
-| Microservices routing | Agent handoffs |
-| Input validation middleware | Input guardrails |
-| Response interceptors | Output guardrails |
-| Distributed tracing | Runner traces |
-| Service mesh | Multi-agent network |
-| Worker pool | Runner executing agents |
+| Web framework request loop | The agent tool-call loop |
+| Service routing / dispatch | Triage + handoff |
+| Input validation middleware | Input guardrail |
+| Response interceptor | Output guardrail |
+| Structured logging / tracing | Per-step loop logging |
+| Async request handlers | `AsyncAnthropic` + `await` |
 
 ---
 
 ## Key Takeaways
 
-1. **The SDK is opinionated** — that's a feature, not a limitation; it encodes best practices
-2. **Handoffs are the killer feature** — multi-agent routing without complex state machines
-3. **Guardrails are first-class** — input and output validation are part of the agent definition
-4. **Use cheap models for routing** — Haiku for triage, Sonnet for specialists
-5. **Async is the production path** — `run_async` for web apps
-6. **The SDK is Claude-only** — use LangGraph if you need multiple model providers
+1. **Every agent SDK wraps the same loop** — call with tools, run tools, feed results back, repeat. Learn the loop and the SDKs become conveniences, not magic.
+2. **Two different SDKs** — the **Claude Agent SDK** (`query`/`ClaudeSDKClient`, managed loop) and the **OpenAI Agents SDK** (`Agent`/`Runner`/handoff). Don't conflate their APIs; check current docs for exact signatures.
+3. **Routing is `tool_choice` + dispatch** — forcing a structured routing decision is the reliable handoff mechanism.
+4. **Guardrails are just pre/post validation** — no framework required.
+5. **Use cheap models for triage** (Haiku) and stronger models for specialists (Sonnet/Opus).
+6. **Async is the production path** — `AsyncAnthropic` with the identical loop.
 
 ---
 
 ## Practice Exercises
 
-1. Build a customer support system with three specialist agents (billing, technical, general) and a triage agent that routes between them
-2. Add a guardrail that detects off-topic requests (not related to your product) and politely declines them
-3. Implement async handling and integrate it with a FastAPI endpoint that streams the response
-4. Compare the token usage of the same task run with the SDK vs raw Anthropic API calls
+1. Extend `run_agent` to support streaming (`client.messages.stream(...)`) so tokens appear as they're generated.
+2. Build a three-way support router (billing / technical / general) on top of `triage` + `run_agent`, and log which specialist handled each request.
+3. Add an output guardrail that declines off-topic requests (not about your product) politely.
+4. Compare token usage of the same task on `claude-haiku-4-5` vs `claude-opus-4-8`, and decide where each belongs.
+5. **Stretch:** reimplement the support router using the real Claude Agent SDK (`query` / `ClaudeAgentOptions`) and compare the ergonomics with the raw loop. Check the official docs for the current API.
 
 ---
 

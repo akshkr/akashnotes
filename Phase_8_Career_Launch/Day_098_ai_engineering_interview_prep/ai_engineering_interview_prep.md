@@ -352,7 +352,7 @@ The story structure that works:
 
 AI engineering is in high demand and short supply. Use that.
 
-1. **Know the market rate.** AI engineers at senior level command $180-300K+ total comp at large companies. Startups compensate with equity.
+1. **Know the market rate.** As a rough benchmark (US, as of early 2026 — verify current data on levels.fyi / Glassdoor for your market), senior AI engineers command roughly $180-300K+ total comp at large companies; startups compensate with equity. Treat these numbers as directional, not current — comp moves fast.
 
 2. **Your portfolio is leverage.** "I have a working RAG system, a multi-agent pipeline, and a production deployment" is negotiating power. Use it.
 

@@ -1,0 +1,20 @@
+name: Check lesson snippets
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      # Fails the build on hard errors (unbalanced code fences). Python parse
+      # failures are printed as warnings only — add --strict to gate on those too
+      # once the intentional fragment blocks are annotated/cleaned up.
+      - name: Check fences and parse Python blocks
+        run: python tools/check_snippets.py

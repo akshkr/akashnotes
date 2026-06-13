@@ -1,5 +1,7 @@
 # 100-Day AI Engineering Challenge — Day-by-Day Index
 
+> **Maintainers:** [`REFERENCE.md`](REFERENCE.md) is the single source of truth for model IDs, pricing, library-version gotchas, and the canonical day map — update it before editing values restated in lessons. See [`CHANGELOG.md`](CHANGELOG.md) for the change history.
+
 ---
 
 ## Phase 0: Getting Started (Day 1)
