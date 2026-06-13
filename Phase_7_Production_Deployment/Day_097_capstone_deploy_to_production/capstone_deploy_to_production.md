@@ -63,7 +63,7 @@ deploy/
 │   └── models.py         # Pydantic request/response models
 ├── ui/
 │   └── app.py            # Streamlit UI
-├── pipeline/             # Day 81 pipeline code (copied here)
+├── pipeline/             # Day 73 pipeline code (copied here)
 │   ├── agents/
 │   ├── evaluator.py
 │   ├── security.py
