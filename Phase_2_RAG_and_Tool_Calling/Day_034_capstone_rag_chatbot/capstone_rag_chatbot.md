@@ -4,6 +4,8 @@ You've spent the last two weeks learning how embeddings work, how to store and q
 
 > **Coming from Software Engineering?** A RAG chatbot is architecturally identical to a search-powered web app: query comes in, you hit a database for relevant results, format them, and return a response. The difference is the "database" is a vector store and the "response formatter" is an LLM. If you've built anything with Elasticsearch + a templating layer, you already understand 80% of this architecture. The new pieces are embedding-based retrieval and prompt construction.
 
+> **Portfolio thread (2 of 5).** This builds on the **Day 18** extraction pipeline (reuse it to ingest and structure your documents) and becomes a *tool* the **Day 48** research agent calls. It's capstone #2 of the five-project system you'll deploy on Day 97 and present on Day 99.
+
 This is a real product. Variations of this exact architecture are running in production at hundreds of companies right now — answering support questions from documentation, helping lawyers search case files, letting employees query internal wikis. By the end of today, you'll have built one.
 
 ---

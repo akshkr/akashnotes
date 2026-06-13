@@ -6,7 +6,9 @@ You've built real systems. Now it's time to put them on the internet.
 
 This is where many AI engineers stop. They have impressive demos that run on localhost, but they've never deployed an AI system to production. That gap is both a career liability and a missed learning opportunity — because production is where you discover all the things your demo hid from you.
 
-Today we take the content pipeline from Day 81, wrap it in a FastAPI backend, add a Streamlit UI, containerize everything with Docker, and deploy it to a public URL. By the end of today, you'll have something you can share with anyone.
+Today we take the content pipeline from Day 73, wrap it in a FastAPI backend, add a Streamlit UI, containerize everything with Docker, and deploy it to a public URL. By the end of today, you'll have something you can share with anyone.
+
+> **Portfolio thread (5 of 5).** This is the capstone that ties the other four together: it deploys the **Day 73** multi-agent pipeline (which orchestrates the **Day 48** agent, built on the **Day 34** RAG chatbot and **Day 18** extraction pipeline). After today you have five connected, deployed projects — exactly the portfolio you'll package on **Day 99**.
 
 ---
 

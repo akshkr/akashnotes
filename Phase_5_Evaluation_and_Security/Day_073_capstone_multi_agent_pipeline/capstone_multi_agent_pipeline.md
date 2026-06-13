@@ -4,6 +4,8 @@ You've spent Phase 4 learning about multi-agent patterns, evaluation techniques,
 
 > **Coming from Software Engineering?** This capstone is a microservices system with an approval workflow. You have three specialized services (researcher, writer, reviewer), an orchestrator, a quality gate (LLM judge), and a manual approval step — exactly like a content management system with editorial workflow. If you've built anything with service orchestration + human approval (like an order fulfillment pipeline with fraud review), this is the same pattern with LLM-powered services.
 
+> **Portfolio thread (4 of 5).** This pipeline coordinates specialist agents like the **Day 48** research agent and applies the evaluation and prompt-injection defenses from this phase. It's the exact system **Day 97** containerizes and deploys to production — capstone #4 of the five you'll present on Day 99.
+
 This isn't a toy. Variations of this pipeline are running at content agencies, marketing teams, and media companies right now.
 
 ---

@@ -4,6 +4,8 @@ You've been building up to this. You know how to call LLM APIs, extract structur
 
 > **Coming from Software Engineering?** This capstone is architecturally a workflow orchestrator — like a CI/CD pipeline or an Airflow DAG, but where each step's output determines the next step dynamically. You're building a state machine with conditional branching, external API calls, data aggregation, and a final render step. If you've built job schedulers, pipeline runners, or even complex CLI tools that shell out to multiple services, you'll recognize the patterns immediately.
 
+> **Portfolio thread (3 of 5).** This agent reuses the extraction (**Day 18**) and retrieval (**Day 34**) capstones as tools, and is itself the kind of specialist the **Day 73** multi-agent pipeline coordinates. Capstone #3 of the five-project system deployed on Day 97 and presented on Day 99.
+
 You give it a topic. It searches for information, synthesizes what it finds, asks follow-up questions, searches again, and produces a structured research report — without you doing anything after the first prompt.
 
 This is the moment where AI engineering stops feeling like plumbing and starts feeling like building something alive.

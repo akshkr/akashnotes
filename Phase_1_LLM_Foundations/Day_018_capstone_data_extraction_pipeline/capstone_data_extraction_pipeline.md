@@ -4,6 +4,8 @@ You've spent the last 20 days learning the fundamentals: how LLMs work, how to c
 
 > **Coming from Software Engineering?** This capstone is basically an ETL pipeline where the "Transform" step is an LLM instead of regex or rule-based parsing. You'll use the same patterns you know — input validation, retry logic, error handling, structured schemas — but the transformation engine is probabilistic. If you've built data pipelines with tools like Apache Beam, Airflow, or even simple Python scripts that scrape and normalize data, this will feel very familiar.
 
+> **Portfolio thread (1 of 5).** This is the first of five capstones that build one connected system. The extraction skills here feed the **Day 34 RAG chatbot** (ingesting documents), which the **Day 48 research agent** wraps as a tool, which the **Day 73 multi-agent pipeline** orchestrates, and which **Day 97** deploys to production. Together they're the portfolio you'll present on **Day 99** — so keep your code.
+
 This is your first capstone project. By the end of today, you'll have a working, portfolio-ready pipeline that takes unstructured text — job postings, product reviews, news articles, whatever — and extracts clean, validated, structured data from it. This is a real problem that real companies pay real money to solve.
 
 Let's build it.
