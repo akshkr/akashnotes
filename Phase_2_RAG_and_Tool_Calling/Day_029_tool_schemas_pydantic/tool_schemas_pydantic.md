@@ -324,6 +324,59 @@ class DoStuff(BaseModel):
 
 ---
 
+## Strict Schemas: Guaranteeing Valid Output
+
+A normal tool schema *describes* the shape you want, but the model can still
+return something slightly off. **Strict / structured-output modes** make the
+provider *enforce* the schema, so you get valid, parseable output every time —
+no defensive `try/except json.loads` dance.
+
+> **Coming from Software Engineering?** This is the difference between
+> documenting an API contract and having the framework validate it. Strict mode
+> is server-side request validation for the model's output.
+
+```python
+# script_id: day_029_tool_schemas_pydantic/strict_outputs
+from openai import OpenAI
+client = OpenAI()
+
+# OpenAI: strict tool — the function arguments are guaranteed to match the schema
+response = client.chat.completions.create(
+    model="gpt-4o",
+    messages=[{"role": "user", "content": "Book a flight to Tokyo on 2026-03-15 for 2"}],
+    tools=[{
+        "type": "function",
+        "function": {
+            "name": "book_flight",
+            "strict": True,                       # enforce the schema
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "destination": {"type": "string"},
+                    "date": {"type": "string"},
+                    "passengers": {"type": "integer"},
+                },
+                "required": ["destination", "date", "passengers"],
+                "additionalProperties": False,    # required when strict=True
+            },
+        },
+    }],
+)
+```
+
+On the Anthropic side, the Messages API offers the same guarantee via
+`output_config={"format": {"type": "json_schema", "schema": {...}}}` for the
+response body, and `strict: True` on a tool to validate its inputs. Either way,
+the rule is the same: **let the provider enforce the contract instead of
+parsing-and-hoping.**
+
+> **In production:** strict mode removes a whole class of "the model returned
+> almost-JSON" bugs. The trade-offs: schemas compile on first use (a one-time
+> latency hit, then cached), and a few JSON-Schema features (recursion, numeric
+> ranges) aren't supported — validate those client-side.
+
+---
+
 ## Summary
 
 ```mermaid

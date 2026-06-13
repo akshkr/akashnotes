@@ -1,5 +1,7 @@
 # 100-Day AI Engineering Challenge — Day-by-Day Index
 
+> **New here?** Skim the [`GLOSSARY.md`](GLOSSARY.md) — every term with its software-engineering analogy.
+>
 > **Maintainers:** [`REFERENCE.md`](REFERENCE.md) is the single source of truth for model IDs, pricing, library-version gotchas, and the canonical day map — update it before editing values restated in lessons. See [`CHANGELOG.md`](CHANGELOG.md) for the change history.
 
 ---
