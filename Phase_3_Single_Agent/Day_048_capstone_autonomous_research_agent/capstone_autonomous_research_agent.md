@@ -619,7 +619,65 @@ A production-pattern autonomous research agent with:
 
 ---
 
-## What's Next
+## Summary
+
+```mermaid
+mindmap
+  root((Research Agent))
+    State
+      ResearchState TypedDict
+      iteration_count
+      research_complete
+    Tools
+      web_search
+      fetch_article
+      analyze_findings
+      save_note
+    Graph
+      Agent node
+      ToolNode
+      should_continue routing
+    Production
+      Max iterations
+      SQLite persistence
+      Streaming progress
+```
+
+---
+
+## Quick Reference
+
+| Piece | API / pattern |
+|---|---|
+| Define tools | `@tool` on a typed function with a docstring |
+| Collect tools | `RESEARCH_TOOLS = [web_search, fetch_article, ...]` |
+| Bind to model | `llm.bind_tools(RESEARCH_TOOLS)` |
+| Run tools | `from langgraph.prebuilt import ToolNode` |
+| Route loop | conditional edge on `should_continue` → `"tools"` or `"end"` |
+| Stop signal | `"RESEARCH_COMPLETE"` in the reply, or `iteration_count >= max` |
+| Persist sessions | `SqliteSaver` / SQLite session table |
+| Watch progress | `for event in app.stream(state, config): ...` |
+
+---
+
+## Exercises
+
+1. Swap the mocked `web_search` for a real API (Tavily, SerpAPI, or Brave) behind the same `@tool` signature so the rest of the graph is untouched.
+2. Add a hard cost budget: track cumulative tokens and force the `should_continue` router to `"end"` once you cross a threshold.
+3. Add a fifth tool — e.g. `summarize_source(url)` — bind it, and confirm the agent chooses it when a fetched article is long.
+4. Replace the `RESEARCH_COMPLETE` string signal with a structured final node that returns a validated report object (or explains why it can't).
+
+<details><summary>Solutions (approaches)</summary>
+
+1. Keep `def web_search(query, num_results=5) -> str:` identical; inside, call the provider client and `json.dumps` the results. The `@tool` schema and graph stay the same.
+2. Accumulate `response.usage`/token counts in state; in `should_continue`, `if state["tokens"] > BUDGET: return "end"`.
+3. Define it with `@tool`, append to `RESEARCH_TOOLS`, re-`bind_tools` — `ToolNode` dispatches by name automatically.
+4. Add a terminal node that calls the LLM with a Pydantic schema (structured output) and returns the parsed report; route to it instead of matching a string.
+</details>
+
+---
+
+## What's Next?
 
 Tomorrow is Day 49 — the career checkpoint. We're pausing the technical content for a day to take stock of what you've built, map it to job requirements, and talk about what to put on your resume right now.
 

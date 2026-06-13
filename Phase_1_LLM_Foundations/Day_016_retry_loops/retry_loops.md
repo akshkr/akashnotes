@@ -689,3 +689,9 @@ You've completed **Month 1**! You now understand:
 - Structured output (Pydantic, JSON modes, retries)
 
 But first, one more foundations topic: **DSPy** — replacing manual prompt engineering with programmatic optimization!
+
+---
+
+## What's Next?
+
+Tomorrow (Day 17) is **DSPy — Programmatic Prompt Optimization** — instead of hand-tuning prompt strings, you'll declare input/output signatures and let an optimizer compile the prompt for you, turning the retry-and-tweak loop you just learned into a data-driven process. After that comes the Phase 1 capstone (Day 18).

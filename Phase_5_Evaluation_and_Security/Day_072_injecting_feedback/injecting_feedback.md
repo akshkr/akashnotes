@@ -548,6 +548,23 @@ store.add(task, output, feedback)
 
 ---
 
+## Exercises
+
+1. Modify `FeedbackableAgent` so feedback is weighted by recency: more recent feedback appears later in the system prompt and is labeled "most important."
+2. Convert the free-text feedback in `iterative_refinement` into `StructuredFeedback` objects, so each round records a type, target, and priority instead of a raw string.
+3. Upgrade `FeedbackStore.get_relevant_feedback` from keyword overlap to embedding similarity (reuse your Day 19-21 embedding code) and compare which retrieves better matches.
+4. In the LangGraph example, add a `revision_count` cap so the `generate → generate` loop cannot run forever even if the human never approves.
+
+<details><summary>Solutions (approaches)</summary>
+
+1. Sort `feedback_history` oldest-to-newest and append after the rest; tag the last item with a prefix like `"MOST IMPORTANT: "`.
+2. Replace the `feedback` string with a `StructuredFeedback(...)`; pass `inject_structured_feedback(state, [fb])` and feed `state["structured_feedback"]` into the prompt.
+3. Embed each stored `task` once, embed the query, rank by cosine similarity instead of `len(task_words & entry_words)`.
+4. In `check_approval`, `return "complete"` when `state.get("revision_count", 0) >= state["max_revisions"]`, regardless of approval, to break the loop.
+</details>
+
+---
+
 ## What's Next?
 
 You've learned to inject human feedback into agent state. Next, we'll bring Phase 5 together in the **Capstone — Multi-Agent Content Pipeline**: research, writing, review, LLM-as-judge evaluation, a human approval gate, and prompt-injection defenses.

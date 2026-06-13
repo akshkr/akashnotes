@@ -367,6 +367,67 @@ def check_database():
 
 ---
 
+## Summary
+
+```mermaid
+mindmap
+  root((Docker for AI Apps))
+    Image
+      Slim base image
+      Pin dependencies
+      Multi-stage build
+    Config
+      Env vars for secrets
+      No keys baked in
+      .dockerignore
+    Health
+      /health liveness
+      /ready dependency checks
+    Run
+      Expose port
+      uvicorn entrypoint
+```
+
+---
+
+## Quick Reference
+
+```dockerfile
+# Minimal FastAPI agent image
+FROM python:3.12-slim
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY . .
+EXPOSE 8000
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+```
+
+```bash
+docker build -t agent .                  # Build image
+docker run -p 8000:8000 --env-file .env agent   # Run with secrets from file
+docker history agent                     # Verify no secrets are baked in
+```
+
+---
+
+## Exercises
+
+1. **Containerize it.** Write a `Dockerfile` for your FastAPI agent on a `-slim` base, build it, and run it mapped to port 8000.
+2. **Keep secrets out.** Pass your API key with `--env-file` (or `-e`) instead of `COPY`-ing it in. Confirm with `docker history` that the key isn't in any layer.
+3. **Add liveness + readiness.** Implement `/health` (process is up) and `/ready` (dependencies reachable) and explain why orchestrators need both.
+4. **Shrink the image.** Add a `.dockerignore` and try a multi-stage build; report the size before and after.
+
+<details><summary>Solutions (approaches)</summary>
+
+1. See the Dockerfile above; `docker build -t agent . && docker run -p 8000:8000 agent`.
+2. `docker run --env-file .env agent`; read keys via `os.environ`; `docker history agent` should show no key strings.
+3. `/health` returns `{"status":"healthy"}` always-fast; `/ready` pings OpenAI/DB so traffic isn't routed before deps are live.
+4. `.dockerignore` excludes `.git`, `__pycache__`, tests; multi-stage builds dependencies in one stage and copies only the venv/site-packages into the final slim image.
+</details>
+
+---
+
 ## What's Next?
 
 Your service is containerized — but containers alone don't survive real traffic. Next up: **Rate Limits and Backoffs** — exponential backoff with jitter, token-bucket rate limiting, and the circuit-breaker state machine that keeps you online when a provider degrades.

@@ -576,6 +576,23 @@ paragraphs = text.split('\n\n')
 
 ---
 
+## Exercises
+
+1. **Add overlap to your fixed-size chunker.** Extend `chunk_simple` to accept an `overlap` parameter so consecutive chunks share the last N characters. Verify a sentence that straddles a boundary now appears in both chunks.
+2. **Measure the size/recall tradeoff.** Chunk the same document at 200, 500, and 1000 characters, embed each set, and run one query against all three. Note how chunk size changes which passage ranks first.
+3. **Write a structure-aware splitter.** Split a Markdown doc on headings (`#`, `##`) so each chunk is one section, then fall back to size-based splitting only for sections that exceed your limit.
+4. **Attach metadata to every chunk.** Return chunks as `{"text": ..., "source": ..., "chunk_index": ...}` so you can trace a retrieved chunk back to its document and position.
+
+<details><summary>Solutions (approaches)</summary>
+
+1. Step the range by `size - overlap` instead of `size`: `range(0, len(text), size - overlap)`. Guard against `overlap >= size`.
+2. Build three collections (or tag chunks with their size), embed once per set, and compare top-1 results. Smaller chunks = sharper matches but less surrounding context.
+3. Split on a heading regex, then post-process: any section longer than the limit goes through your recursive/fixed splitter. Keep the heading text as a prefix for context.
+4. Have the chunker `enumerate(chunks)` and emit dicts; downstream `collection.add` passes the extra fields via `metadatas=`.
+</details>
+
+---
+
 ## What's Next?
 
 Now that you can chunk documents effectively, let's learn how to **Inject Retrieved Context into Prompts** - the final piece of the RAG puzzle!

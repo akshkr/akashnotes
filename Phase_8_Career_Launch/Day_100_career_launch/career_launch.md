@@ -233,6 +233,21 @@ Here's the honest picture of where AI engineering stands in 2026:
 
 ---
 
+## Quick Reference: Specialization Paths
+
+Pick the one that pulls at you — and name the first thing you'll learn next.
+
+| Path | You'd go deep on | First next step |
+|---|---|---|
+| **Agents** | Multi-agent orchestration, tool reliability, long-horizon tasks | Rebuild your D48 agent with a richer tool surface + eval |
+| **RAG / Retrieval** | Reranking, hybrid search, retrieval eval, GraphRAG | Add reranking + a retrieval-quality harness to your D34 bot |
+| **Evaluation** | LLM-as-judge, RAGAS, regression suites, observability | Stand up an eval CI gate for one capstone |
+| **Infrastructure** | Serving, scaling, cost/latency, fine-tuning, MCP | Containerize + load-test a capstone; add caching/fallbacks |
+
+(The "Final Action Items" below are your exercises for today.)
+
+---
+
 ## The Final Motivation
 
 Here's what I want you to understand about the position you're in.

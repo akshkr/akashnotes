@@ -587,12 +587,36 @@ mindmap
 
 ---
 
+## Quick Reference
+
+| Step | OpenAI | What it does |
+|---|---|---|
+| Define a tool | `pydantic_function_tool(MyModel)` | Turns a Pydantic model into the tool schema |
+| Send tools | `client.chat.completions.create(model="gpt-4o-mini", tools=tools, messages=...)` | Let the model see your functions |
+| Detect a call | `response.choices[0].message.tool_calls` | `None` if the model just answered in text |
+| Read arguments | `json.loads(tool_call.function.arguments)` | Arguments arrive as a JSON string |
+| Return a result | `{"role": "tool", "tool_call_id": tc.id, "content": result}` | Feed the function output back in |
+| Loop | re-call `create(...)` with the tool result appended | Model produces the final answer |
+
+---
+
+## Exercises
+
+1. **Add a second tool.** You have a calculator and a clock — add a `get_weather(city)` tool (return a hardcoded dict for now) and confirm the model picks the right tool per question.
+2. **Handle the no-tool case.** Ask a question that needs no tool ("Tell me a joke") and verify your loop returns the model's text answer directly without crashing on an empty `tool_calls`.
+3. **Measure tool-selection accuracy.** Write 10 prompts where you know the correct tool, run them, and count how often the model calls the expected function.
+4. **Make the model call two tools at once.** Ask "What time is it and what's 8 times 9?" — inspect whether the model returns multiple entries in `tool_calls` and make sure your loop executes all of them.
+
+<details><summary>Solutions (approaches)</summary>
+
+1. Define a `Weather` Pydantic model with a `city` field, register it alongside the others, and dispatch on `tool_call.function.name`.
+2. Guard the loop: `if not message.tool_calls: return message.content`. Only enter the execute-and-resend branch when calls exist.
+3. Store `(prompt, expected_tool)` pairs, run each, compare `tool_calls[0].function.name` to the expected name, and print the hit rate.
+4. Iterate over every item in `tool_calls`, append one `{"role": "tool", ...}` message per call (matching `tool_call_id`), then re-call the model once.
+</details>
+
+---
+
 ## What's Next?
 
-You've completed Month 2! You now understand:
-- Embeddings and vector math
-- Vector databases (pgvector, ChromaDB)
-- RAG systems
-- Tool calling
-
-Next month: **Single-Agent Architectures** - building autonomous AI agents!
+You can expose functions and let the model call them — but hand-writing JSON schemas is brittle. Tomorrow, **Day 29: Tool Schemas with Pydantic**, we generate clean, validated tool definitions from Pydantic models so your contracts stay correct as they grow.

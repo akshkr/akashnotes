@@ -533,6 +533,33 @@ result = crew.kickoff(inputs={"topic": "AI"})
 
 ---
 
+## Exercises
+
+1. **Sequential pipeline.** Build a research -> write -> edit crew with `Process.sequential`. Confirm the order is deterministic and each task sees the prior output via `context`.
+
+2. **Switch to hierarchical.** Take the same three tasks and run them under `Process.hierarchical` with a manager agent. Compare: who decided the order, and was the result different from sequential?
+
+3. **Parallelize independent work.** Mark three independent research tasks `async_execution=True` and have a synthesis task depend on all three. Time it against a fully sequential version — the speedup is your reward for finding the parallelizable parts.
+
+4. **Mix the phases.** Recreate the four-phase "Mixing Approaches" flow (parallel research -> sequential analysis -> parallel outputs -> final review). Draw the DAG first, then implement it.
+
+<details><summary>Solutions (approaches)</summary>
+
+1. `Crew(agents=[...], tasks=[t1, t2, t3], process=Process.sequential)` with `context=[prev]` chaining.
+2. Add `process=Process.hierarchical, manager_agent=manager`; leave tasks without explicit `agent` so the manager assigns them.
+3. Set `async_execution=True` on the independent tasks and `context=[t1, t2, t3]` on the synthesizer:
+
+```text
+t1 = Task(..., async_execution=True)
+t2 = Task(..., async_execution=True)
+synth = Task(..., context=[t1, t2], async_execution=False)
+```
+
+4. Follow the "Mixing Approaches" section verbatim — it already wires the four phases via `async_execution` flags and `context` lists.
+</details>
+
+---
+
 ## What's Next?
 
 That wraps Phase 4. Next we move into **Phase 5: Evaluation & Security**, starting with **LangSmith and Phoenix** — tracing and observability so you can see what your multi-agent systems are actually doing.

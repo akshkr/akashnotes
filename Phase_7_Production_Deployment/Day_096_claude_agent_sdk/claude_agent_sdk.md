@@ -398,7 +398,44 @@ The SDK saves you the boilerplate; the raw loop gives you total control and zero
 
 ---
 
-## Practice Exercises
+## Summary
+
+```mermaid
+mindmap
+  root((Agent SDKs))
+    The loop
+      Call with tools
+      Run tools
+      Feed results back
+      Repeat
+    Patterns
+      Routing as tool_choice
+      Guardrails pre/post
+      Cheap triage, strong specialist
+    SDKs
+      Claude Agent SDK
+      OpenAI Agents SDK
+      Same loop underneath
+```
+
+---
+
+## Quick Reference
+
+| Building block | On the Messages API | Note |
+|---|---|---|
+| Tools | `tools=[{name, input_schema, ...}]` in `messages.create` | Schemas are what the model sees |
+| Run a tool | Detect `tool_use` blocks, execute, send back `tool_result` | This is the loop the SDKs automate |
+| Routing | Force a structured choice via `tool_choice`, then dispatch | Reliable handoff mechanism |
+| Guardrails | Plain validation before/after the call | No framework required |
+| Streaming | `client.messages.stream(...)` | Tokens as they generate |
+| Async | `AsyncAnthropic` with the identical loop | Production path |
+
+> The real **Claude Agent SDK** (`query` / `ClaudeAgentOptions`) wraps this loop for you — check the official docs for current signatures rather than guessing them.
+
+---
+
+## Exercises
 
 1. Extend `run_agent` to support streaming (`client.messages.stream(...)`) so tokens appear as they're generated.
 2. Build a three-way support router (billing / technical / general) on top of `triage` + `run_agent`, and log which specialist handled each request.
@@ -406,6 +443,17 @@ The SDK saves you the boilerplate; the raw loop gives you total control and zero
 4. Compare token usage of the same task on `claude-haiku-4-5` vs `claude-opus-4-8`, and decide where each belongs.
 5. **Stretch:** reimplement the support router using the real Claude Agent SDK (`query` / `ClaudeAgentOptions`) and compare the ergonomics with the raw loop. Check the official docs for the current API.
 
+<details><summary>Solutions (approaches)</summary>
+
+1. Swap `messages.create` for `with client.messages.stream(...) as s:` and iterate `s.text_stream`.
+2. `triage` returns a label via forced `tool_choice`; a dict maps label → specialist system prompt; log the chosen label.
+3. Post-call check: if the reply (or request) is off-topic, return a fixed polite decline instead of the model output.
+4. Run the same prompt on both models, read `response.usage.input_tokens`/`output_tokens`; route cheap/simple to Haiku, hard to Opus.
+5. Follow the official Agent SDK docs for `query`/`ClaudeAgentOptions`; don't hand-write signatures from memory.
+</details>
+
 ---
 
-**Next up:** the **Capstone — Deploy to Production**, where you bring the whole content pipeline together behind FastAPI, Docker, monitoring, and a cloud deployment.
+## What's Next?
+
+**Capstone — Deploy to Production**, where you bring the whole content pipeline together behind FastAPI, Docker, monitoring, and a cloud deployment.

@@ -503,6 +503,27 @@ Before deploying sandboxed execution:
 
 ---
 
+## Exercises
+
+1. Use `run_with_secrets` to pass a fake `API_KEY` into a container, then prove the secret never lands on disk: the code is written to a temp file but the env var is not — inspect the temp file's contents to confirm.
+2. `SecureSandbox._validate_code` does a naive substring check that both over-blocks (`open(` appears in `reopen(`) and under-blocks (obfuscated calls). Replace it with word-boundary regex and note one obfuscation that still gets through — motivating why container isolation matters more than static checks.
+3. Add a `get_audit_log()` method to `SecureSandbox` that returns the `execution_log` with full keys/secrets stripped, suitable for shipping to a logging system.
+4. Swap the hardcoded secret in `run_with_secrets` for one fetched via `get_secret` (AWS Secrets Manager) so no secret ever appears in source.
+
+<details><summary>Solutions (approaches)</summary>
+
+1. After the call, `open(code_path).read()` (before the `finally` deletes it) shows only the user code; the secret exists only in the container's `environment=`. Mask it if you log anything.
+2. Use patterns like `r'\bos\.system\b'`, `r'\bsubprocess\b'`. Obfuscation such as `getattr(os, "sys"+"tem")` still passes — hence the container limits are the real boundary.
+3. ```text
+   def get_audit_log(self):
+       return [{k: v for k, v in e.items() if k not in ("error",)} for e in self.execution_log]
+   ```
+   (Ensure no secret was ever placed into the log in the first place.)
+4. `secrets = get_secret("my-app/api-keys"); run_with_secrets(code, {"API_KEY": secrets["OPENAI_API_KEY"]})`.
+</details>
+
+---
+
 ## What's Next?
 
 You've learned to secure your agents! In Month 6, we'll explore **Production Deployment** - taking your agents from development to the real world!

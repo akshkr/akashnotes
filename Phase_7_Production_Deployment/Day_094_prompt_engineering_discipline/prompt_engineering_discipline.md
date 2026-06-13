@@ -565,13 +565,58 @@ In practice, 80% of use cases are solved by better prompting + RAG. Fine-tuning 
 
 ---
 
-## Practice Exercises
+## Summary
 
-1. Move all inline prompts from your capstone project into a `prompts/v1/` directory and build a `PromptManager`
-2. Build an eval dataset of 20 examples for one of your prompts and measure its accuracy
-3. Write v2 of one prompt targeting the failure cases you find, and verify it improves accuracy
-4. Implement the A/B experiment framework and run it with 100 test calls split 50/50 between v1 and v2
+```mermaid
+mindmap
+  root((Prompt Discipline))
+    Version
+      Prompts as files
+      Registry + IDs
+      Code review
+    Test
+      Eval dataset
+      LLM-as-judge
+      Measure every change
+    Roll out
+      A/B split traffic
+      Promote the winner
+    Avoid
+      Inline hardcoded prompts
+      Changes without evals
+```
 
 ---
 
-**Next up:** Capstone — Deploy to Production, where you will ship your complete AI system with prompt management, cost tracking, and production hardening.
+## Quick Reference
+
+| Concern | Anti-pattern | Discipline |
+|---|---|---|
+| Storage | Prompt hardcoded in a function | `prompts/v1/<name>.txt` loaded by a `PromptManager` |
+| Change control | Edit string, deploy | Versioned file + code review |
+| Validation | Eyeball a few outputs | Eval dataset + automated score before promote |
+| Rollout | Swap in place | A/B split, compare, then promote |
+| Scoring at scale | Manual review | LLM-as-judge over the eval set |
+
+---
+
+## Exercises
+
+1. Move all inline prompts from your capstone project into a `prompts/v1/` directory and build a `PromptManager` that loads them by name + version.
+2. Build an eval dataset of 20 examples for one of your prompts and measure its accuracy.
+3. Write v2 of one prompt targeting the failure cases you find, and verify it improves accuracy.
+4. Implement the A/B experiment framework and run it with 100 test calls split 50/50 between v1 and v2.
+
+<details><summary>Solutions (approaches)</summary>
+
+1. `PromptManager.get("sentiment", version="v1")` reads `prompts/v1/sentiment.txt`; version is just a directory.
+2. A list of `(input, expected)` pairs; run the prompt over each, compare, report `correct / total`.
+3. Inspect the misses, edit the wording for those cases, re-run the same eval set, confirm the score went up.
+4. Hash the request id to pick v1/v2 50/50, log `(version, score)`, then compare mean scores before promoting.
+</details>
+
+---
+
+## What's Next?
+
+Next we standardize how agents talk to tools and data sources: the **Model Context Protocol (MCP)** — a common interface for exposing tools, resources, and prompts to any MCP-aware client.

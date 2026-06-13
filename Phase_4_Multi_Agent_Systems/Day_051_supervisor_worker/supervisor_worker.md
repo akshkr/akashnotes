@@ -520,6 +520,33 @@ results = await asyncio.gather(*[worker(task) for worker, task in assignments])
 
 ---
 
+## Exercises
+
+1. **Build a 3-worker supervisor.** Wire up a supervisor that routes a request to a `research`, `writing`, or `code` worker based on the LLM's JSON decision. Test it with one prompt per worker type and confirm each lands at the right specialist.
+
+2. **Add retry + fallback.** Wrap your worker calls with the `safe_worker_call` retry helper. Then add a fallback: if the supervisor routes to an unknown worker name, default to a generalist worker instead of crashing.
+
+3. **Make it parallel.** Take a request that needs two independent workers (e.g. research + code) and run them concurrently with `asyncio.gather`. Measure wall-clock time vs. the sequential version.
+
+4. **Capacity-aware routing.** Track how many tasks each worker is handling and have the supervisor prefer idle workers. This mirrors load-balancing across a worker pool.
+
+<details><summary>Solutions (approaches)</summary>
+
+1. Reuse the `supervisor()` function: it already parses `{"worker": ..., "task": ...}` JSON and dispatches via the `workers` dict. Just send three test prompts.
+2. Validate the routed name against the `workers` dict keys; on a miss, point to a generalist:
+
+```text
+name = routing["worker"]
+worker_fn = workers.get(name, generalist_worker)
+result = safe_worker_call(worker_fn, task)
+```
+
+3. Build a coroutine per worker and `await asyncio.gather(*tasks)` (see the Parallel Worker section). Time both with `time.perf_counter()`.
+4. Keep a `dict[str, int]` of in-flight counts; pass it into the supervisor prompt as context so it can pick the least-loaded eligible worker.
+</details>
+
+---
+
 ## What's Next?
 
 Now let's explore **Adversarial Debate** - where agents critique each other's work to find better solutions!

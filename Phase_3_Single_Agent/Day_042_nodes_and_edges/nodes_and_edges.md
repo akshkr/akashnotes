@@ -474,6 +474,23 @@ app = workflow.compile()
 
 ---
 
+## Exercises
+
+1. Write three node functions (`fetch`, `process`, `format`) that each take state and return a partial update, then wire them in a straight line `fetch → process → format → END`.
+2. Replace the straight line with a branch: after `process`, a routing function sends "valid" data to `format` and "invalid" data to an `error` node.
+3. Build a self-loop: a `retry` node routes back to itself until a `attempts` counter in state reaches 3, then exits.
+4. Add a "fan-in" merge — two nodes that both feed into a single `summarize` node — and confirm `summarize` sees updates from both.
+
+<details><summary>Solutions (approaches)</summary>
+
+1. `for name, fn in [("fetch",fetch),...]: workflow.add_node(name, fn)`, then chain `add_edge`s. Each `fn` returns e.g. `{"data": ...}`.
+2. `workflow.add_conditional_edges("process", route, {"valid": "format", "invalid": "error"})` where `route(state)` returns the string key.
+3. Route function: `lambda s: "retry" if s["attempts"] < 3 else "done"`, mapped to `{"retry": "retry", "done": END}`; the node increments `attempts`.
+4. Add edges `A → summarize` and `B → summarize`; use an `Annotated[list, operator.add]` reducer on the merged field so both updates accumulate instead of overwriting.
+</details>
+
+---
+
 ## What's Next?
 
 Now let's learn how to **compile and run your graph** as a working agent!

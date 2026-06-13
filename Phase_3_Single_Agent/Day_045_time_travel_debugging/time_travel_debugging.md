@@ -505,6 +505,23 @@ new_result = app.invoke(new_state, config=resume_config)
 
 ---
 
+## Exercises
+
+1. Run a multi-step graph under a fixed `thread_id`, then list its checkpoints with `get_state_history` and print the `checkpoint_id` and key state fields for each.
+2. Rewind to an earlier checkpoint and re-run from there, confirming the result differs from the original run when you change an input.
+3. Use `update_state` to edit a value at a past checkpoint (an "alternate timeline"), then continue execution and observe the branch.
+4. Build a tiny "A/B" experiment: replay from the same checkpoint twice with two different inputs and compare the two outcomes.
+
+<details><summary>Solutions (approaches)</summary>
+
+1. `history = list(app.get_state_history(config)); for cp in history: print(cp.config["configurable"]["checkpoint_id"], cp.values)`.
+2. Build a `resume_config` that includes the target `checkpoint_id`, then `app.invoke(new_state, config=resume_config)`.
+3. `app.update_state(target_config, {"field": new_value})` writes a fork point; the next `invoke(None, config)` continues from it.
+4. Capture `cp = history[k].config`, then call `invoke` twice with inputs X and Y both resuming from `cp`; diff the returned states.
+</details>
+
+---
+
 ## What's Next?
 
 Now let's learn how to **store conversation threads in databases** for long-term persistence!

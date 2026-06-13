@@ -323,4 +323,6 @@ mindmap
 
 ---
 
-*Next up: Temperature and Sampling Part 1 — how LLMs turn token probabilities into the words you actually see, and how the temperature dial reshapes that distribution.*
+## What's Next?
+
+Tomorrow (Day 4) is **Temperature and Sampling Part 1** — now that you know how text becomes tokens, you'll see how the model turns each token's *probability* into the words you actually get back, and how the temperature dial reshapes that distribution from deterministic to creative.

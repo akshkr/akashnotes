@@ -472,6 +472,46 @@ mindmap
 
 ---
 
+## Quick Reference
+
+| Pattern | When | How |
+|---|---|---|
+| Exact-match cache | Identical repeated prompts | Hash the prompt → Redis key |
+| Semantic cache | Paraphrases of the same question | Embed query, nearest-neighbor in pgvector/Chroma |
+| Similarity threshold | Tune precision vs hit-rate | ~0.97 factual, ~0.92 conversational, ~0.85 creative |
+| TTL invalidation | Answers go stale | Set per-entry expiry |
+| Topic/manual invalidation | Underlying data changed | Evict by tag or key |
+
+```python
+# Semantic cache lookup (pseudo-flow)
+emb = embed(query)
+hit = vector_store.search(emb, top_k=1)
+if hit and hit.score >= THRESHOLD:
+    return hit.cached_response          # cache hit
+resp = call_llm(query)
+vector_store.add(emb, resp, ttl=3600)   # store for next time
+return resp
+```
+
+---
+
+## Exercises
+
+1. **Exact-match first.** Build a Redis-backed cache keyed on a hash of the prompt; measure the hit rate on a log of repeated questions.
+2. **Go semantic.** Add an embedding-similarity cache so "What's your refund policy?" hits the entry stored for "How do refunds work?"
+3. **Tune the threshold.** Sweep the similarity threshold from 0.85 to 0.98 and chart hit-rate vs wrong-answer rate. Pick a value for a *factual* assistant.
+4. **Invalidate.** Add TTL expiry plus a way to evict every cached entry about a given topic when its source data changes.
+
+<details><summary>Solutions (approaches)</summary>
+
+1. `key = hashlib.sha256(prompt.encode()).hexdigest()`; `redis.get(key)` then `redis.setex(key, ttl, resp)`.
+2. Embed the query, nearest-neighbor search in pgvector/Chroma, return the stored response when `score >= threshold`.
+3. Higher threshold → fewer but safer hits; for factual, bias high (~0.97) to avoid serving a near-but-wrong answer.
+4. Store entries with a `topic` tag and `ttl`; evict by scanning/deleting that tag, and let TTL handle the rest.
+</details>
+
+---
+
 ## What's Next?
 
 Caching saves money when the same provider is up. But what happens when it goes down? Next, we'll build **model fallback strategies** — routing between providers for reliability and cost optimization.

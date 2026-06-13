@@ -598,6 +598,36 @@ mindmap
 
 ---
 
+## Quick Reference
+
+| Piece | What it does | Sketch |
+|---|---|---|
+| System prompt | Teaches the Thought/Action/Observation format | `"Thought: ...\nAction: tool\nAction Input: {...}"` |
+| Parse step | Pull the next action (or final answer) out of model text | `re.search(r"Action:\s*(\w+)", text)` |
+| Tool dispatch | Map a tool name to a Python callable | `self.tools[action](**action_input)` |
+| Observation | Feed the tool result back as a new message | `messages.append({"role": "user", "content": obs})` |
+| Stop conditions | Bound the loop | `max_iterations`, `max_time`, `max_tokens` |
+| Structured output | Skip regex; ask for JSON directly | `response_format={"type": "json_object"}` |
+
+---
+
+## Exercises
+
+1. Add a third tool (e.g. `word_count(text)` that returns the number of words) to the scratch-built `ReActAgent`, then ask it a task that needs both `search` and `word_count`.
+2. Make the loop refuse to run the *same* action with the *same* input twice in a row — print a warning and inject a nudge message instead of re-executing the tool.
+3. Swap the regex parser for the JSON-mode approach (`response_format={"type": "json_object"}`) and confirm `_parse_response` becomes a plain dict lookup.
+4. Add a `total_tokens` accumulator to `run()` and stop the loop once it crosses a budget you pick (e.g. 8000 tokens).
+
+<details><summary>Solutions (approaches)</summary>
+
+1. Register it like the others: `agent.add_tool("word_count", "Count words", lambda text: str(len(text.split())))`. The model picks it when the task mentions counting.
+2. Track `(action, json.dumps(input, sort_keys=True))` from the previous step; if it repeats, append a user message like `"You already tried that. Try a different action or give the Final Answer."`.
+3. Use the `_get_structured_response` helper already in the lesson; the returned dict has `final_answer` / `action` / `action_input`, so no parsing is needed.
+4. Add `total_tokens += response.usage.total_tokens` after each call and `if total_tokens > BUDGET: return "Token budget exceeded"` — mirrors `SafeAgent`.
+</details>
+
+---
+
 ## What's Next?
 
 Now that you can build agents from scratch, let's give them better memory: **Conversation History** — managing the message list so agents stay coherent across many turns without blowing the context window.

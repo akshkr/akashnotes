@@ -725,6 +725,53 @@ A production-deployed AI system with:
 
 ---
 
+## Summary
+
+```mermaid
+mindmap
+  root((Deploy to Production))
+    Package
+      FastAPI backend
+      Streamlit UI
+      Docker images
+    Operate
+      Rate limiting
+      Cost tracking in SQLite
+      Health checks + monitoring
+    Ship
+      Cloud deploy (Render)
+      Environment config / secrets
+      Public URL for the portfolio
+```
+
+## Quick Reference
+
+| Task | Command / pattern |
+|---|---|
+| Build image | `docker build -t app .` |
+| Run locally | `docker compose up` |
+| Healthcheck endpoint | `GET /health` returns 200 + version |
+| Secrets | env vars / platform secret store — never in the image |
+| Deploy (Render) | connect repo → set env vars → deploy on push |
+| Smoke test prod | hit the public URL with one real request before sharing |
+
+## Exercises
+
+1. Add a `/health` endpoint that also reports the model in use and uptime, and wire it to your platform's health check.
+2. Put rate-limiting middleware in front of the chat endpoint and verify it returns `429` past the limit.
+3. Add per-request cost logging to SQLite and write a query for "total spend in the last 24h."
+4. Deploy to a free tier (Render/Railway), then load-test with ~20 concurrent requests and note where it breaks first.
+
+<details><summary>Solutions (approaches)</summary>
+
+1. Return a small JSON dict; read the model from config and uptime from a process start timestamp.
+2. Use a token-bucket dependency keyed on client IP/API key; return `JSONResponse(status_code=429)` when empty.
+3. One row per request (timestamp, model, input/output tokens, cost); `SELECT SUM(cost) WHERE ts > now()-1d`.
+4. Watch for connection-pool exhaustion or provider rate limits first; add backoff + a queue if needed.
+</details>
+
+---
+
 ## What's Next
 
 You're 97 days in. Three days left.

@@ -327,3 +327,64 @@ print(generate_with_top_p(prompt, 0.95))
 > OpenAI recommends setting **only one** of `temperature` or `top_p`, not both. When both are set, they interact in unpredictable ways — temperature reshapes the probability distribution, then top_p filters it. This double transformation makes output behavior hard to reason about. **Best practice:** Use `temperature` for most use cases (it's more intuitive). Only switch to `top_p` when you specifically need nucleus sampling behavior. If you must use both, keep one at its default value (`temperature=1.0` or `top_p=1.0`).
 
 ---
+
+## Summary
+
+```mermaid
+mindmap
+  root((Temperature & Sampling))
+    Probabilistic generation
+      Model outputs a distribution over tokens
+      Sampling picks the next token
+      Same prompt can yield different text
+    Temperature
+      The creativity dial
+      Low = focused, deterministic-ish
+      High = flatter, more random
+    Top-P (nucleus)
+      Cuts the long tail of unlikely tokens
+      Keep tokens until cumulative p
+      Filters rather than reshapes
+    Don't tune both
+      Pick temperature OR top_p
+      Leave the other at its default
+```
+
+## Quick Reference
+
+| Setting | What it does | Typical use |
+|---|---|---|
+| `temperature=0` | Near-deterministic; picks the top token | Extraction, classification, code |
+| `temperature=0.7` | Balanced, natural variation | Chat, general use |
+| `temperature=1.0+` | Flatter distribution, more surprising | Brainstorming, creative writing |
+| `top_p=0.9` | Sample only from the top 90% probability mass | When you want nucleus sampling |
+| `top_p=1.0` | No filtering (the default) | Leave here when tuning temperature |
+| Both at once | Interact unpredictably | Avoid — set only one |
+
+```python
+# script_id: day_004_temperature_and_sampling_part1/quick_reference
+response = client.chat.completions.create(
+    model="gpt-4o-mini",
+    messages=[{"role": "user", "content": prompt}],
+    temperature=0.0,   # deterministic; or set top_p instead, not both
+)
+```
+
+## Exercises
+
+1. **Measure determinism.** Call the model 5 times at `temperature=0` with the same prompt, then 5 times at `temperature=1.2`. Count how many distinct outputs you get in each batch.
+2. **Pick by task.** For each task — extracting a date from text, writing a poem, classifying sentiment — choose a temperature and justify it in one line.
+3. **Implement top-p by hand.** Extend the `apply_top_p` function above to also return the *excluded* tokens, and verify the kept probabilities sum to ≥ p.
+4. **Break the rule on purpose.** Set both `temperature=0.2` and `top_p=0.5`, run the creative prompt a few times, and describe how the output feels versus tuning just one.
+
+<details><summary>Solutions (approaches)</summary>
+
+1. At `temperature=0` you'll usually get 1 distinct output (the model is near-greedy); at `1.2` expect 4–5 distinct outputs. Determinism isn't *guaranteed* even at 0, but it's close.
+2. Date extraction → `0` (you want the exact answer). Poem → `0.9–1.2` (variety). Sentiment classification → `0` (consistent labels).
+3. Track a second list for tokens once `cumulative >= p`; assert `sum(prob for _, prob in kept) >= p`.
+4. Output tends to feel narrower than `top_p=0.5` alone but with odd variance — exactly the "hard to reason about" interaction the warning describes.
+</details>
+
+## What's Next?
+
+Tomorrow (Day 5) is **Temperature and Sampling Part 2** — we go deeper on choosing between temperature and top-p, add **frequency and presence penalties** to curb repetition, and build a decision tree for picking sampling settings by use case.

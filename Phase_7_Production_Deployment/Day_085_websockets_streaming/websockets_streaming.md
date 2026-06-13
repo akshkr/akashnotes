@@ -471,6 +471,23 @@ async with websockets.connect(uri) as ws:
 
 ---
 
+## Exercises
+
+1. **Echo socket.** Build a `/ws` endpoint that accepts a connection, receives one text message, and sends it back uppercased.
+2. **Stream an LLM.** On message, stream the model's reply chunk-by-chunk over the socket instead of waiting for the full response.
+3. **Two clients.** Connect once from browser JavaScript (`new WebSocket(...)`) and once from Python (`websockets.connect`). Confirm both receive the same stream.
+4. **Survive a drop.** Handle `WebSocketDisconnect` cleanly so a client closing mid-stream doesn't crash the server, and stop generating tokens when they leave.
+
+<details><summary>Solutions (approaches)</summary>
+
+1. `await ws.accept(); msg = await ws.receive_text(); await ws.send_text(msg.upper())`.
+2. `for chunk in stream: await ws.send_text(chunk.choices[0].delta.content or "")`.
+3. JS: `ws.onmessage = e => console.log(e.data)`; Python: `async with websockets.connect(uri) as ws: print(await ws.recv())`.
+4. Wrap the loop in `try: ... except WebSocketDisconnect: break` and check connection state before each send.
+</details>
+
+---
+
 ## What's Next?
 
 Now let's build **beautiful agent UIs** with Streamlit and Gradio!

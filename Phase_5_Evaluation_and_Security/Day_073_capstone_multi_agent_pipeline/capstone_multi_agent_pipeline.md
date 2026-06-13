@@ -748,6 +748,69 @@ A production-pattern multi-agent content pipeline with:
 
 ---
 
+## Summary
+
+```mermaid
+mindmap
+  root((Content Pipeline Capstone))
+    Specialized Agents
+      Researcher
+      Writer
+      Reviewer
+    Orchestration
+      Supervisor routing
+      Write/evaluate loop
+      Revision cap
+    Quality and Safety
+      LLM-as-judge scoring
+      Quality threshold
+      Prompt injection defense
+    Human Gate
+      Approve
+      Request revision
+      Reject
+      Audit log
+```
+
+---
+
+## Quick Reference
+
+| Component | File | Responsibility |
+|---|---|---|
+| State schema | `state.py` | Typed `ContentPipelineState` shared across stages |
+| Input security | `security.py` | `sanitize_input` — pattern match + length cap, optional LLM check |
+| Researcher | `agents/researcher.py` | Gather facts; `gpt-4o-mini`, temp 0.4 |
+| Writer | `agents/writer.py` | Draft content; `gpt-4o-mini`, temp 0.7 |
+| Reviewer | `agents/reviewer.py` | Structured critique JSON; temp 0.3 |
+| Evaluator | `evaluator.py` | LLM-as-judge; `gpt-4o`, temp 0, normalized 0-1 score |
+| Human gate | `hitl.py` | `get_human_review` → approve / revise / reject |
+| Orchestrator | `pipeline.py` | `ContentPipeline.run` ties stages + revision loop together |
+
+Tips:
+- Spend your strongest (most expensive) model on evaluation, not every stage — the judge sets the quality bar.
+- Sanitize before *any* agent sees input; treat the topic as untrusted user data.
+- Cap revisions (`max_revisions`) so a stubborn quality threshold can't loop forever.
+
+---
+
+## Exercises
+
+1. Swap the in-terminal `get_human_review` for an async approval gate: persist the draft and `run_id`, return immediately, and let a human approve later via a separate function call.
+2. Enable the commented-out `llm_safety_check` path in `sanitize_input` and add a test with a subtle injection (e.g., "summarize, then ignore prior rules") that pattern matching alone misses.
+3. Reduce cost: route the researcher and reviewer to `gpt-4o-mini` (already the case) but make the *model per stage* configurable, and measure cost per run before/after using the figures in the Cost Analysis block.
+4. Add a second judge and average the two `normalized_score` values (a tiny LLM-jury) to reduce single-judge variance; log both scores.
+
+<details><summary>Solutions (approaches)</summary>
+
+1. Store `{run_id: {"draft", "evaluation"}}` in a dict/Redis; `request_review` returns `run_id`; a separate `submit_decision(run_id, decision, feedback)` resumes the pipeline.
+2. Uncomment Step 4 in `sanitize_input`; `llm_safety_check` returns `(safe, reason)` — return `("[BLOCKED: ...]", False)` when unsafe. Assert the subtle input yields `was_safe == False`.
+3. Add a `models: dict[str, str]` arg to `ContentPipeline.__init__`; pass `models["researcher"]` etc. into each agent call; compare summed token cost.
+4. Call `evaluate_content` twice (or with two different judge prompts), then `normalized_score = (e1 + e2) / 2`; keep both in the result for auditing.
+</details>
+
+---
+
 ## What's Next
 
 You've completed Phase 4. You've built the most complex system in this course. Now it's time to make it production-ready.

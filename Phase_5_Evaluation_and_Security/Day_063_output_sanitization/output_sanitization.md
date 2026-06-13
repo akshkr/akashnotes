@@ -470,6 +470,23 @@ clean_code, issues = sanitize_code_output(code)
 
 ---
 
+## Exercises
+
+1. Add an IP-address redaction rule to `OutputSanitizer.pii_patterns` (IPv4) that replaces matches with `[IP REDACTED]`, and test it on a sample string containing one.
+2. The `\b\d{16}\b` credit-card pattern misses cards written with spaces or dashes (`4111 1111 1111 1111`). Improve it to catch those groupings without flagging unrelated long numbers.
+3. Combine the layers in order: run `OutputSanitizer` first, then `check_moderation`, then `moderate_with_llm` only if a moderation score exceeds 0.3 — exactly as `ComprehensiveSanitizer` does — and log which layer made the final decision.
+4. Extend `sanitize_json_output` so it also redacts values that *look* like secrets (e.g. strings matching `sk-...`) even when the key name is innocuous.
+
+<details><summary>Solutions (approaches)</summary>
+
+1. Add `(r'\b(?:\d{1,3}\.){3}\d{1,3}\b', '[IP REDACTED]')` to `pii_patterns`.
+2. Use `r'\b(?:\d[ -]?){13,16}\b'` then strip separators and validate length (optionally a Luhn check) before redacting, to avoid false positives.
+3. Track a `decided_by` variable set to `"pattern"`, `"moderation"`, or `"llm"` at each early return; include it in the `SanitizationResult.issues` or as a new field.
+4. In the leaf branch of `redact`, also test the value: `if isinstance(obj, str) and re.match(r'sk-[A-Za-z0-9]{8,}', obj): return "[REDACTED]"`.
+</details>
+
+---
+
 ## What's Next?
 
 Now let's explore **NeMo Guardrails** - a framework for building comprehensive safety guardrails!

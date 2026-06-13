@@ -429,6 +429,31 @@ register(project_name="my-project")
 
 ---
 
+## Exercises
+
+1. **Trace a multi-step pipeline.** Decorate a small RAG-style pipeline (`embed -> retrieve -> generate`) with `@traceable` on each step. Run it and find the nested trace in the LangSmith dashboard — confirm you can see each step's inputs and outputs.
+
+2. **Instrument with Phoenix.** Use `OpenAIInstrumentor` to auto-trace a few `client.chat.completions.create` calls, then open the Phoenix UI and inspect the spans, token counts, and latency.
+
+3. **Tag and filter.** Add `tags` and `metadata` (e.g. `version`, `team`) to a traced function, then filter for those runs in the dashboard. This is how you separate prod traffic from experiments.
+
+4. **Auto-flag bad traces.** Use the `analyze_trace` helper to scan a batch of trace dicts and surface high-latency or low-relevance runs. Print only the traces with `has_critical == True`.
+
+<details><summary>Solutions (approaches)</summary>
+
+1. Mirror the lesson's `rag_query` example — each helper gets its own `@traceable(name=...)` so the parent trace nests them.
+2. `register(project_name=...)` then `OpenAIInstrumentor().instrument(tracer_provider=...)`; calls are captured automatically afterward.
+3. `@traceable(tags=["production"], metadata={"version": "2.0"})`, or set `run.metadata[...]` at runtime via `get_current_run_tree()`.
+4. Map `analyze_trace` over your traces and filter:
+
+```text
+flagged = [analyze_trace(t) for t in traces]
+critical = [r for r in flagged if r["has_critical"]]
+```
+</details>
+
+---
+
 ## What's Next?
 
 Now that you can see what's happening, let's learn how to **measure quality** with automated evaluation!

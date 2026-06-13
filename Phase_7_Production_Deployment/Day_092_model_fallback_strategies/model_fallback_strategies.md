@@ -433,6 +433,49 @@ mindmap
 
 ---
 
+## Quick Reference
+
+| Pattern | Purpose | Key idea |
+|---|---|---|
+| Fallback chain | Survive a provider outage | Try providers in order; collect errors; return first success |
+| Health checking | Skip known-bad providers | Track latency + error count; cooldown before retrying |
+| Cost routing | Spend less | Classify request complexity; route to cheapest capable model |
+| Circuit breaker | Stop hammering a dead provider | Open after N failures; half-open probe after a timeout |
+| Degraded mode | Never return a blank error | Serve cached/static response as last resort |
+
+```python
+# Fallback chain (pseudo-flow)
+errors = []
+for provider in [primary, secondary, cheap_local]:
+    if breaker.is_open(provider):
+        continue
+    try:
+        return provider.call(prompt, timeout=10)
+    except Exception as e:
+        errors.append((provider.name, e))
+        breaker.record_failure(provider)
+return degraded_response(errors)   # cached or static, never blank
+```
+
+---
+
+## Exercises
+
+1. **Two-provider chain.** Implement a fallback that tries provider A, and on failure/timeout tries provider B, returning the first success.
+2. **Circuit breaker.** Add a breaker that opens after 5 consecutive failures for a provider and half-opens with a single probe after a 30s cooldown.
+3. **Cost-aware routing.** Classify each request as simple/complex and route simple ones to a cheap model (e.g. Haiku/`gpt-4o-mini`), complex ones to a stronger model.
+4. **Degraded mode.** When *every* provider is down, return a cached or static answer instead of a 500, and log that you served degraded.
+
+<details><summary>Solutions (approaches)</summary>
+
+1. Loop providers, `try` each with a per-call `timeout`; `except` records the error and continues; raise/degrade only if all fail.
+2. Track `failures` per provider; `open` blocks calls; after cooldown allow one probe and `close` on success, re-`open` on failure.
+3. A cheap classifier (length/heuristics or a small model) tags complexity; a dict maps tag → model id.
+4. `except AllProvidersDown: return cache.get(key) or STATIC_FALLBACK` and `logging.warning("degraded mode")`.
+</details>
+
+---
+
 ## What's Next?
 
 With caching and fallbacks in place, your system is resilient and cost-efficient. Next, let's deploy it to the **cloud** — AWS, GCP, Render, and Railway.

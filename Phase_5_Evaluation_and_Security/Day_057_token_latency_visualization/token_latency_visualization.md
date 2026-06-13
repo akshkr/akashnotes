@@ -487,6 +487,32 @@ cost = estimate_cost(call)
 
 ---
 
+## Exercises
+
+1. **Capture metrics on a call.** Use `call_with_metrics` to make an API call and print prompt/completion/total tokens plus latency. Confirm the numbers match what you'd expect from the prompt size.
+
+2. **Collect and summarize.** Route a handful of calls through `tracked_call`, then print `metrics.get_summary()`. Identify your p50 and p95 latency — the p95 is what your slowest users actually feel.
+
+3. **Estimate cost.** Use `estimate_cost` / `get_cost_summary` to total the spend across your calls and break it down by model. Which model is eating your budget?
+
+4. **Visualize it.** Render the ASCII `print_latency_histogram`, or build the Streamlit dashboard, to spot the shape of your latency distribution (tight vs. long-tailed).
+
+<details><summary>Solutions (approaches)</summary>
+
+1. `content, m = call_with_metrics([...])` then print the `TokenMetrics` fields.
+2. Make several `tracked_call(...)` calls, then `print(metrics.get_summary())` — `p50_latency_ms` and `p95_latency_ms` are already computed.
+3. `get_cost_summary(metrics.calls)` returns `total_cost` and a `by_model` breakdown:
+
+```text
+cs = get_cost_summary(metrics.calls)
+print(cs["total_cost"], cs["by_model"])
+```
+
+4. `print_latency_histogram(metrics.calls)` for the terminal, or run `streamlit run dashboard.py` with the `create_dashboard` function.
+</details>
+
+---
+
 ## What's Next?
 
 Now let's learn about **Automated Evaluation** - using LLMs to evaluate agent quality!

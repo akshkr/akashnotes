@@ -446,6 +446,23 @@ client = OpenAI(base_url="http://localhost:11434/v1", api_key="ollama")
 
 ---
 
+## Exercises
+
+1. **Pull and chat.** Install Ollama, `ollama pull llama3.2`, and run a single chat turn from Python with the `ollama` package. Print the response text.
+2. **Swap the client, keep the code.** Point the OpenAI SDK at Ollama's `http://localhost:11434/v1` base URL and send the *same* request shape you'd send to OpenAI. Confirm your existing code path works unchanged.
+3. **Compare two local models.** Pull a second model (e.g. `qwen2.5`), ask both the same prompt, and eyeball the difference in quality and latency.
+4. **Inspect what you're running.** Use `ollama list` and `ollama show llama3.2` to report the model's parameter count and quantization level.
+
+<details><summary>Solutions (approaches)</summary>
+
+1. `import ollama; print(ollama.chat(model='llama3.2', messages=[{'role':'user','content':'hi'}])['message']['content'])`.
+2. `client = OpenAI(base_url="http://localhost:11434/v1", api_key="ollama")`, then `client.chat.completions.create(model="llama3.2", messages=[...])` — only the client constructor changes.
+3. Loop over `["llama3.2", "qwen2.5"]`, time each `ollama.chat` call with `time.perf_counter()`, print response + elapsed.
+4. `ollama list` shows size/quant in the tag; `ollama show <model>` prints the full modelfile including parameter count.
+</details>
+
+---
+
 ## What's Next?
 
 Now let's go deeper on **Quantization and Model Swapping** — the GGUF/AWQ/GPTQ formats, bit-level tradeoffs, and choosing the right quantization for your hardware.

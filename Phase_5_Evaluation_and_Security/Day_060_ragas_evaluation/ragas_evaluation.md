@@ -494,6 +494,30 @@ print(results["answer_relevancy"])
 
 ---
 
+## Exercises
+
+1. Build an `EvaluationDataset` with `EvaluationDataset.from_list([...])` (the per-sample-dict form) instead of `from_dict`, using three samples with `user_input` / `response` / `retrieved_contexts` / `reference`. Confirm you get the same metrics back.
+2. Construct one deliberately low-faithfulness sample (an answer that adds a fact not in the context) and one high-faithfulness sample, run only the `faithfulness` metric, and check the scores move in the direction you expect.
+3. Extend `RAGEvaluator.evaluate_batch` to also return the per-sample scores (not just the aggregate) so you can spot which question dragged the average down.
+4. Wire `EvaluatedRAG` to flag any query whose `faithfulness` drops below 0.7 as `"needs_review": True` in its returned result dict.
+
+<details><summary>Solutions (approaches)</summary>
+
+1. ```text
+   samples = [
+       {"user_input": "...", "response": "...", "retrieved_contexts": ["..."], "reference": "..."},
+       # ...two more
+   ]
+   ds = EvaluationDataset.from_list(samples)
+   results = evaluate(dataset=ds, metrics=[faithfulness, answer_relevancy, context_precision, context_recall])
+   ```
+2. Low: `response` asserts "...and it's the largest country in Europe" while the context only mentions the capital. High: response stays within the context. Faithfulness should score the first markedly lower.
+3. Iterate the dataset alongside `results` (Ragas exposes a per-sample DataFrame via `results.to_pandas()`); return `{"aggregate": results, "per_sample": results.to_pandas().to_dict("records")}`.
+4. In `query`, after computing `eval_result`, add `result["needs_review"] = eval_result["faithfulness"] < 0.7`.
+</details>
+
+---
+
 ## What's Next?
 
 Now let's learn about **Agent Trajectory Evaluation** - measuring how efficiently agents solve problems!

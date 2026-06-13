@@ -347,6 +347,23 @@ if agent_confidence < threshold:
 
 ---
 
+## Exercises
+
+1. Extend `ApprovalPipeline` so that a `NEEDS_REVISION` result loops back and re-reviews the revised output (instead of accepting it after a single revision).
+2. Add a `default_on_timeout` parameter to `get_approval_with_timeout` so a caller can choose whether an unanswered prompt defaults to approve or reject — and explain which default is safer for an irreversible action.
+3. Wire `classify_risk` into the LangGraph example so low-risk tasks skip the `interrupt_before=["human_review"]` pause entirely while high-risk tasks still pause.
+4. Add a fourth pipeline stage that logs every approval decision (who, what, when, outcome) to an audit trail before the next stage runs.
+
+<details><summary>Solutions (approaches)</summary>
+
+1. After the revision, call `self._get_approval(stage, result)` again inside a `while status == ApprovalStatus.NEEDS_REVISION:` loop so each revision is re-reviewed.
+2. `def get_approval_with_timeout(action, timeout=300, default_on_timeout=False)`; return `default_on_timeout` when the thread is still alive. Safer default for irreversible actions is `False` (reject) — fail closed.
+3. Add a conditional edge from `plan` using `classify_risk`: `"low"` routes straight to `execute`, `"medium"`/`"high"` route to `human_review`.
+4. Insert a `Stage("Audit", log_decision, requires_approval=False)` whose action appends `{"approver", "stage", "ts", "status"}` to a JSONL file.
+</details>
+
+---
+
 ## What's Next?
 
 You've built multi-stage approval pipelines. Next, we'll cover **Breakpoints Design** — placing conditional and risk-based breakpoints so agents pause only when a high-risk operation actually warrants human review.

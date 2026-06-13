@@ -451,6 +451,23 @@ demo.launch()
 
 ---
 
+## Exercises
+
+1. **Streamlit chat.** Build a minimal chat app with `st.chat_input` / `st.chat_message` that keeps history across turns using `st.session_state`.
+2. **Gradio in three lines.** Wrap your chat function in `gr.ChatInterface(fn=..., type="messages")` and launch it. Note how little code it took.
+3. **Stream the reply.** Make either UI render tokens as they arrive instead of after the full response (Streamlit `st.write_stream`, or yield from the Gradio fn).
+4. **Add a file upload.** Let the user upload a document and feed its text into the next prompt.
+
+<details><summary>Solutions (approaches)</summary>
+
+1. Append each turn to `st.session_state.messages`; re-render the list at the top of the script on every run.
+2. `gr.ChatInterface(fn=chat, type="messages").launch()` — `type="messages"` passes OpenAI-style `{role, content}` dicts.
+3. Streamlit: `st.write_stream(token_generator)`; Gradio: make `fn` a generator and `yield` partial strings.
+4. `st.file_uploader(...)` / `gr.File(...)`, read the bytes, extract text, prepend it to the user message.
+</details>
+
+---
+
 ## What's Next?
 
-Finally, let's learn about **Cloud Deployment** - putting your AI apps into production!
+Now let's add **generative / agentic UIs** — letting the agent decide what UI components to render, not just text.

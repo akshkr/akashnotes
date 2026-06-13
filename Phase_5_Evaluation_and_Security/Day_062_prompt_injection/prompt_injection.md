@@ -570,6 +570,49 @@ mindmap
 
 ---
 
+## Quick Reference
+
+| Defense layer | Technique | What it catches |
+|---|---|---|
+| Input validation | Regex pattern match | Known attack phrases ("ignore instructions", "you are now") |
+| Prompt hardening | Strict system rules | Override attempts; rule-bending |
+| Context isolation | Wrap user text in `<user_message>` tags | Confusing data with instructions |
+| RAG sandwich | Instructions before AND after context | Indirect injection in retrieved docs |
+| Context sanitization | Strip HTML comments + instruction patterns | Hidden directives in documents |
+| Output filtering | Regex on the response | Leaked system prompt / secrets / PII |
+
+Tips:
+- Treat detection as defense-in-depth, not a guarantee — regex misses paraphrased and encoded attacks (e.g. base64). Combine layers so an attacker must beat all of them.
+- Never echo why a request was blocked in detail; a generic refusal leaks less to an attacker probing your filters.
+- For RAG, the highest-leverage fix is the sandwich: keep retrieved text framed as DATA, never as instructions.
+
+---
+
+## Exercises
+
+1. Add an encoding-aware check to `detect_injection`: decode any base64-looking token in the input and re-scan the decoded text against `BLOCKED_PATTERNS`.
+2. The regex in `SecureLLM.check_input` can be bypassed by paraphrase ("pay no attention to your earlier directions"). Add 2-3 paraphrase patterns and write one input that still slips through — this shows why detection alone is insufficient.
+3. Harden the `vulnerable_agent` from the "Break It, Then Fix It" section so it survives all six listed attacks: add input validation, the sandwich structure, and an output filter that blocks the `INTERNAL50` code.
+4. Implement a simple per-user rate limiter (e.g. max 5 suspicious inputs per minute) that temporarily blocks a user after repeated injection attempts, and log each attempt.
+
+<details><summary>Solutions (approaches)</summary>
+
+1. ```text
+   import base64, re
+   for tok in re.findall(r"[A-Za-z0-9+/]{16,}={0,2}", user_input):
+       try:
+           decoded = base64.b64decode(tok).decode("utf-8", "ignore")
+           user_input += " " + decoded   # rescan combined text
+       except Exception:
+           pass
+   ```
+2. Add patterns like `r"pay no attention"`, `r"forget what (you were|i) told"`. A novel paraphrase ("set aside the rules above") will still pass — that's the point: layer prompt hardening + output filtering behind it.
+3. Combine `check_input` (block known patterns) → wrap input in `<user_input>` tags with a hardened system prompt → `check_output` with a filter `if "INTERNAL50" in output: return refusal`. Log blocked inputs.
+4. Keep a `dict[user_id] -> list[timestamps]`; on each suspicious hit, append now, drop entries older than 60s, and refuse if `len > 5`.
+</details>
+
+---
+
 ## What's Next?
 
 Now let's learn about **Safe Sandboxing** - running agent code securely with Docker!

@@ -599,6 +599,23 @@ collection.delete(where={"category": "old"})
 
 ---
 
+## Exercises
+
+1. **Extend the indexer to skip duplicates.** Before calling `collection.add`, query the collection by `ids` (or hash the document text into the id) and only add documents that aren't already present. Print how many you skipped.
+2. **Measure batch vs. one-at-a-time indexing.** Time adding 200 documents in a single `add` call versus 200 separate calls. Report the wall-clock difference — embedding round-trips dominate.
+3. **Add a metadata filter to your search.** Tag each document with a `category` in its metadata, then run the same query with and without a `where={"category": ...}` filter and compare the results.
+4. **Build a tiny upsert loop.** Write a function that takes `(id, text)`, re-embeds the text, and `upsert`s it so re-running it twice never creates duplicates. Verify the collection count stays flat.
+
+<details><summary>Solutions (approaches)</summary>
+
+1. Fetch existing ids with `collection.get(ids=batch_ids)["ids"]`, diff against your batch, add only the remainder. Hashing text to a stable id (`hashlib.sha1`) makes "same content = same id".
+2. Wrap each path in `time.perf_counter()`. The batch path wins because it sends one embedding request and one DB write instead of N of each.
+3. Pass `where={"category": "docs"}` to `collection.query`. Fewer candidates come back; filtering happens before similarity ranking.
+4. Re-embed inside the function and call `collection.upsert(ids=[id], documents=[text], embeddings=[vec])`. Check `collection.count()` before and after a second run — it should be unchanged.
+</details>
+
+---
+
 ## What's Next?
 
-Now that you've mastered vector databases, let's put it all together with **Retrieval-Augmented Generation (RAG)** - making LLMs smarter with your own data!
+You can index, search, and keep a vector store fresh — but real documents (PDFs, HTML, scans) don't arrive as clean strings. Tomorrow, **Day 24: Document Parsing**, we extract usable text out of messy source files so it's ready to embed.

@@ -526,6 +526,32 @@ task = Task(
 
 ---
 
+## Exercises
+
+1. **Rewrite a vague task.** Take the bad `description="Research AI"` example and rewrite it with specific focus areas, a structured `expected_output`, and explicit success criteria. Treat it like writing acceptance criteria for a ticket.
+
+2. **Chain three tasks.** Build a research -> write -> edit pipeline where each task passes its output to the next via `context=[...]`. Run it in a sequential crew and confirm the editor actually receives the writer's draft.
+
+3. **Add structured output.** Define a Pydantic model (e.g. `ResearchReport` with `title`, `summary`, `key_findings`) and attach it with `output_pydantic`. Access the typed result fields after the run.
+
+4. **Build a task template.** Write a `create_research_task(topic, agent)` factory that returns a configured `Task`. Use it to generate three tasks for three different topics without copy-pasting descriptions.
+
+<details><summary>Solutions (approaches)</summary>
+
+1. Follow the "Be Specific" example: numbered focus areas in `description`, a bulleted `expected_output`, and a "Success criteria" block.
+2. Set `context=[research_task]` on the writer and `context=[writing_task]` on the editor; CrewAI feeds upstream outputs in automatically.
+3. Subclass `BaseModel`, pass `output_pydantic=ResearchReport`, then read `task.output.title`. (CrewAI 0.70+ may rename this — check the docs.)
+4. Return a `Task(...)` from a function that interpolates `topic`:
+
+```text
+def create_research_task(topic, agent):
+    return Task(description=f"Research {topic}...",
+                expected_output=f"Report on {topic}", agent=agent)
+```
+</details>
+
+---
+
 ## What's Next?
 
 Now let's learn about **Sequential and Parallel Processes** - controlling how tasks execute in CrewAI!

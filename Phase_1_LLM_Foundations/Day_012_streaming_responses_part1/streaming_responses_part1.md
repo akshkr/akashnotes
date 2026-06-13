@@ -316,3 +316,56 @@ asyncio.run(parallel_streams())
 ```
 
 ---
+
+## Summary
+
+```mermaid
+mindmap
+  root((Streaming Responses))
+    Why stream
+      Faster perceived speed
+      Tokens appear as generated
+      Better UX for long answers
+    OpenAI
+      stream=True on create
+      Read chunk.choices[0].delta.content
+      Skip empty deltas
+    Anthropic
+      client.messages.stream(...) context manager
+      Iterate stream.text_stream
+      Or loop raw events for detail
+    Async
+      AsyncOpenAI + async for
+      gather() runs streams in parallel
+      Collect while you print
+```
+
+## Quick Reference
+
+| Task | OpenAI | Anthropic |
+|---|---|---|
+| Turn on streaming | `...create(..., stream=True)` | `with client.messages.stream(...) as stream:` |
+| Get each text piece | `chunk.choices[0].delta.content` | `for text in stream.text_stream:` |
+| Guard empty pieces | `if content:` | text pieces are already non-empty |
+| Inspect raw events | iterate the stream object | `for event in stream:` |
+| Async variant | `AsyncOpenAI()` + `async for chunk in stream` | `AsyncAnthropic()` + `async with ... as stream` |
+| Run several at once | `await asyncio.gather(*tasks)` | same |
+
+## Exercises
+
+1. **Stream then collect.** Modify `simple_chat` so it prints tokens live *and* returns the full joined string at the end.
+2. **Time the difference.** Measure time-to-first-token for a streaming call vs. total time for a non-streaming call on the same prompt. Which feels faster, and why?
+3. **Add a token counter.** Count the number of streamed chunks and print it after the response completes; compare it to the `usage` token count from a non-streaming call.
+4. **Stream from Anthropic.** Port the OpenAI streaming function to Anthropic using `client.messages.stream(...)` and its `text_stream`.
+
+<details><summary>Solutions (approaches)</summary>
+
+1. Append each non-empty `delta.content` to a list while printing, then `return "".join(collected)` — exactly the collect-while-streaming pattern shown above.
+2. Time-to-first-token is much lower when streaming (you see output in ~100s of ms); total time is similar, but the *perceived* latency is what users feel.
+3. Increment a counter inside the `for chunk` loop. Chunk count ≈ token count but isn't exact (some chunks carry no text, some carry several characters).
+4. Wrap the call in `with client.messages.stream(model="claude-sonnet-4-6", max_tokens=512, messages=[...]) as stream:` and iterate `stream.text_stream`.
+</details>
+
+## What's Next?
+
+Tomorrow (Day 13) is **Streaming Responses Part 2** — building a real streaming chat interface, streaming with callbacks, Server-Sent Events for web apps, handling interruptions, and measuring streaming performance.

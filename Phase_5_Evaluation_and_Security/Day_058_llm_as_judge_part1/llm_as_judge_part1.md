@@ -450,3 +450,74 @@ print(f"Context Quality: {result['context_quality']:.2%}")
 ```
 
 ---
+
+## Summary
+
+```mermaid
+mindmap
+  root((LLM-as-Judge))
+    Scoring
+      Criteria-based prompts
+      Structured JSON scores
+      temperature=0 for consistency
+    Comparison
+      Pairwise A vs B
+      Often beats absolute scoring
+    RAG Evaluation
+      Ragas metrics
+      Custom evaluator
+      Faithfulness & relevancy
+    Mindset
+      Like a linter for prose
+      Fast but imperfect
+      Pairs with human review
+```
+
+---
+
+## Quick Reference
+
+| Pattern | When to use | Key detail |
+|---|---|---|
+| Criteria scoring | Free-form quality review | `temperature=0`; ask for score + reasoning |
+| Structured scores | Comparing many responses | `response_format={"type": "json_object"}` |
+| Pairwise comparison | "Which is better, A or B?" | More reliable than absolute scores |
+| Ragas `evaluate()` | RAG pipelines | `EvaluationDataset.from_list([...])` |
+| Custom RAG evaluator | Bespoke metrics | One prompt per dimension, parse JSON |
+
+Tips:
+- Always set `temperature=0` for the judge so scores are reproducible.
+- Ragas 0.2+ fields are `user_input` / `response` / `retrieved_contexts` / `reference` — not the old `question` / `answer` / `contexts` / `ground_truth`.
+- Prefer pairwise comparison when absolute scores feel arbitrary; it's easier for a judge to say "B is better" than "B is a 4.2".
+
+---
+
+## Exercises
+
+1. Extend `evaluate_with_scores` to also return a boolean `pass` field that is `True` only when every individual criterion scores at least 4. Use it to filter a batch of responses.
+2. Run `compare_responses` twice on the same pair but swap `response_a` and `response_b`. Does the winner stay consistent? Note what you observe (this is a preview of position bias, covered tomorrow).
+3. Add a fifth Ragas-style dimension to `RAGEvaluator` — `answer_completeness` (does the answer cover everything the context supports?) — following the same prompt-and-parse pattern.
+4. Build the smallest possible Ragas run: two samples, only the `faithfulness` and `answer_relevancy` metrics, and print each score.
+
+<details><summary>Solutions (approaches)</summary>
+
+1. Parse the JSON, then `result["pass"] = all(result[c] >= 4 for c in ["accuracy", "completeness", "clarity", "relevance", "conciseness"])`.
+2. Swap the arguments; an unbiased judge should flip the winner. If it always picks the same slot, that's position bias.
+3. Copy `evaluate_relevancy`, change the prompt to ask "is anything in the context missing from the answer?", return a `completeness_score`, and add it to the `full_evaluation` dict.
+4. ```text
+   from ragas import evaluate, EvaluationDataset
+   from ragas.metrics import faithfulness, answer_relevancy
+   ds = EvaluationDataset.from_list([
+       {"user_input": "...", "response": "...", "retrieved_contexts": ["..."], "reference": "..."},
+       {"user_input": "...", "response": "...", "retrieved_contexts": ["..."], "reference": "..."},
+   ])
+   r = evaluate(dataset=ds, metrics=[faithfulness, answer_relevancy])
+   print(r)
+   ```
+</details>
+
+---
+
+## What's Next?
+
+You can now score and compare responses, but naive judges have systematic biases (position, verbosity, self-enhancement). Next up: **LLM-as-Judge Part 2** — detecting and correcting those biases, calibrating with anchors, measuring reliability with Cohen's Kappa, and running multi-judge consensus cost-efficiently.

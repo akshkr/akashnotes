@@ -501,13 +501,66 @@ Find them at: `github.com/modelcontextprotocol/servers`
 
 ---
 
-## Practice Exercises
+## Summary
 
-1. Build an MCP server that exposes your Day 40 RAG chatbot's vector database as a queryable tool
-2. Create a simple MCP server for a REST API you use (weather, news, etc.) and connect it to Claude Desktop
-3. Add a `search_schema` tool to the database server that finds tables matching a keyword
-4. Write an MCP server that exposes your local git repository: `git_log`, `git_diff`, `git_status` tools
+```mermaid
+mindmap
+  root((MCP))
+    Why
+      One protocol for all tools
+      Tools as standalone services
+      Reuse across clients
+    Primitives
+      Tools (actions)
+      Resources (read-only data)
+      Prompts (templates)
+    Clients
+      Claude Desktop
+      Claude Code
+      Any MCP-aware app
+```
 
 ---
 
-**Next up:** Claude Agent SDK, Anthropic's native framework for building production agents.
+## Quick Reference
+
+| Concept | What it is | Analogy for a SWE |
+|---|---|---|
+| MCP server | A process exposing tools/resources/prompts | A microservice with a typed contract |
+| Tool | A callable action with a schema | An RPC endpoint |
+| Resource | Read-only data the client can fetch | A GET-only resource/URI |
+| Prompt | A reusable templated instruction | A stored query / snippet |
+| Client | The host that connects (Claude Desktop, Code) | The service consumer |
+
+```text
+# Register a Claude Desktop MCP server (config sketch)
+# ~/Library/Application Support/Claude/claude_desktop_config.json
+{
+  "mcpServers": {
+    "db": { "command": "python", "args": ["db_mcp_server.py"] }
+  }
+}
+```
+
+---
+
+## Exercises
+
+1. Build an MCP server that exposes your Day 40 RAG chatbot's vector database as a queryable tool.
+2. Create a simple MCP server for a REST API you use (weather, news, etc.) and connect it to Claude Desktop.
+3. Add a `search_schema` tool to the database server that finds tables matching a keyword.
+4. Write an MCP server that exposes your local git repository: `git_log`, `git_diff`, `git_status` tools.
+
+<details><summary>Solutions (approaches)</summary>
+
+1. Wrap your existing `retrieve(query)` in a tool function; the schema takes `query: str` and returns the top-k chunks.
+2. One tool per endpoint; map tool args → request params; return the parsed JSON as the tool result.
+3. `search_schema(keyword)` runs `SELECT table_name ... WHERE table_name LIKE '%keyword%'` and returns matches.
+4. Shell out to `git` (`git log --oneline`, `git diff`, `git status --short`) and return stdout as the tool result; restrict to a safe repo path.
+</details>
+
+---
+
+## What's Next?
+
+**Next up:** the Claude Agent SDK and the agent patterns underneath it — the loop the SDKs automate, routing/handoffs, and guardrails, all on the Messages API.

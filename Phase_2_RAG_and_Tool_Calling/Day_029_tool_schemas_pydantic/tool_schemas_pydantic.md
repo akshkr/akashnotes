@@ -345,6 +345,36 @@ flowchart LR
 
 ---
 
+## Quick Reference
+
+| Goal | Code | Notes |
+|---|---|---|
+| Define a tool model | `class GetWeather(BaseModel): city: str = Field(..., description="...")` | Descriptions are the model's only hint — write them |
+| OpenAI tool spec | `pydantic_function_tool(GetWeather)` | One-liner, OpenAI-formatted |
+| Anthropic input_schema | `GetWeather.model_json_schema()` | Feed into `{"name", "description", "input_schema"}` |
+| LangChain tool | `@tool` on a typed function | Schema inferred from the signature |
+| Validate model output | `GetWeather(**json.loads(args))` | Pydantic raises if the LLM sent bad args |
+| Inspect generated schema | `GetWeather.model_json_schema()` | See exactly what the LLM will receive |
+
+---
+
+## Exercises
+
+1. **Add validation to a tool model.** Add a `@field_validator` (Pydantic v2) that rejects an empty `city`, then feed it deliberately bad LLM arguments and confirm it raises before you ever call the function.
+2. **Compare generated schemas.** Run `model_json_schema()` and `pydantic_function_tool()` on the same model and diff the output — note how the OpenAI wrapper nests the schema under `function`.
+3. **Document a poorly-described tool.** Take a model with a bare `x: str` field, add a real `Field(description=...)`, and measure whether the LLM fills the argument more correctly.
+4. **Build a tool registry.** Write a dict mapping tool name → (Pydantic model, handler function) so adding a tool is one entry instead of edits in three places.
+
+<details><summary>Solutions (approaches)</summary>
+
+1. Use `@field_validator("city") @classmethod def non_empty(cls, v): ...` raising `ValueError`. Construct the model from bad args inside a `try/except ValidationError`.
+2. Print both as JSON; the OpenAI form is `{"type": "function", "function": {...schema...}}` while `model_json_schema()` is the bare schema.
+3. Swap the docstring/`Field(description=...)` and rerun the same prompts; clearer descriptions reduce wrong or empty arguments.
+4. `REGISTRY = {"get_weather": (GetWeather, get_weather)}`; generate tool specs by iterating the registry and dispatch by name on a tool call.
+</details>
+
+---
+
 ## What's Next?
 
 Now that your tools have proper schemas, let's learn how to **execute tool calls and return results** back to the LLM!

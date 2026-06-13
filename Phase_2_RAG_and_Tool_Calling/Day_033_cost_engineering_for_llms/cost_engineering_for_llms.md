@@ -791,6 +791,46 @@ def optimize_context(chunks: list[str], query: str, max_tokens: int = 800) -> li
 
 ---
 
+## Summary
+
+```mermaid
+mindmap
+  root((Cost Engineering))
+    Measure
+      Count tokens
+      Price per model
+      Track per user
+    Optimize
+      Model routing
+      Prompt caching
+      Batch API
+    Predict
+      Monthly estimate
+      Budget alerts
+      Per-query cost
+    Decide
+      Cheap vs capable
+      Business tradeoff
+      Data-driven choice
+```
+
+---
+
+## Quick Reference
+
+| Lever | Pattern | Rough impact |
+|---|---|---|
+| Count tokens | `count_tokens(text, model)` before sending | Know cost up front |
+| Cheap default | Route simple queries to `gpt-4o-mini` / `claude-haiku-4-5` | Up to ~16x cheaper than flagship |
+| Model routing | Classify complexity, pick model per query | Pay for capability only when needed |
+| Prompt caching | Mark a stable system prefix cacheable (Anthropic) | ~75%+ off the cached prefix |
+| Batch API | OpenAI Batch for non-urgent work | ~50% off real-time pricing |
+| Budget alerts | Track spend/hour, alert at 50% of cap | Catch runaway cost early |
+
+Prices as of 2026-06 — verify against the provider before relying on a number (see `REFERENCE.md`).
+
+---
+
 ## Practice Exercises
 
 1. Build a cost calculator that takes a system prompt, expected user messages, and daily user count — and outputs monthly cost for three different models
@@ -798,6 +838,16 @@ def optimize_context(chunks: list[str], query: str, max_tokens: int = 800) -> li
 3. Add a semantic cache to your Day 34 RAG chatbot and measure the cache hit rate after 50 test queries
 4. Build a cost dashboard that tracks spend by hour and alerts when you hit 50% of your daily budget
 
+<details><summary>Solutions (approaches)</summary>
+
+1. Reuse `count_message_tokens` for input, estimate output tokens, multiply by each model's per-million rate, then scale by messages/user × users × 30. Print one row per model.
+2. Classify with a cheap model (or a keyword heuristic), then branch: greetings/FAQ → `claude-haiku-4-5`, technical → `claude-sonnet-4-6`. Log which tier each query hit.
+3. Wrap retrieval+generation behind an embedding-keyed cache; on a near-duplicate query, return the cached answer. Track `hits / total` over your 50 queries.
+4. Accumulate spend into hourly buckets; when the running daily total crosses 50% of the budget, emit a warning (log/Slack). Reset at midnight.
+</details>
+
 ---
 
-**Next up:** Capstone — RAG Chatbot, where you will build and deploy a complete RAG system with cost tracking built in from the start.
+## What's Next?
+
+Phase 2 ends where it has been heading all along: tomorrow, **Day 34: Capstone — RAG Chatbot**, you assemble parsing, chunking, embeddings, retrieval, tool calling, and the cost discipline from today into one complete, deployable RAG system — with cost tracking built in from the start.

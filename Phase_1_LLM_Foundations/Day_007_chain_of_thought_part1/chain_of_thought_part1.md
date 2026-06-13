@@ -432,3 +432,53 @@ print(f"Vote Distribution: {result['vote_distribution']}")
 ```
 
 ---
+
+## Summary
+
+```mermaid
+mindmap
+  root((Chain of Thought))
+    The problem
+      LLMs guess fast and skip steps
+      Hurts math and multi-step logic
+    Trigger it
+      "Let's think step by step"
+      Ask for reasoning before the answer
+    Teach it
+      Zero-shot: the magic phrase
+      Few-shot: show worked examples
+      Structured formats for parsing
+    Make it robust
+      Self-consistency: many chains
+      Vote on the most common answer
+      Higher temperature for diversity
+```
+
+## Quick Reference
+
+| Technique | How to invoke | When to use |
+|---|---|---|
+| Zero-shot CoT | Append `"Let's think step by step."` | Quick boost on reasoning tasks, no examples handy |
+| Few-shot CoT | Provide 1–3 worked examples showing the reasoning | When you need a consistent reasoning *format* |
+| Structured CoT | Ask for labeled steps (e.g. `Step 1:`, `Final Answer:`) | When you must parse the answer out reliably |
+| Self-consistency | Sample N chains at `temperature≈0.7`, vote | High-stakes answers where accuracy beats cost |
+| Extracting the answer | `re.search(r"Final Answer:\s*(.+)", text)` | Pulling the result from a reasoning chain |
+
+## Exercises
+
+1. **Add the magic phrase.** Take a word problem the model gets wrong in one shot, append "Let's think step by step," and compare the two answers.
+2. **Write a few-shot CoT prompt.** Build a 2-example prompt for a custom task (e.g. computing a discounted price) where each example shows the reasoning, then test it on a new input.
+3. **Measure self-consistency confidence.** Extend `self_consistency_cot` to also return how often the top answer changes as you raise `num_samples` from 1 → 9.
+4. **Harden the extractor.** Modify the regex/parsing so it still finds the final answer when the model writes "The final answer is 42." instead of "Final Answer: 42".
+
+<details><summary>Solutions (approaches)</summary>
+
+1. The single-shot answer is often a fast wrong guess; the step-by-step version usually corrects it. Note *which* step the reasoning fixes.
+2. Format each example as `Input → reasoning → Final Answer:`. The model copies the pattern, so consistency comes from the demonstrated format, not just the content.
+3. Call the function in a loop over `num_samples` values and record `result["confidence"]`; confidence usually stabilizes by ~5 samples — diminishing returns after that.
+4. Broaden the pattern, e.g. `re.search(r"final answer(?: is)?:?\s*(.+)", text, re.IGNORECASE)`, and strip trailing punctuation.
+</details>
+
+## What's Next?
+
+Tomorrow (Day 8) is **Chain of Thought Part 2** — when CoT actually pays off versus when it just burns tokens, practical CoT patterns, reliable answer extraction, and the cost trade-offs of reasoning prompts.

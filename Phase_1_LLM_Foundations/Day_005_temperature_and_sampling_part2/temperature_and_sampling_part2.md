@@ -291,6 +291,19 @@ mindmap
 
 ---
 
+## Quick Reference
+
+| Parameter | What it does | Typical range | Reach for it when |
+|---|---|---|---|
+| `temperature` | Reshapes the whole distribution | 0 – 2 | You want a single creativity dial |
+| `top_p` | Keeps only the top probability mass | 0.1 – 1.0 | You want nucleus sampling (instead of temperature) |
+| `frequency_penalty` | Penalizes tokens by how *often* they've appeared | 0.0 – 1.0 (try 0.3–0.7) | Output keeps repeating the same words |
+| `presence_penalty` | Penalizes tokens that have appeared *at all* | 0.0 – 1.0 (try 0.3–0.5) | You want the model to introduce new topics |
+
+**Rule of thumb:** tune *one* of temperature / top_p, then add a small penalty only if you see repetition.
+
+---
+
 ## Exercises
 
 1. **Temperature Explorer**: Create a script that generates the same prompt with temperatures from 0 to 2 in 0.2 increments. Visualize how the outputs change.

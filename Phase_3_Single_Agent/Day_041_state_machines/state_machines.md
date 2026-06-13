@@ -465,6 +465,23 @@ result = app.invoke({"data": "input"})
 
 ---
 
+## Exercises
+
+1. Define a `TypedDict` state with `count: int` and `messages: list`, then build a two-node graph that increments `count` and appends a string — run it and inspect the final state.
+2. Add a conditional edge: after node A, route to `node_b` if `count < 3` else to `END`, creating a controlled loop.
+3. Make one node deliberately raise, then wrap `app.invoke` in try/except and confirm the state up to the failure is what you expected.
+4. Draw the graph: call `app.get_graph().draw_mermaid()` (or `.print_ascii()`) and check the diagram matches your mental model.
+
+<details><summary>Solutions (approaches)</summary>
+
+1. Each node returns a partial dict (`return {"count": state["count"] + 1}`); LangGraph merges it into state. Print `app.invoke({"count": 0, "messages": []})`.
+2. Use `graph.add_conditional_edges("A", lambda s: "loop" if s["count"] < 3 else "stop", {"loop": "node_b", "stop": END})`.
+3. The exception propagates out of `invoke`; without a checkpointer the in-memory state is lost, which motivates Day 44's persistence.
+4. `print(app.get_graph().draw_mermaid())` returns Mermaid text you can paste into the rendered page or any Mermaid viewer.
+</details>
+
+---
+
 ## What's Next?
 
 Now let's go deeper on LangGraph's building blocks: **Nodes and Edges** — how to structure node functions and route between them with simple and conditional edges.

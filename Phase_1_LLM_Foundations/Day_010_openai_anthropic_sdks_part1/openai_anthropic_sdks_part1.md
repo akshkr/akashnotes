@@ -424,3 +424,58 @@ response = client.messages.create(
 > **Coming from Software Engineering?** Traditional image-understanding pipelines required stitching together separate OCR services (Tesseract, AWS Textract), computer vision models, and custom post-processing. With multimodal LLMs, a single API call handles text + image understanding together — dramatically reducing integration complexity.
 
 ---
+
+## Summary
+
+```mermaid
+mindmap
+  root((OpenAI & Anthropic SDKs))
+    Setup
+      pip install openai / anthropic
+      API key from env var
+      Create one client instance
+    The call
+      OpenAI: client.chat.completions.create
+      Anthropic: client.messages.create
+      messages list of role/content
+    The response
+      Text in choices / content
+      usage gives token counts
+      Multiply tokens by price for cost
+    More inputs
+      Vision: text + image blocks
+      Async clients for concurrency
+```
+
+## Quick Reference
+
+| Task | OpenAI | Anthropic |
+|---|---|---|
+| Install | `pip install openai` | `pip install anthropic` |
+| Client | `client = OpenAI()` | `client = Anthropic()` |
+| Basic call | `client.chat.completions.create(...)` | `client.messages.create(..., max_tokens=...)` |
+| Get text | `resp.choices[0].message.content` | `resp.content[0].text` |
+| Token usage | `resp.usage.prompt_tokens` / `.completion_tokens` | `resp.usage.input_tokens` / `.output_tokens` |
+| Async client | `AsyncOpenAI()` + `await ...create(...)` | `AsyncAnthropic()` + `await ...create(...)` |
+| Image block | `{"type":"image_url","image_url":{...}}` | `{"type":"image","source":{...}}` |
+
+(Current model IDs and prices live in `REFERENCE.md` — verify before quoting numbers.)
+
+## Exercises
+
+1. **Print the cost.** Wrap `simple_chat` so it also returns the dollar cost of the call using `response.usage` and the per-1M prices from REFERENCE.md.
+2. **Port a call.** Take the OpenAI `simple_chat` and rewrite it against the Anthropic SDK, accounting for `max_tokens` (required) and the different response shape.
+3. **Go async.** Convert one call to `AsyncOpenAI` and use `asyncio.gather` to send three prompts concurrently; compare wall-clock time to running them in a loop.
+4. **Read an image.** Send a screenshot to `gpt-4o` and ask it to extract any visible numbers; then do the same with Anthropic's base64 image block.
+
+<details><summary>Solutions (approaches)</summary>
+
+1. `cost = u.prompt_tokens/1e6*in_price + u.completion_tokens/1e6*out_price`. For `gpt-4o-mini` use ~$0.15 / ~$0.60 per 1M (verify in REFERENCE.md).
+2. Swap to `client.messages.create(model="claude-sonnet-4-6", max_tokens=256, messages=[...])` and return `resp.content[0].text`.
+3. Define `async def ask(p)`, then `await asyncio.gather(*(ask(p) for p in prompts))`. Concurrent latency ≈ the slowest single call, not the sum.
+4. OpenAI wants an `image_url` block (URL or data URI); Anthropic wants an `image` block with a base64 `source`. Same prompt text, different envelope.
+</details>
+
+## What's Next?
+
+Tomorrow (Day 11) is **OpenAI and Anthropic SDKs Part 2** — the key differences between the two SDKs (system-message placement, response structure), a unified wrapper for multi-provider support, async batch patterns, error handling, and how to pick a model.

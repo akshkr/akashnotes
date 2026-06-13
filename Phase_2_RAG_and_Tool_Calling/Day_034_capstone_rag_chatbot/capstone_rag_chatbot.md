@@ -770,11 +770,66 @@ Once you have this RAG chatbot working, there are several ways to extend it:
 
 ---
 
-## What's Next
+## Summary
+
+```mermaid
+mindmap
+  root((RAG Chatbot Capstone))
+    Ingest
+      Parse documents
+      Chunk with overlap
+      Embed and store
+    Retrieve
+      Embed the query
+      Cosine search in pgvector
+      Top-k chunks
+    Generate
+      Inject context
+      Cite sources
+      Refuse if unknown
+    Operate
+      Track cost
+      Evaluate answers
+      Demo-ready
+```
+
+---
+
+## Quick Reference
+
+| Stage | Key call | Notes |
+|---|---|---|
+| Init store | `CREATE EXTENSION vector; CREATE TABLE ... embedding vector(1536)` | pgvector, HNSW + `vector_cosine_ops` index |
+| Embed | `client.embeddings.create(model="text-embedding-3-small", input=texts)` | 1536-dim; batch for speed |
+| Ingest | parse → `chunk_text(...)` → `embed_texts(...)` → upsert | `ON CONFLICT ... DO UPDATE` for idempotent re-ingest |
+| Retrieve | `ORDER BY embedding <=> query_vec LIMIT k` | `<=>` is cosine distance in pgvector |
+| Generate | inject top-k chunks into the prompt, call the chat model | Instruct it to cite and to refuse when unsupported |
+| Operate | count tokens, track cost, eval answers | Carry forward Day 33's cost discipline |
+
+---
+
+## Exercises
+
+1. **Add source citations end to end.** Return the `source` and `chunk_index` for each retrieved chunk and have the chatbot cite which document(s) it used. Verify against the stored metadata.
+2. **Measure retrieval quality.** Write 10 question/expected-source pairs, run them, and report how often the correct document appears in the top-k. This is your retrieval recall number for the README.
+3. **Add a cost meter.** Wrap each turn to count input/output tokens and accumulate dollar cost (reuse Day 33's calculator). Print running spend after a demo session.
+4. **Make it refuse gracefully.** Add a similarity threshold so that when no chunk is relevant, the bot says it doesn't know instead of inventing an answer. Test with an off-corpus question.
+
+<details><summary>Solutions (approaches)</summary>
+
+1. Select `content, source, chunk_index` in the retriever, number the chunks in the prompt, and instruct the model to cite the numbers; map cited numbers back to `source`.
+2. Store `(question, expected_source)` pairs; for each, check whether `expected_source` is among the top-k retrieved `source` values; print `hits / 10`.
+3. Reuse the per-million pricing table; after each turn add `input_tokens*in_rate + output_tokens*out_rate` to a running total and log it.
+4. Compare the top result's cosine similarity (`1 - distance`) to a threshold; below it, short-circuit to "I don't have that information in my documents."
+</details>
+
+---
+
+## What's Next?
 
 Phase 2 is complete. You now know how to give an LLM external knowledge. In Phase 3, we're going to give it the ability to take actions in the world. We're building agents.
 
-The jump from "a chatbot that retrieves information" to "an agent that takes actions" is one of the most exciting in AI engineering. See you on Day 41.
+The jump from "a chatbot that retrieves information" to "an agent that takes actions" is one of the most exciting in AI engineering. See you on **Day 35: The ReAct Loop — Building Your First Agent**.
 
 ---
 

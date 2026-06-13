@@ -552,6 +552,23 @@ history = json.load(open("history.json"))
 
 ---
 
+## Exercises
+
+1. Build a sliding-window history with `deque(maxlen=20)` and confirm that the oldest messages drop off after the 21st append — but make sure the system message never gets evicted.
+2. Write a `token_budget_trim(history, max_tokens)` that removes the *oldest non-system* messages until the estimated token count fits, then test it on a long fake conversation.
+3. Add `save(path)` / `load(path)` methods that round-trip the history to JSON and back, and verify the reloaded list equals the original.
+4. Extend a history entry to carry a `tool_calls` field, then write a function that reconstructs only the user/assistant turns (dropping tool noise) for a clean transcript view.
+
+<details><summary>Solutions (approaches)</summary>
+
+1. Keep the system message separate: store it once, build the window from `deque(maxlen=19)` of the rest, and prepend system on read. Append 21 user turns and assert `len(window) == 19`.
+2. Estimate tokens with `len(content) // 4` (or `tiktoken`); loop `while total > max_tokens: history.pop(1)` (index 1 skips system) and recompute.
+3. `json.dump(self.messages, open(path, "w"))` and `self.messages = json.load(open(path))`; assert equality after reload.
+4. Filter with `[m for m in history if m["role"] in ("user", "assistant") and not m.get("tool_calls")]`.
+</details>
+
+---
+
 ## What's Next?
 
 Now let's learn about **implementing hard stops and max iterations** to prevent your agent from running forever!

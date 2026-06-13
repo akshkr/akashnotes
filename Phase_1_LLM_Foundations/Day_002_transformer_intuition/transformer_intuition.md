@@ -315,3 +315,53 @@ sentence = "The bank by the river was overgrown with grass."
 ```
 
 Understanding these concepts will make you a much more effective AI developer. You're building the foundation for everything that comes next!
+
+---
+
+## Summary
+
+```mermaid
+mindmap
+  root((Transformers))
+    Self-attention
+      Words look at other words
+      Resolves references like "it"
+      High scores = strong relation
+    Context window
+      The model's working memory
+      Everything must fit in tokens
+      Bigger window = more history
+    Multi-head attention
+      Several attention "views" at once
+      Grammar, meaning, references
+      Combined into one understanding
+    Parallel processing
+      All tokens at once, not left-to-right
+      Fast on GPUs
+      Why transformers scaled
+```
+
+## Quick Reference
+
+| Concept | One-liner | SWE analogy |
+|---|---|---|
+| Self-attention | Each token weighs every other token | A join where rows score their relevance to each other |
+| Attention score | Strength of relation between two tokens | A similarity weight |
+| Context window | Max tokens the model can see at once | A fixed-size buffer / RAM limit |
+| Multi-head attention | Several attention computations in parallel | Running multiple indexes over the same data |
+| Parallelism | All positions processed together | SIMD / vectorized ops vs. a serial loop |
+
+## Exercises
+
+1. **Disambiguate by attention.** Take the sentence `"The trophy didn't fit in the suitcase because it was too big."` Write down which word `it` refers to, and list the 2–3 words you'd expect to have the highest attention with `it`.
+2. **Estimate a context budget.** A model has a 128K-token window. If a chat keeps ~750 tokens per turn, roughly how many turns fit before you must trim history? What strategy would you use when it fills?
+3. **Spot the heads.** For `"The river bank was muddy after the storm,"` describe two *different* relationships separate attention heads might capture (e.g. one for meaning, one for grammar).
+4. **Extend the mental model.** Explain in two sentences why parallel processing makes transformers faster to train than older left-to-right RNNs.
+
+<details><summary>Solutions (approaches)</summary>
+
+1. `it` = the trophy (the thing that didn't fit). Expect high attention between `it` and `trophy`, plus `big` / `fit`.
+2. `128000 / 750` ≈ **170 turns**. Past that, summarize older turns or drop the oldest (sliding window) — both covered in later days.
+3. One head might link `bank` ↔ `river`/`muddy` (meaning → riverbank), another might link the article `The` ↔ `bank` (grammatical structure).
+4. RNNs process token *t* only after *t-1*, so work is serial; transformers compute all positions' attention simultaneously, which maps cleanly onto GPU parallelism.
+</details>

@@ -690,4 +690,71 @@ def log_llm_call(
 
 ---
 
-**Next up:** HITL Patterns, where you will learn how to add human oversight and approval gates to your agent systems.
+## Summary
+
+```mermaid
+mindmap
+  root((Production Hardening))
+    Resilience
+      Retry with backoff
+      Circuit breaker
+      Fallback chain
+      Hard timeouts
+    Guardrails
+      Input validation
+      Output validation
+      Redis rate limiting
+      Cost budgets
+    Operability
+      Health/readiness probes
+      Structured JSON logs
+      Log metrics not content
+    SWE Mindset
+      Same playbook as APIs
+      Fail fast and cheap
+      Degrade gracefully
+```
+
+---
+
+## Quick Reference
+
+| Concern | Pattern | Key detail |
+|---|---|---|
+| Transient API errors | `retry_with_backoff` | Exponential delay + jitter; retry 5xx/429, never 4xx |
+| Failing service | `CircuitBreaker` | CLOSED → OPEN → HALF_OPEN; stop hammering |
+| LLM unavailable | `FallbackChain` | Try handlers in order; static message last |
+| Bad input | Pydantic `@field_validator` | Reject before spending tokens |
+| Unsafe output | `OutputValidator` | Redact secrets/PII, cap length |
+| Too many requests | `RedisRateLimiter` | Sliding window; works across servers |
+| Slow runs | `asyncio.timeout` | Hard cap; users won't wait minutes |
+| Liveness/readiness | `/health`, `/ready` | Probe LLM + cache connectivity |
+| Observability | `JSONFormatter` | Log token counts, never prompt/response text |
+
+Tips:
+- Validate first, call the model last — cheap checks prevent expensive failures.
+- In-memory rate limiting is a lie at scale; centralize state in Redis.
+- Logs are forever — never write prompts, responses, or API keys to them.
+
+---
+
+## Exercises
+
+1. Wrap `resilient_completion` so it goes through *both* the circuit breaker and the retry decorator. Decide the order (retry inside the breaker, or breaker inside retry) and justify it in a comment.
+2. Extend `OutputValidator.SENSITIVE_PATTERNS` to also redact email addresses, then write a test asserting `foo@bar.com` is replaced with `[REDACTED]`.
+3. Add a per-user *daily cost budget* check: track accumulated `input_tokens + output_tokens` per `user_id` in Redis and raise a `402`-style error when the budget is exceeded.
+4. Make `/ready` return HTTP 503 (not just `status="degraded"`) when the LLM check fails, so Kubernetes actually removes the pod from rotation.
+
+<details><summary>Solutions (approaches)</summary>
+
+1. Breaker *outside* retry: the breaker should see one logical attempt, not each retry. `circuit_breaker.call(retry_with_backoff(...)(fn), ...)` — retries exhaust, then the single failure counts toward the breaker.
+2. Add `r'\b[\w.+-]+@[\w-]+\.[\w.-]+\b'` to the list; the existing `re.sub(pattern, "[REDACTED]", output)` loop handles replacement.
+3. `pipe.incrby(f"cost:{user_id}:{date}", tokens)` with `pipe.expire(..., 86400)`; compare the returned total to the budget and `raise HTTPException(status_code=402, ...)`.
+4. In `readiness_check`, `from fastapi import Response`; set `response.status_code = 503` when `not llm_ok`, or return a `JSONResponse(status_code=503, ...)`.
+</details>
+
+---
+
+## What's Next?
+
+Next up is **Day 069 — Human-in-the-Loop (HITL) Patterns, Part 1**, where you'll add human oversight and approval gates to your agents: basic approval prompts, LangGraph breakpoints, feedback injection, and confidence-based escalation.

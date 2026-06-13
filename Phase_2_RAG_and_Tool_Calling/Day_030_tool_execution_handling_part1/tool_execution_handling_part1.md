@@ -337,12 +337,57 @@ print(agent.chat("What time is it in Tokyo timezone?"))
 
 ---
 
+## Summary
+
+```mermaid
+mindmap
+  root((Tool Execution))
+    Parse
+      Read tool_calls
+      json.loads arguments
+      Capture call id
+    Execute
+      Dispatch by name
+      Run your function
+      Catch errors
+    Return
+      role tool message
+      Match tool_call_id
+      Re-call the model
+    Loop
+      Final text answer
+      Handle no-tool case
+```
+
+---
+
+## Quick Reference
+
+| Step | Code | Notes |
+|---|---|---|
+| Detect calls | `message.tool_calls` | `None`/empty means the model answered in text |
+| Parse arguments | `json.loads(tool_call.function.arguments)` | Arguments arrive as a JSON string |
+| Dispatch | `execute_function(tool_call.function.name, args)` | Map name → your Python function |
+| Return result | `{"role": "tool", "tool_call_id": tc.id, "content": json.dumps(result)}` | The `tool_call_id` must match |
+| Continue | re-call `client.chat.completions.create(model="gpt-4o", messages=...)` | Append the tool message first |
+| Finish | model returns text with no `tool_calls` | That's your final answer |
+
+---
+
 ## Exercises
 
 1. **Add a tool.** Register a `convert_currency(amount, from_currency, to_currency)` tool and confirm the agent calls it for a relevant question.
 2. **Unknown-tool handling.** Ask for something no tool covers and verify the agent degrades gracefully instead of crashing.
 3. **Inspect the loop.** Log each `tool_call` the model requests and the result you return — trace one full request end to end.
 4. **Bad arguments.** Make the model call a tool with a missing or invalid argument and have your executor return a structured error the model can recover from.
+
+<details><summary>Solutions (approaches)</summary>
+
+1. Add the function plus its Pydantic/tool spec, then add a branch in `execute_function`. Ask "Convert 100 USD to EUR" and check the dispatched name.
+2. In `execute_function`, return `{"error": f"unknown tool: {name}"}` for unrecognized names instead of raising; the model can then apologize gracefully.
+3. Add `print()`/logging inside the loop for `parsed["name"]`, `parsed["arguments"]`, and the returned result — one full round shows request → execute → result → final text.
+4. Wrap the call in `try/except` and return `{"error": str(e)}` as the tool content; the model reads the error and can retry or ask for the missing field.
+</details>
 
 ---
 

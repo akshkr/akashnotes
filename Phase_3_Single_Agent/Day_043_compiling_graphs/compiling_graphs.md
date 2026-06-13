@@ -509,6 +509,23 @@ result = await app.ainvoke(state)
 
 ---
 
+## Exercises
+
+1. Compile a small graph two ways — plain `workflow.compile()` and `workflow.compile(checkpointer=MemorySaver())` — and note what the checkpointer version unlocks (`thread_id`, replay).
+2. Run the same input through `invoke` and through `stream`, printing each streamed step, and compare what you can observe.
+3. Trigger a compile-time validation error on purpose (e.g. an edge to a node that was never added) and read the message LangGraph gives you.
+4. Run two `invoke` calls with the *same* `thread_id` and a checkpointer, then a third with a *different* `thread_id`, and explain why the third doesn't see the earlier state.
+
+<details><summary>Solutions (approaches)</summary>
+
+1. The checkpointer version persists state per `thread_id`, enabling resume and time-travel (Day 44/45). Plain compile is stateless across calls.
+2. `for step in app.stream(state): print(step)` shows node-by-node updates; `invoke` only returns the final merged state.
+3. LangGraph raises at `compile()` (not at `invoke`) — e.g. it complains the target node isn't registered. Catching it early is the point of a compile step.
+4. State is keyed by `thread_id` inside the checkpointer, so a new id starts a fresh conversation/state.
+</details>
+
+---
+
 ## What's Next?
 
 Now you can build complete graph agents! Next, let's explore **memory and persistence** to make your agents remember across sessions.

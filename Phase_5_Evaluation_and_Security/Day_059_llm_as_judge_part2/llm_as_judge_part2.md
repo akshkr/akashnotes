@@ -414,6 +414,25 @@ Return JSON: {{"score": 1-5, "reasoning": "..."}}"""}],
 
 ## Summary
 
+```mermaid
+mindmap
+  root((Reliable LLM Judges))
+    Biases
+      Position bias
+      Verbosity bias
+      Self-enhancement bias
+    Calibration
+      Anchor examples
+      Cohen's Kappa
+      Compare to humans
+    Consensus
+      Multi-judge averaging
+      Cheap judges + tiebreaker
+    Cost Control
+      Sampling
+      Tiered evaluation
+```
+
 | Technique | What It Solves | When to Use |
 |-----------|---------------|-------------|
 | Position swapping | Position bias in pairwise comparison | Always for A/B comparisons |
@@ -423,6 +442,45 @@ Return JSON: {{"score": 1-5, "reasoning": "..."}}"""}],
 | Tiebreaker pattern | Cost of always using multiple judges | Balance cost vs. reliability |
 | Sampled evaluation | Evaluating everything is too expensive | Large test sets (1000+) |
 | Tiered evaluation | Expensive models for every eval | Production evaluation at scale |
+
+---
+
+## Quick Reference
+
+| Concern | Technique | One-liner |
+|---|---|---|
+| Position bias | Swap order, keep labels | Unbiased judge flips its winning label |
+| Verbosity bias | Score one dimension only | "Rate ACCURACY ONLY, ignore length" |
+| Self-enhancement | Use a different judge model | Don't let GPT-4o grade GPT-4o |
+| Score consistency | Calibration anchors | Show excellent/mediocre/poor exemplars |
+| Judge reliability | `cohens_kappa(human, llm)` | > 0.6 = trust it; < 0.2 = rethink |
+| Single-judge noise | `multi_judge_evaluate(...)` | Average across models, check variance |
+| Cost at scale | Tiered / sampled eval | Cheap screen first, escalate only the gray zone |
+
+Tips:
+- Reach for the cheap-judges-plus-tiebreaker pattern before always running an expensive judge — the tiebreaker usually fires only 20-30% of the time.
+- Kappa under 0.4 means the prompt or anchors need work; don't ship an automated gate on a judge you haven't measured against human labels.
+
+---
+
+## Exercises
+
+1. Wrap the position-bias check into a `position_bias_rate(pairs)` helper that runs `demonstrate_position_bias` over a list of pairs and returns the fraction that were position-biased.
+2. Add a fourth calibration anchor at score 3 ("fair") to `CALIBRATION_ANCHORS` and confirm `calibrated_judge` can map a borderline response to it via `closest_anchor`.
+3. Modify `multi_judge_evaluate` to also return `min_score` and `max_score`, then flag any evaluation where the spread (`max - min`) is 2 or more as `needs_review`.
+4. Using `cohens_kappa`, write a tiny experiment: score 10 responses with `gpt-4o-mini` twice (temperature 0) and compute self-agreement. Is it close to 1.0? Explain any gap.
+
+<details><summary>Solutions (approaches)</summary>
+
+1. ```text
+   def position_bias_rate(pairs):
+       results = [demonstrate_position_bias(q, a, b) for q, a, b in pairs]
+       return sum(r["position_biased"] for r in results) / len(results)
+   ```
+2. Add `"fair": {"question": "...", "response": "...", "score": 3, "reasoning": "..."}`; the loop that builds `anchor_text` already iterates the dict, so no other change is needed.
+3. After collecting `all_scores`: `result["min_score"] = min(all_scores); result["max_score"] = max(all_scores); result["needs_review"] = (max(all_scores) - min(all_scores)) >= 2`.
+4. Collect two score lists from the same model/prompt, then `cohens_kappa(run1, run2)`. Gaps come from sampling nondeterminism even at temperature 0; near-1.0 means the judge is internally stable.
+</details>
 
 ---
 

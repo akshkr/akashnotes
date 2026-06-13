@@ -494,6 +494,28 @@ print(f"Overall: {results['overall_score']:.1%}")
 
 ---
 
+## Exercises
+
+1. Build a second `AgentTrajectory` for the same Tokyo-weather task that takes a redundant extra step (e.g. searches twice). Run `evaluate_efficiency` with `optimal_steps=2` and confirm the efficiency score drops.
+2. Add a `tool_repetition_penalty` to `TrajectoryEvaluator`: detect when the same `action` is used on consecutive steps and reflect it in the overall score.
+3. Capture three trajectories that solve one task differently, then use `compare_trajectories` to pick the best. Print the full comparison list, not just the winner.
+4. Extend `AgentStep` and `to_dict` to record how long each step took (use the existing `timestamp`), then report the slowest step in `format_report`.
+
+<details><summary>Solutions (approaches)</summary>
+
+1. Add an extra `add_step(...)` that re-searches; `evaluate_efficiency` returns `optimal_steps / actual_steps`, so 2/3 ≈ 0.67.
+2. Compare `trajectory.steps[i].action` to `steps[i-1].action`; count repeats, subtract a small weighted penalty inside `_calculate_overall_score`.
+3. ```text
+   result = compare_trajectories([t1, t2, t3], optimal_steps=2)
+   for c in result["comparisons"]:
+       print(c)
+   print("Best:", result["best_trajectory"])
+   ```
+4. Compute `delta = steps[i].timestamp - steps[i-1].timestamp` per step; track the max and add a `"Slowest step: #N (Xs)"` line to the report.
+</details>
+
+---
+
 ## What's Next?
 
 Now let's learn about **Security & Guardrails** - protecting your agents from attacks and misuse!

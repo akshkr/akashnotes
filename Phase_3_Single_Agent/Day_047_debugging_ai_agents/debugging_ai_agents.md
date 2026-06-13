@@ -532,13 +532,63 @@ def print_trace(trace: AgentTrace):
 
 ---
 
-## Practice Exercises
+## Summary
 
-1. Add `AgentTrace` and `TraceableAgent` to your Day 48 capstone and print a trace for each run
-2. Write a test that triggers the "repeated tool call" detection in `agent_debugging_checklist`
-3. Implement `trim_messages` and verify it stays under 100K tokens after 200 simulated iterations
-4. Use LangGraph's state history to replay an execution step-by-step and print state at each checkpoint
+```mermaid
+mindmap
+  root((Debugging Agents))
+    Failure Modes
+      Infinite loops
+      Wrong tool
+      Hallucinated tool
+      Context overflow
+      Error retry loop
+    Observability
+      Structured logging
+      AgentStep / AgentTrace
+      Token + cost per step
+    Replay
+      LangGraph checkpoints
+      State history
+      Rewind and re-run
+    Fixes
+      Stop conditions
+      Circuit breaker
+      Trim messages
+```
 
 ---
 
-**Next up:** Capstone — Autonomous Research Agent, where you will build a full multi-step agent with the tracing and debugging infrastructure from today.
+## Quick Reference
+
+| Symptom | Detection | Fix |
+|---|---|---|
+| Never finishes | `final_answer is None` after loop | Explicit stop condition in system prompt |
+| Repeats same call | `Counter` of `(tool, input)` > 2 | Block duplicate; nudge the model |
+| Calls missing tool | error contains "unknown tool" | Keep tool list and prompt in sync |
+| Context overflow | message tokens near window | `trim_messages(...)` to a budget |
+| Error retry loop | per-tool error count rising | Circuit breaker after N failures |
+| "What happened?" | `app.get_state_history(config)` | Inspect / rewind each checkpoint |
+
+---
+
+## Exercises
+
+1. Add `AgentTrace` and `TraceableAgent` to your Day 48 capstone and print a trace for each run.
+2. Write a test that triggers the "repeated tool call" detection in `agent_debugging_checklist`.
+3. Implement `trim_messages` and verify it stays under 100K tokens after 200 simulated iterations.
+4. Use LangGraph's state history to replay an execution step-by-step and print state at each checkpoint.
+
+<details><summary>Solutions (approaches)</summary>
+
+1. Wrap each call in an `AgentStep`, append to `trace`, and call `print_trace(trace)` at the end — both helpers are defined in this lesson.
+2. Feed `agent_debugging_checklist` a hand-built `AgentTrace` whose `steps` contain three identical `(tool_name, tool_input)` entries; assert "LOOP DETECTED" appears.
+3. Build 200 fake messages, run `trim_messages(messages, max_tokens=100_000)`, and assert the re-encoded total is under budget.
+4. `for cp in app.get_state_history(config): print(cp.values)` — newest first; reverse it to read forward.
+</details>
+
+---
+
+## What's Next?
+
+Capstone — **Autonomous Research Agent**, where you'll build a full multi-step agent with the tracing and debugging infrastructure from today.

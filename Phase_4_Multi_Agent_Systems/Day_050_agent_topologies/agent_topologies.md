@@ -419,6 +419,39 @@ mindmap
 
 ---
 
+## Quick Reference
+
+| Topology | Coordination pattern | Maps to (SWE) | When to reach for it |
+|----------|----------------------|---------------|----------------------|
+| Hierarchical | `supervisor_decide()` assigns, workers `execute()`, supervisor synthesizes | Load balancer + backend workers | Task decomposes into clear, independent subtasks |
+| Networked | `agent_respond()` reads shared `conversation_history`, every agent sees prior turns | Peer-to-peer / group chat | Brainstorming, multi-perspective debate |
+| Adversarial | `generate()` ↔ `critique()` loop until `approved` or `max_rounds` | Retry-with-feedback loop | Iterative quality refinement |
+| (Single agent) | One model, one prompt | Monolith | Task is small enough not to need orchestration |
+
+Implementation tips:
+- Use a cheaper model (`gpt-4o-mini`) for workers and a stronger one (`gpt-4o`) for the supervisor/synthesis step to control cost.
+- For JSON coordination, set `response_format={"type": "json_object"}` and always `json.loads(...)` defensively.
+- Cap loops with `max_rounds` so an adversarial system can't spin forever.
+
+---
+
+## Exercises
+
+1. **Add a fourth worker.** Register an `editor` worker in the `HierarchicalSystem` that proofreads the writer's output, then confirm the supervisor's synthesis still runs cleanly.
+2. **Stop the chatter early.** In `NetworkedSystem`, add a check after each round that asks a "moderator" agent whether the group has reached consensus, and break out of `run_discussion` early if so.
+3. **Track cost.** Wrap each `client.chat.completions.create(...)` call so you accumulate `response.usage` token counts and print a per-run total. (Reference REFERENCE.md for $/1M rates.)
+4. **Pick a topology.** Given the task "summarize 50 customer reviews into one paragraph," argue which topology fits best and why a single agent might actually be enough.
+
+<details><summary>Solutions (approaches)</summary>
+
+1. `system.add_worker("editor", "Polishing grammar and flow", "You are a copy editor...")` — the supervisor already lists workers dynamically from `self.workers`, so no other change is needed.
+2. After the per-agent loop, call a moderator agent with the recent history and a yes/no prompt; `if "yes" in reply.lower(): break`.
+3. `total = 0` before the run; after each call `total += response.usage.total_tokens`; multiply by the rate (e.g. gpt-4o-mini input $0.15/1M) to estimate dollars.
+4. Hierarchical is overkill; the work is one summarization step — a single agent (or at most adversarial for a quality pass) is the right call. Multi-agent earns its keep only when subtasks are genuinely independent or need distinct viewpoints.
+</details>
+
+---
+
 ## What's Next?
 
 Now let's explore **CrewAI** - a framework designed specifically for multi-agent task orchestration!

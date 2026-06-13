@@ -312,4 +312,60 @@ See you on Day 50.
 
 ---
 
+## Exercises
+
+These are reflection prompts, not code. Spend 20–30 honest minutes on them today.
+
+1. Re-score yourself on the Day 1 skills audit. Write one concrete piece of evidence ("I built X that does Y") for each skill that moved.
+2. Pick one real AI Engineer job posting. Paste its requirements and mark each line ✅ / ⚠️ / ❌ against what you can do today.
+3. Rewrite your three capstones as resume bullets — each one outcome-first ("Built…", "Implemented…", "Added…"), naming the tech.
+4. Name one company in your network where you could have a *conversation* (not an application) about AI roles, and draft the one-line message you'd send.
+
+<details><summary>Solutions (reflection guide)</summary>
+
+1. There are no wrong scores — the point is evidence. If you can't cite a project for a skill, that's the skill to revisit.
+2. Most "nice to have" gaps (multi-agent, eval, fine-tuning, deployment) map directly onto Phases 4–8, so a wall of ⚠️ is expected and temporary.
+3. Use the project descriptions in "What to Put on Your Resume RIGHT NOW" as templates; tighten them to your own wording.
+4. The strongest framing is "actively building AI engineering skills, completed projects in X/Y/Z, currently working on …" — honest beats inflated.
+</details>
+
+---
+
+## Summary
+
+```mermaid
+mindmap
+  root((Day 49 Checkpoint))
+    Take stock
+      Re-score the Day 1 audit
+      3 capstones built (D18/34/48)
+    Map to jobs
+      Match skills to JD requirements
+      Name the gaps honestly
+    Act now
+      Update resume + LinkedIn today
+      Start strategic applications
+    Refuel
+      Phases 4–8 are the hard part
+      Why you're doing this
+```
+
+## Quick Reference
+
+| Do this today | How |
+|---|---|
+| Re-score the Day 1 skills audit | Compare honestly; note the deltas |
+| Resume bullets | One per capstone: what it does + the stack |
+| LinkedIn headline | "Software Engineer → AI Engineer \| RAG, agents, LLM apps" |
+| Where to apply now | Stretch roles + warm intros, not dream jobs (save those for Day 100) |
+| Framing for gaps | "Actively building; completed X/Y/Z; currently working on …" |
+
+---
+
+## What's Next?
+
+Phase 4 begins. Day 50 — **Agent Topologies** — opens Multi-Agent Systems: how to arrange multiple agents (hierarchical, networked, adversarial) for the jobs a single agent can't do alone.
+
+---
+
 *Next up: Multi-Agent Systems — When One Agent Isn't Enough*

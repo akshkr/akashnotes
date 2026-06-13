@@ -651,6 +651,37 @@ mindmap
 
 ---
 
+## Quick Reference
+
+| Task | API |
+|---|---|
+| In-memory checkpoints | `from langgraph.checkpoint.memory import MemorySaver` |
+| SQLite checkpoints | `from langgraph.checkpoint.sqlite import SqliteSaver` |
+| Compile with persistence | `app = workflow.compile(checkpointer=saver)` |
+| Identify a conversation | `config = {"configurable": {"thread_id": "user-123"}}` |
+| Run on a thread | `app.invoke(state, config=config)` |
+| Read current state | `app.get_state(config).values` |
+| List all checkpoints | `list(app.get_state_history(config))` |
+
+---
+
+## Exercises
+
+1. Compile a graph with `MemorySaver`, run it under `thread_id="a"`, then resume the *same* thread with a follow-up and confirm it remembers earlier state.
+2. Run a second conversation under `thread_id="b"` and verify the two threads are fully isolated.
+3. Swap `MemorySaver` for `SqliteSaver`, restart the process, and prove the thread's state survived by reading it back with `get_state`.
+4. After a multi-step run, call `get_state_history` and print how many checkpoints were recorded and the values at each.
+
+<details><summary>Solutions (approaches)</summary>
+
+1. Pass `config={"configurable": {"thread_id": "a"}}` on both calls; the second `invoke` sees the merged state from the first.
+2. Same code, `thread_id="b"`; `get_state` for "a" and "b" return different values — state is keyed by thread.
+3. `SqliteSaver.from_conn_string("checkpoints.db")` writes to disk; a fresh process pointing at the same file recovers the thread.
+4. `for cp in app.get_state_history(config): print(cp.values)` — one checkpoint per super-step, newest first.
+</details>
+
+---
+
 ## What's Next?
 
 You can now persist agent state. Next, we'll use those checkpoints for **Time-Travel Debugging** — rewinding to any past state and replaying execution to understand what your agent did.

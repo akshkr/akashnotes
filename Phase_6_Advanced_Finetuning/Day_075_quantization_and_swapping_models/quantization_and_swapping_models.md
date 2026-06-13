@@ -383,6 +383,23 @@ model = AutoModelForCausalLM.from_pretrained("model-gptq")
 
 ---
 
+## Exercises
+
+1. **Read the labels.** Given the tags `Q4_K_M`, `Q5_K_M`, and `Q8_0`, rank them by file size and by expected quality, and explain the tradeoff in one sentence each.
+2. **Pick a format for hardware.** You have (a) a CPU-only laptop and (b) a single 24GB GPU. Choose GGUF/AWQ/GPTQ for each and justify it.
+3. **Quantize your own.** Take a Hugging Face model and produce a `Q4_K_M` GGUF using llama.cpp (`convert_hf_to_gguf.py` then `llama-quantize`). Note the size before/after.
+4. **Measure the cost of compression.** Run the same 5 prompts through the full-precision and the Q4 version; record any quality regressions you can spot.
+
+<details><summary>Solutions (approaches)</summary>
+
+1. Size: `Q4_K_M < Q5_K_M < Q8_0`; quality is the reverse. Lower bits = smaller + faster but more rounding error.
+2. CPU-only → GGUF (built for CPU via llama.cpp); 24GB GPU → AWQ or GPTQ (GPU-optimized, activation-aware AWQ usually edges quality).
+3. `python convert_hf_to_gguf.py ./model --outfile model.f16.gguf` then `llama-quantize model.f16.gguf model.Q4_K_M.gguf Q4_K_M`; compare `ls -lh`.
+4. Loop the prompts through both, diff outputs; watch for degraded reasoning/formatting on the quantized one.
+</details>
+
+---
+
 ## What's Next?
 
 Now let's learn how to **swap OpenAI for local models** in your existing code!
@@ -836,6 +853,23 @@ openai_to_local = {
 # Environment-based
 export LLM_PROVIDER=ollama
 ```
+
+---
+
+## Exercises
+
+1. **One-line provider switch.** Take a working OpenAI call and make it hit a local Ollama server by changing only the `base_url` and `api_key`. No other code should change.
+2. **Config-driven selection.** Add an `LLM_PROVIDER` env var that picks between `openai` and `ollama` at startup, mapping a friendly model name to the right concrete model per provider.
+3. **Build a model map.** Write a dict that maps each OpenAI model you use to its closest local equivalent, and a helper that resolves the name based on the active provider.
+4. **Add a fallback.** Wrap the local call so that if the local server is down, it transparently falls back to OpenAI (and logs which path it took).
+
+<details><summary>Solutions (approaches)</summary>
+
+1. `OpenAI(base_url="http://localhost:11434/v1", api_key="ollama")` — the request body stays identical.
+2. Read `os.getenv("LLM_PROVIDER", "openai")`; branch the client constructor and look the model up in a per-provider table.
+3. `{"gpt-4o-mini": "llama3.3", "gpt-4": "mixtral"}`; `resolve(name, provider)` returns the mapped value when provider is local, else `name`.
+4. `try:` local call; `except (ConnectionError, APIError):` fall back to the OpenAI client and `logging.warning("fell back to openai")`.
+</details>
 
 ---
 

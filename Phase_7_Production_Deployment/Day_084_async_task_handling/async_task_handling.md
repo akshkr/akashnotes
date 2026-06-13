@@ -487,6 +487,23 @@ task.result  # Get result
 
 ---
 
+## Exercises
+
+1. **Submit + poll.** Build `POST /agent/submit` that returns a `task_id` and `GET /agent/status/{id}` that reports `pending`/`running`/`completed` with the result when done.
+2. **Track progress.** Have the worker write a `progress` percentage somewhere the status endpoint can read, so a client can show a progress bar.
+3. **Move to Celery.** Re-implement the worker as a Celery task; submit with `.delay(prompt)` and read `task.state` / `task.result` in the status endpoint.
+4. **Add a timeout + cleanup.** Cancel a task that runs past N seconds and delete finished task records after a TTL so memory doesn't grow forever.
+
+<details><summary>Solutions (approaches)</summary>
+
+1. Store state in a dict keyed by `uuid4().hex`; submit kicks off a background task that mutates the entry; status returns it.
+2. Worker updates `tasks[id]["progress"]` as it goes; status endpoint returns that field.
+3. `@celery.task def run_agent(prompt): ...`; `task = run_agent.delay(prompt)`; map Celery states to your API's status strings.
+4. Use `asyncio.wait_for(coro, timeout=N)` (or Celery `soft_time_limit`); a periodic sweep removes entries older than the TTL.
+</details>
+
+---
+
 ## What's Next?
 
 Now let's implement **WebSockets for real-time streaming** of agent thoughts!

@@ -868,3 +868,31 @@ Production + maintenance? → Consider vanilla or hybrid
 ```
 
 The best developers know when to use frameworks and when to write custom code. **Master all approaches, then choose wisely!**
+
+---
+
+## Exercises
+
+1. Build a minimal RAG query engine in LlamaIndex: load a folder of `.txt` files, build a `VectorStoreIndex`, and answer one question with `index.as_query_engine().query(...)`.
+2. Persist that index to disk and reload it in a fresh script with `StorageContext` + `load_index_from_storage`, proving you don't have to re-embed every run.
+3. Take the same documents and answer the *same* question with plain vanilla Python (embed chunks, cosine-similarity retrieve top-k, stuff into a prompt). Compare lines of code and control.
+4. Fill in the decision table for three of your own past/side projects: would you pick Vanilla, LangChain, LlamaIndex, or Hybrid — and why?
+
+<details><summary>Solutions (approaches)</summary>
+
+1. ```text
+   from llama_index.core import VectorStoreIndex, SimpleDirectoryReader
+   docs = SimpleDirectoryReader("./data").load_data()
+   index = VectorStoreIndex.from_documents(docs)
+   print(index.as_query_engine().query("Your question?"))
+   ```
+2. `index.storage_context.persist("./storage")`, then reload with `load_index_from_storage(StorageContext.from_defaults(persist_dir="./storage"))`.
+3. Vanilla is more code (manual chunking, an embedding call, a similarity loop) but every step is visible and tweakable — that's the trade-off the decision guide captures.
+4. Rule of thumb from the guide: RAG-heavy → LlamaIndex; tool-using agent → LangChain; simple/maximum-control or long-lived production → Vanilla or Hybrid.
+</details>
+
+---
+
+## What's Next?
+
+You now know all three approaches — vanilla, LangChain, and LlamaIndex — and when to reach for each. Next up is **PydanticAI**, a lightweight, type-first agent framework that brings Pydantic-style validation to agent outputs, before we dive into LangGraph state machines.

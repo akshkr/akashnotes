@@ -404,6 +404,37 @@ Your SWE background is an advantage, not a liability. Here is how to frame it:
 
 ---
 
+## Summary
+
+```mermaid
+mindmap
+  root((Interview Prep))
+    System design
+      RAG / multi-agent / eval
+      Tradeoffs out loud
+    Coding
+      Structured output
+      Tool calling
+    Take-home
+      Ship something runnable
+      Clear README
+    Behavioral
+      STAR stories
+      "When the model failed"
+```
+
+## Quick Reference
+
+| Round | What they're checking | How to win it |
+|---|---|---|
+| System design | Can you scope a real LLM system? | Clarify reqs → sketch RAG/agent → name tradeoffs (cost, latency, eval) |
+| Coding | Practical LLM patterns | Structured output, tool calling, retries — not algorithms |
+| Take-home | Do you ship? | Small, runnable, tested, with a README |
+| Behavioral | Judgment + ownership | STAR; have a "model failed → I fixed it" story ready |
+| SWE→AI mapping | Transferable skills | Frame existing experience in AI terms explicitly |
+
+---
+
 ## Practice Exercises
 
 1. Give yourself 45 minutes to design a RAG system for a company blog on a whiteboard (or paper). Time yourself.

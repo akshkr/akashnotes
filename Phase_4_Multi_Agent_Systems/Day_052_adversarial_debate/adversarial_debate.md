@@ -562,6 +562,33 @@ verdict = judge(defense, attack)
 
 ---
 
+## Exercises
+
+1. **Run a proposer-critic-judge cycle.** Pick a question with a non-obvious answer and run the basic `debate()` function. Compare the proposer's first answer against the judge's final answer — what did the critic catch?
+
+2. **Tune the rounds.** Run `multi_round_debate` with 1, 2, and 3 rounds on the same question. Note where the answer stops improving — that's your point of diminishing returns (and where the extra cost stops paying off).
+
+3. **Red team a claim.** Use `red_blue_debate` to stress-test a position you believe is true. Did the red team surface a weakness you hadn't considered?
+
+4. **Add a confidence gate.** Have the judge emit a confidence score (1-10). If it's below a threshold, trigger one more critic round instead of returning. This keeps cost low on easy questions and spends more only when needed.
+
+<details><summary>Solutions (approaches)</summary>
+
+1. Call `debate(question)`; the returned dict has `initial_answer` and `final_answer` side by side for comparison.
+2. Loop `for r in (1, 2, 3): multi_round_debate(q, rounds=r)` and eyeball the diffs.
+3. `red_blue_debate(topic, position)` returns `best_attack` and a `verdict` with a strength rating.
+4. Have the judge return JSON `{"answer": ..., "confidence": N}`; branch on `N`:
+
+```text
+result = judge_with_confidence(question, answer, critique)
+if result["confidence"] < 7:
+    critique = critic(question, result["answer"])
+    result = judge_with_confidence(question, result["answer"], critique)
+```
+</details>
+
+---
+
 ## What's Next?
 
 Now let's explore **CrewAI** - a framework that makes building agent teams easy!

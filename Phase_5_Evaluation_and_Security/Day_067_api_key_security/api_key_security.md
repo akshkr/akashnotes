@@ -520,6 +520,32 @@ logger.info(f"Using key: {mask_key(api_key)}")
 
 ---
 
+## Exercises
+
+1. Extend `get_api_key` to validate Anthropic keys too: accept the `sk-ant-` prefix (already partially handled) and raise a clear error for anything that matches neither known format.
+2. The `SecureAgent.generate` leak check only compares the first 10 characters of the key. Strengthen it to also catch a masked or partial leak, and decide what to do if a leak is detected (refuse vs. redact).
+3. Implement a `rotate_now(key_name)` method on `KeyManager` that fetches a fresh key from the provider, updates the metadata timestamp, and returns the new masked key.
+4. Add a guard that fails fast at startup if any required key (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`) is missing, listing all missing names at once rather than crashing on the first.
+
+<details><summary>Solutions (approaches)</summary>
+
+1. Keep `key.startswith(("sk-", "sk-ant-"))`; on failure raise `ValueError(f"Unrecognized key format for {key_name}")`.
+2. Compare against `mask_key(self._api_key)` and a longer prefix; on detection, prefer redaction (`result.replace(self._api_key, "[REDACTED]")`) over raising, so one stray echo doesn't break the whole response — log the event either way.
+3. ```text
+   def rotate_now(self, key_name):
+       key = self.provider.get(key_name)
+       self.keys[key_name] = key
+       self.key_metadata[key_name] = ManagedKey(key=key, created_at=datetime.now(), rotation_days=90)
+       return mask_key(key)
+   ```
+4. ```text
+   missing = [n for n in ("OPENAI_API_KEY", "ANTHROPIC_API_KEY") if not os.environ.get(n)]
+   if missing: raise RuntimeError(f"Missing required keys: {', '.join(missing)}")
+   ```
+</details>
+
+---
+
 ## What's Next?
 
 You've secured your API keys! Next, we'll tackle **Production Hardening** — retries, circuit breakers, rate limiting, and graceful degradation so your agents survive real-world failure modes.

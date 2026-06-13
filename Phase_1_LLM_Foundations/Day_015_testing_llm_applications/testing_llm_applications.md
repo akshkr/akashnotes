@@ -718,4 +718,56 @@ def test_sample_integration():
 
 ---
 
-**Next up:** Retry Loops and Error Handling (Day 16) — turning the failures you now know how to test for into automatic recovery, before DSPy (Day 17) and the Phase 1 capstone (Day 18).
+## Summary
+
+```mermaid
+mindmap
+  root((Testing LLM Apps))
+    Why it's different
+      Outputs are non-deterministic
+      Real calls cost money
+      Test the contract, not exact text
+    Testing pyramid
+      Many unit tests with mocks
+      Some integration tests
+      Few end-to-end tests
+    Techniques
+      Mock the client response object
+      Validate Pydantic schemas
+      Snapshot prompts to catch drift
+    CI strategy
+      Fast unit tests gate every PR
+      Mark slow/paid tests, run on demand
+      continue-on-error for flaky calls
+```
+
+## Quick Reference
+
+| Need | Tool / pattern |
+|---|---|
+| Fake an LLM response | `MagicMock()` returning a typed `ChatCompletion(...)` |
+| Fake an async call | `AsyncMock()` |
+| Patch the client | `@patch("module.client")` or inject a mock fixture |
+| Assert structure (not text) | Parse to a Pydantic model; assert fields/types |
+| Detect prompt changes | Snapshot test the rendered prompt string |
+| Skip slow tests locally | `pytest -m "not slow"` (mark with `@pytest.mark.slow`) |
+| Don't fail CI on flaky calls | `continue-on-error: true` on the integration job |
+
+## Exercises
+
+1. **Mock a failure path.** Add a unit test where the mocked client returns invalid JSON, and assert your parsing code raises (or retries) instead of crashing.
+2. **Parametrize schema validation.** Write one `@pytest.mark.parametrize` test that feeds five mock outputs (valid, missing field, wrong type, extra field, empty) into your Pydantic model and asserts the expected pass/fail.
+3. **Add a cost guard to integration tests.** In a real-call test, assert `response.usage.total_tokens` stays under a budget so a runaway prompt fails loudly.
+4. **Wire the CI tiers.** Configure pytest markers so `pytest -m "not slow"` runs only mocked tests, and a separate job runs the `slow` integration tests with `continue-on-error`.
+
+<details><summary>Solutions (approaches)</summary>
+
+1. Set the mock to return `'{"name": "John", age: 30}'` (the `invalid_json` fixture) and use `pytest.raises(...)` around the parse call.
+2. Build a list of `(payload, should_pass)` tuples; inside the test, `try: Model.model_validate_json(payload)` and assert success/`ValidationError` matches `should_pass`.
+3. After the real call, `assert response.usage.total_tokens < 2000` — a cheap regression guard against prompt bloat.
+4. Mark integration tests with `@pytest.mark.slow`; in CI run two steps — the fast one gating merges, the slow one informational (`continue-on-error: true`).
+</details>
+
+## What's Next?
+
+Tomorrow (Day 16) is **Retry Loops and Error Handling** — turning the failures you now know how to test for into automatic recovery, before DSPy (Day 17) and the Phase 1 capstone (Day 18).

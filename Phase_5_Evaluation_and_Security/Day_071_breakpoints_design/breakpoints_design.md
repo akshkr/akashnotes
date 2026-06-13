@@ -481,6 +481,23 @@ if risk_score > threshold:
 
 ---
 
+## Exercises
+
+1. Add a fifth factor to `calculate_risk_score` — for example, whether the action touches production vs. staging — and adjust the weights so the maximum still caps at 1.0.
+2. Extend `ConditionalBreakpoint.should_break` to return *all* triggered reasons (not just the first), so the human sees every condition that fired.
+3. Combine `interrupt_before` and `interrupt_after` in one LangGraph workflow: pause *after* the draft node for review and *before* the send node for final approval.
+4. Build a small decision matrix: for each of `send_email`, `delete_records`, `read_only_query`, decide whether it deserves a breakpoint and which type (pre-action, post-action, conditional, escalation). Justify each.
+
+<details><summary>Solutions (approaches)</summary>
+
+1. Add `if state.get("environment") == "production": risk += 0.2`; keep the final `return min(risk, 1.0)` so the cap holds.
+2. Collect into a list: `reasons = [c["reason"] for c in self.conditions if c["check"](state)]`; return `(bool(reasons), reasons)`.
+3. `workflow.compile(checkpointer=cp, interrupt_after=["draft"], interrupt_before=["send"])` — both arguments accept node-name lists.
+4. `read_only_query` → no breakpoint (reversible, no effects). `send_email` → pre-action (irreversible external effect). `delete_records` → conditional/risk-based, escalating when scope is large.
+</details>
+
+---
+
 ## What's Next?
 
 Now let's learn how to **inject human feedback** back into agent state to influence future behavior!

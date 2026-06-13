@@ -394,6 +394,38 @@ Interview ready:
 
 ---
 
+## Summary
+
+```mermaid
+mindmap
+  root((Portfolio))
+    The 5 capstones
+      D18 extraction
+      D34 RAG
+      D48 agent
+      D73 multi-agent
+      D97 deployed
+    Make it real
+      Good README per repo
+      Live demo URLs
+      Docker-compose reproducible
+    Be findable
+      GitHub pinned + profile
+      LinkedIn + a blog post
+```
+
+## Quick Reference
+
+| Asset | Bar to clear |
+|---|---|
+| README (per project) | Problem → demo GIF/URL → how to run → stack → what you learned |
+| Live demo | Public URL on HF Spaces / Railway / Render |
+| Reproducibility | `docker compose up` (or one clear command) works from a clean clone |
+| GitHub profile | 5 projects pinned; profile README mentions AI engineering |
+| Reach | One technical blog post + LinkedIn updated with links |
+
+---
+
 ## Practice Exercises
 
 1. Rewrite the README for your best capstone project using the formula above — time yourself at 2 hours

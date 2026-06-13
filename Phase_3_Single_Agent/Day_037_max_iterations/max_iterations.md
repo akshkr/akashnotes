@@ -618,6 +618,33 @@ except (TimeoutError, KeyboardInterrupt):
 
 ---
 
+## Exercises
+
+1. Give an agent loop four independent stop conditions — max iterations, max wall-clock time, max tokens, and max consecutive errors — and have it return a dict reporting *which* limit fired.
+2. Write a `@timeout(seconds)` decorator (or use `signal.alarm` / a thread) and prove it raises `TimeoutError` on a deliberately slow function.
+3. Implement "graceful exit": when any limit trips, save the partial result and current state so the run can be resumed later instead of starting over.
+4. Add an exponential backoff between retries (1s, 2s, 4s…) and cap total retries so a flaky tool can't spin the loop.
+
+<details><summary>Solutions (approaches)</summary>
+
+1. Check all four at the top of each iteration: `if iterations >= max_iter: return {"reason": "max_iterations", ...}` etc. Track `consecutive_errors`, resetting to 0 on success.
+2. ```text
+   def timeout(seconds):
+       def deco(fn):
+           def wrap(*a, **k):
+               signal.signal(signal.SIGALRM, lambda *_: (_ for _ in ()).throw(TimeoutError()))
+               signal.alarm(seconds)
+               try: return fn(*a, **k)
+               finally: signal.alarm(0)
+           return wrap
+       return deco
+   ```
+3. On any stop, `json.dump({"state": state, "step": iterations}, ...)`; a `resume(path)` reloads and continues the loop from `step`.
+4. `time.sleep(2 ** attempt)` inside an `except`, with `if attempt >= max_retries: raise`.
+</details>
+
+---
+
 ## What's Next?
 
 Now you've built a complete agent from scratch! Next, let's explore **frameworks like LangChain and LlamaIndex** that provide these features out of the box.

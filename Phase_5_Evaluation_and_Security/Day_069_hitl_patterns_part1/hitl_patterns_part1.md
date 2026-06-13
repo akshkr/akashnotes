@@ -397,3 +397,67 @@ flowchart TB
 ```
 
 ---
+
+## Summary
+
+```mermaid
+mindmap
+  root((HITL Part 1))
+    Why
+      High-stakes actions
+      Uncertainty
+      Compliance
+      Teaching the agent
+    Patterns
+      Basic approval gate
+      LangGraph breakpoints
+      Feedback injection
+      Confidence-based
+    Mechanics
+      interrupt_before
+      Checkpointer persistence
+      Resume with thread_id
+    SWE Analogy
+      CI/CD approval step
+      PR review + merge
+```
+
+---
+
+## Quick Reference
+
+| Pattern | When to use | Core mechanism |
+|---|---|---|
+| Basic approval | Single irreversible action | `input()` gate before `execute_action` |
+| LangGraph breakpoint | Stateful, resumable pause | `compile(checkpointer=..., interrupt_before=["execute"])` |
+| Resume after pause | Continue a paused run | Re-`invoke` with same `thread_id` config |
+| Feedback injection | Steer mid-task, not just yes/no | Append `{"role": "user", "content": "Human feedback: ..."}` |
+| Confidence-based | Only interrupt when unsure | Ask model for `confidence`; gate on a threshold |
+
+Tips:
+- Always show the human *what* and *why* before asking — a bare "Approve?" gets rubber-stamped.
+- A breakpoint needs a checkpointer; without persistence there's no state to resume.
+- Confidence scores are self-reported and noisy — calibrate the threshold against real cases.
+
+---
+
+## Exercises
+
+1. Modify `get_human_approval` to also accept an `[e]` (edit) option that lets the human rewrite the action details before approving.
+2. In the LangGraph example, change `interrupt_before=["execute"]` to also persist to a file-backed checkpointer and resume the run in a *separate* Python process using the same `thread_id`.
+3. Add a confidence *band*: auto-approve above 0.85, auto-reject below 0.3, and only ask the human in between.
+4. Wrap `agent_with_approval` so a rejected action is logged with a timestamp and reason to a `decisions.jsonl` audit file.
+
+<details><summary>Solutions (approaches)</summary>
+
+1. Add an `elif response in ["e", "edit"]:` branch that calls `input("New details: ")`, mutates `details`, then re-displays and returns `True`.
+2. Use `SqliteSaver.from_conn_string("hitl.db")`; in process two, build the same graph, then `app.invoke(None, config)` with `config={"configurable": {"thread_id": "session-123"}}` resumes from the stored checkpoint.
+3. `if conf >= 0.85: return result` / `elif conf < 0.3: reject()` / `else: ask_human()` — three branches instead of one threshold.
+4. After the reject branch, `json.dump({"ts": datetime.now(timezone.utc).isoformat(), "action": action, "decision": "rejected"}, f)` appended to the file.
+</details>
+
+---
+
+## What's Next?
+
+Next up is **Day 070 — HITL Patterns, Part 2**, where you'll graduate from single approvals to multi-stage approval pipelines, risk-based escalation, and timeout handling for when a human never responds.

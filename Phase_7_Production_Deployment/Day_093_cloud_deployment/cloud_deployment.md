@@ -577,6 +577,23 @@ docker run -p 8000:8000 agent
 
 ---
 
+## Exercises
+
+1. **Pick a platform.** For a containerized FastAPI agent, choose between Render, Railway, AWS App Runner, and GCP Cloud Run, and justify the pick in two sentences.
+2. **Deploy once.** Push your Dockerized app to one of them and get a public URL responding to `/health`.
+3. **Secrets, not code.** Move every API key out of the image and into the platform's environment/secret store; confirm the key never appears in `docker history`.
+4. **Health + autoscale.** Add a `/health` endpoint and configure the platform to scale on it (min/max instances). Note what happens to a cold start.
+
+<details><summary>Solutions (approaches)</summary>
+
+1. Render/Railway = fastest DX for small apps; Cloud Run/App Runner = better scale-to-zero + IAM if you're already on that cloud.
+2. `docker build -t agent .` then the platform's deploy command (`render deploy`, `railway up`, `gcloud run deploy ...`).
+3. Set keys via the dashboard/CLI secret store; in code read `os.environ[...]`; never `COPY .env` into the image.
+4. `@app.get("/health") def health(): return {"ok": True}`; set min instances ≥1 to avoid cold starts, or accept the first-request latency.
+</details>
+
+---
+
 ## What's Next?
 
 Your app is deployed to the cloud. Next, we make the prompts behind it maintainable: **Prompt Engineering Discipline** — versioning prompts as files, A/B testing with traffic splitting, LLM-as-judge evaluation, and the anti-patterns to avoid.

@@ -712,6 +712,23 @@ For a deeper look at this tradeoff, see the "Long-Context Alternative" section e
 
 ---
 
+## Exercises
+
+1. **Add source citations to answers.** Number each retrieved chunk in the context (`[1]`, `[2]`, ...) and instruct the model to cite the number it used. Verify the answer references real chunks.
+2. **Enforce a token budget.** Before building the prompt, drop the lowest-ranked chunks until the context fits a fixed token count (estimate with `len(text) // 4`). Log how many chunks you kept.
+3. **Make the system refuse politely.** Add an instruction so that when no retrieved chunk answers the question, the model replies "I don't have that information" instead of hallucinating. Test it with an off-topic question.
+4. **Compare RAG vs. long-context.** For a small corpus that fits in the window, answer the same question two ways — RAG-injected chunks vs. dumping the whole corpus — and compare answer quality and token cost.
+
+<details><summary>Solutions (approaches)</summary>
+
+1. Format context as `f"[{i}] {chunk}"`; add "Cite the bracketed source number(s) you used." to the prompt. Spot-check that cited numbers exist.
+2. Sort chunks by score, accumulate until the running token estimate hits your cap, then stop. Keep at least one chunk so the prompt is never empty.
+3. Add "If the context does not contain the answer, say you don't know." Threshold-filter weak matches first so truly irrelevant chunks never reach the prompt.
+4. Token-count both prompts; long-context is simpler but costs more per query and loses source attribution — exactly the tradeoff in the Long-Context section above.
+</details>
+
+---
+
 ## What's Next?
 
 Now you've built a complete RAG system! Next, we'll go beyond flat vector search with **GraphRAG and Knowledge Graphs** — handling multi-hop questions that single-shot retrieval struggles with. (Tool calling follows in Day 28.)

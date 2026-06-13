@@ -575,7 +575,58 @@ That's a concrete, specific answer that demonstrates you understand both the AI 
 
 ---
 
-## What's Next
+## Summary
+
+```mermaid
+mindmap
+  root((Data Extraction Pipeline))
+    Typed schemas
+      One Pydantic model per input type
+      Field descriptions feed the prompt
+      Validators normalize on the way in
+    Reliable calls
+      Retry loop with backoff
+      Validation rejects bad JSON
+      Streaming for long documents
+    Scale
+      Async batch processing
+      Throughput over many docs
+      Progress reporting
+    Operations
+      Cost tracking per call
+      Portfolio-ready talking point
+```
+
+## Quick Reference
+
+| Piece | What it does | From which day |
+|---|---|---|
+| `BaseModel` + `Field(description=...)` | Defines the target schema; descriptions go into the prompt | Day 14 |
+| `@field_validator(..., mode="before")` | Normalizes/cleans values during parsing | Day 14 |
+| Retry with exponential backoff | Survives transient API failures and rate limits | Day 16 |
+| Feedback-on-error retry | Re-prompts with the validation error so the LLM self-corrects | Day 16 |
+| Async batch (`asyncio.gather`) | Processes many documents concurrently | Day 13 |
+| Streaming | Keeps users informed on slow/long extractions | Day 12–13 |
+| Cost tracking | Sums input/output tokens × price per call | Day 10–11 |
+
+## Exercises
+
+1. **Add a fourth schema.** Extend the pipeline with a `SupportTicket` model (fields like `category`, `priority`, `summary`, `requested_action`) and route raw ticket text through the same extraction function.
+2. **Measure the failure rate.** Run a batch of 20 messy inputs and log how many succeed on the first try vs. after a feedback-retry. Report the retry rate and average attempts.
+3. **Add a cost ceiling.** Extend the cost tracker to abort the batch (and report progress so far) once accumulated spend crosses a configurable limit.
+4. **Export the results.** After extraction, write all validated models to a JSONL file using `model_dump()`, ready to load into a database.
+
+<details><summary>Solutions (approaches)</summary>
+
+1. Define `SupportTicket(BaseModel)` with an `Enum` priority and reuse the existing `extract(text, schema=SupportTicket)` path — only the schema and a one-line prompt hint change.
+2. Wrap each call to count attempts; aggregate `sum(attempts)/n` and the share of items with `attempts > 1`. Feedback-retries usually clear most first-try JSON errors.
+3. Track a running `total_cost`; before each call, check `if total_cost >= budget: break` and return the partial results plus a "stopped early" flag.
+4. `with open("out.jsonl","w") as f: for m in results: f.write(m.model_dump_json() + "\n")` — one JSON object per line.
+</details>
+
+---
+
+## What's Next?
 
 You've now completed Phase 1. You can:
 - Call LLM APIs and handle responses properly

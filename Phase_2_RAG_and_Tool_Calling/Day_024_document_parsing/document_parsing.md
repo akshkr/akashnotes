@@ -496,6 +496,23 @@ text = soup.get_text()
 
 ---
 
+## Exercises
+
+1. **Add a new file type to your universal parser.** Extend the auto-detection dispatch to handle `.docx` (try `python-docx`: `Document(path).paragraphs`). Fall back gracefully if the library isn't installed.
+2. **Measure parser quality on the same PDF.** Run `pypdf`, `pdfplumber`, and PyMuPDF on one multi-column PDF and compare the extracted text — count characters and eyeball where columns get jumbled. Pick a winner for your use case.
+3. **Strip web boilerplate.** Extend your HTML parser to remove `<nav>`, `<footer>`, and `<script>`/`<style>` tags before calling `get_text()`, so only article content survives.
+4. **Capture metadata, not just text.** Make every parser return a dict like `{"text": ..., "source": ..., "page_count": ...}` so downstream chunking can keep provenance.
+
+<details><summary>Solutions (approaches)</summary>
+
+1. Add an `elif ext == ".docx"` branch; wrap the import in `try/except ImportError` and return a clear error string if missing.
+2. Time and character-count each: `len(text)` plus a manual skim. `pdfplumber` usually handles tables/columns best; PyMuPDF is fastest.
+3. `for tag in soup(["nav", "footer", "script", "style"]): tag.decompose()` before `soup.get_text()`.
+4. Have each parser build and return the dict; the universal entry point just routes to the right parser and passes the dict through unchanged.
+</details>
+
+---
+
 ## What's Next?
 
 Now that you can extract text, let's learn **Text Chunking Strategies** - how to split documents into optimal pieces for retrieval!

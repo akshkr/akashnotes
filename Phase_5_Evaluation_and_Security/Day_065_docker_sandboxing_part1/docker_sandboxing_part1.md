@@ -399,3 +399,76 @@ print(f"Result: {output.get('data')}")
 ```
 
 ---
+
+## Summary
+
+```mermaid
+mindmap
+  root((Docker Sandboxing))
+    Isolation
+      Container per run
+      Auto-remove on exit
+      Untrusted LLM code
+    Hardening
+      network_disabled
+      read_only filesystem
+      Non-root user
+      cap_drop ALL, no-new-privileges
+    Resource Limits
+      mem_limit & no swap
+      cpu_quota
+      pids_limit
+      tmpfs size cap
+    I/O
+      Mount code read-only
+      Pass input as JSON
+      Parse delimited output
+```
+
+---
+
+## Quick Reference
+
+| Setting | Purpose |
+|---|---|
+| `remove=True` | Auto-delete container after it exits |
+| `network_disabled=True` | No outbound/inbound network |
+| `read_only=True` | Immutable root filesystem |
+| `mem_limit` / `memswap_limit` | Cap RAM; equal values disable swap |
+| `cpu_period` + `cpu_quota` | Limit CPU (quota/period = fraction of one core) |
+| `pids_limit` | Cap process count (stops fork bombs) |
+| `tmpfs={"/tmp": "size=10m"}` | Small writable scratch space |
+| `cap_drop=["ALL"]` | Drop all Linux capabilities |
+| `security_opt=["no-new-privileges"]` | Block privilege escalation |
+
+Tips:
+- Mount the code directory as `mode: 'ro'` so the running code can't rewrite its own script.
+- A timeout is not optional — pair `detach=True` with `container.wait(timeout=...)` so a hung or infinite-loop program can't run forever.
+
+---
+
+## Exercises
+
+1. Take `run_code_in_sandbox` and submit code with an infinite loop (`while True: pass`). Confirm the timeout fires and the container is cleaned up rather than hanging your process.
+2. Submit code that tries `open("/etc/passwd", "w")`. With `read_only=True` it should fail — verify the error surfaces in `stderr`, then explain why read-only is a stronger control than trusting the code.
+3. Add a `cpu_quota` and `pids_limit` to `run_code_in_sandbox` (it currently sets neither) and test with a small fork bomb to confirm the process cap holds.
+4. Extend `SandboxIO.run_with_data` to also return how long execution took, by timestamping before and after the `_execute` call.
+
+<details><summary>Solutions (approaches)</summary>
+
+1. The `timeout=` passed to `containers.run` (or `container.wait(timeout=...)`) raises, and the `finally` block's `shutil.rmtree` / `os.unlink` still runs. Catch the timeout and return an error dict.
+2. `read_only=True` makes the write raise `OSError`; it's stronger because it's enforced by the kernel/container runtime, not by hoping the LLM-generated code behaves.
+3. Add `cpu_period=100000, cpu_quota=25000, pids_limit=50` to the `run(...)` call; the fork bomb hits the pid cap and fails instead of exhausting the host.
+4. ```text
+   import time
+   t0 = time.time()
+   result = self._execute(wrapped_code)
+   result["elapsed_s"] = round(time.time() - t0, 3)
+   ```
+</details>
+
+---
+
+## What's Next?
+
+This covered isolation and resource limits. Next up: **Docker Sandboxing Part 2** — injecting secrets into containers without writing them to disk, pulling credentials from secret managers (AWS Secrets Manager, Vault), and assembling a production-ready `SecureSandbox` with auditing.

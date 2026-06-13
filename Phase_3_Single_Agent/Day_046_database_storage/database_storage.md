@@ -594,6 +594,23 @@ app = workflow.compile(checkpointer=checkpointer)
 
 ---
 
+## Exercises
+
+1. Create a `SQLiteConversationStore`, start a conversation, add a few user/assistant messages, then read them back with `get_messages` to confirm round-tripping.
+2. Add per-message token counts when you store them and write a query that returns the total tokens for one conversation.
+3. Implement a simple search: given a substring, return all messages (and which conversation) that contain it. Note where SQLite `LIKE` ends and Postgres full-text search begins.
+4. Write the `migrate_sqlite_to_postgres` path for one table and verify the row counts match before and after.
+
+<details><summary>Solutions (approaches)</summary>
+
+1. `conv = store.create_conversation(user_id, "Test")`, `store.add_message(conv, "user", "hi")`, then `store.get_messages(conv)`.
+2. Store a `tokens` column; `SELECT SUM(tokens) FROM messages WHERE conversation_id = ?`.
+3. SQLite: `WHERE content LIKE '%term%'`. Postgres: a `tsvector` column + `to_tsquery` for ranked, language-aware search.
+4. Read all rows from SQLite, `INSERT` into Postgres in a transaction, then assert `COUNT(*)` is equal on both sides.
+</details>
+
+---
+
 ## What's Next?
 
 Your agents now have durable storage. Next, we'll tackle **Debugging AI Agents** — structured tracing, common failure modes, and how to find out why an agent went wrong.

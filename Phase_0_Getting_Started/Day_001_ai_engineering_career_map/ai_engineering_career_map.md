@@ -291,4 +291,57 @@ See you on Day 2.
 
 ---
 
-*Next up: Understanding Transformers — How LLMs Actually Work (API keys, SDKs, local models, and your first API call)*
+## Summary
+
+```mermaid
+mindmap
+  root((AI Engineering Career Map))
+    The roles
+      Data Scientist: analysis
+      ML Engineer: training
+      MLOps: model infra
+      AI Engineer: build apps on LLMs
+    Skills in demand
+      Agents and RAG
+      Evaluation
+      LLM APIs and prompting
+      SLMs and model selection
+    SWE skills transfer
+      Same engineering instincts
+      Probabilistic, not deterministic
+      Empirical: hypothesis-measure-iterate
+    The 100 days
+      Foundations to production
+      5 portfolio capstones
+      Revisit skills audit at D49, D100
+```
+
+## Quick Reference
+
+| Concept | What it means for you |
+|---|---|
+| AI Engineer vs ML Engineer | You *use* foundation models to build products; you don't train them from scratch |
+| Core skills (must have) | Prompt engineering, RAG, LLM API integration, Python |
+| High-value differentiators | Agents, evaluation/testing, vector DBs, LangChain/LangGraph |
+| The mindset shift | Build imperfect → understand through use → iterate; treat prompting as empirical science |
+| Portfolio capstones | Days 18, 34, 48, 73, 97 — the projects you'll show employers |
+| Skills audit cadence | Score yourself today, then compare at Day 49 and Day 100 |
+
+## Exercises
+
+1. **Score yourself.** Complete the skills audit above and save it to a file you'll keep. Note your top 3 strengths and top 3 gaps.
+2. **Read 10–15 "AI Engineer" job postings** on LinkedIn. Tally how often each core skill (RAG, agents, eval, prompting) appears. Which already match your background?
+3. **Estimate one API call's cost.** Open the [OpenAI pricing page](https://openai.com/pricing), pick `gpt-4o-mini`, and roughly compute the cost of a 1,000-token input + 500-token output call. (See REFERENCE.md for current per-1M figures.)
+4. **Write your "why."** In two sentences, describe the kind of AI product you'd most want to build. You'll revisit this at the Day 49 career checkpoint.
+
+<details><summary>Solutions (approaches)</summary>
+
+1. There's no wrong answer — the value is the baseline. Strengths are usually SWE fundamentals (testing, APIs, system design); gaps are usually RAG/agents/eval. Keep the file.
+2. Expect agents, RAG, and "LLM API experience" to dominate; eval shows up less often than it should (an opening for you). Anything Python/backend/cloud you already have.
+3. With `gpt-4o-mini` at ~$0.15/1M input and ~$0.60/1M output: `1000/1e6*0.15 + 500/1e6*0.60` ≈ $0.00015 + $0.00030 ≈ **$0.00045**. Verify the live numbers in REFERENCE.md.
+4. Keep it concrete (e.g. "a support agent that resolves refunds end-to-end") rather than "something with AI."
+</details>
+
+## What's Next?
+
+Tomorrow (Day 2) we go under the hood with **Understanding Transformers** — self-attention, multi-head attention, and context windows. You'll see *why* LLMs can relate words across a sentence in parallel, which is the foundation for everything from tokenization to prompting that follows in Phase 1.

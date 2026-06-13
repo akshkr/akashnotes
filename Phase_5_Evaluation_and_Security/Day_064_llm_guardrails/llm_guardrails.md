@@ -391,6 +391,33 @@ response = client.messages.create(model="claude-sonnet-4-6", system="GUARDRAILS:
 
 ---
 
+## Exercises
+
+1. Write a custom validator `MaxSentences` (subclass `Validator`) that fails when output exceeds N sentences, with an `on_fail="fix"` that truncates to N. Wire it into a `Guard`.
+2. Add a `RestrictToTopic` guard to `GuardedAgent` so it only answers programming questions, and confirm an off-topic question is refused with a clear message.
+3. Compare the three approaches from the "When to Use What" table on the same toxic input: system-prompt rule, OpenAI Moderation API, and a Guardrails `ToxicLanguage` validator. Note which block it and which let it through.
+4. Layer a Claude system-prompt guardrail (using `claude-sonnet-4-6`) in front of the OpenAI Moderation API as a two-stage check, and log which stage rejected a bad input.
+
+<details><summary>Solutions (approaches)</summary>
+
+1. ```text
+   @register_validator("max-sentences", data_type="string")
+   class MaxSentences(Validator):
+       def __init__(self, n, on_fail="fix"):
+           super().__init__(on_fail=on_fail); self.n = n
+       def validate(self, value, metadata):
+           if value.count(".") > self.n: raise ValueError("too long")
+           return value
+       def fix(self, value, metadata):
+           return ".".join(value.split(".")[: self.n]) + "."
+   ```
+2. Add `RestrictToTopic(valid_topics=["programming"], on_fail="exception")` to `input_guard`; catch the exception in `generate` and return the refusal string.
+3. Feed one toxic sentence to each path; expect Moderation API and `ToxicLanguage` to flag it, while a bare system-prompt rule may or may not, depending on the model.
+4. Call Claude with a GUARDRAILS system prompt first; if it declines, stop. Otherwise run `client.moderations.create`. Record `rejected_by = "claude"` or `"moderation"`.
+</details>
+
+---
+
 ## What's Next?
 
 Now let's learn about **Safe Sandboxing** - containerizing agent code execution for security!

@@ -571,6 +571,23 @@ def handle_request(user_id: str, prompt: str):
 
 ---
 
+## Exercises
+
+1. **Exponential backoff.** Write a `retry_with_backoff` wrapper that retries a call on `429`/`RateLimitError` with delays of 1s, 2s, 4s, 8s and gives up after 5 tries.
+2. **Add jitter.** Improve it by adding random jitter to each delay and explain in one line why a thundering herd makes fixed delays dangerous.
+3. **Respect the server.** When the API returns a `Retry-After` header, sleep for that exact duration instead of your computed backoff.
+4. **Per-user token budget.** Implement a sliding-window token budget that blocks a user once they exceed N tokens/hour, and returns their remaining allowance.
+
+<details><summary>Solutions (approaches)</summary>
+
+1. `for i in range(5): try: return fn() except RateLimitError: time.sleep(2 ** i)`; raise after the loop.
+2. `delay = (2 ** i) + random.uniform(0, 1)`; without jitter, all clients retry at the same instant and re-collide.
+3. `wait = int(e.response.headers.get("Retry-After", 2 ** i)); time.sleep(wait)`.
+4. Keep `(timestamp, tokens)` entries; drop entries older than 3600s; `remaining = max_per_hour - sum(tokens)`.
+</details>
+
+---
+
 ## What's Next?
 
-Now let's deploy to the **cloud** with AWS, GCP, or platforms like Render!
+Now let's cut cost and latency with **Semantic Caching** — reusing answers for questions that *mean* the same thing, not just exact-match strings.

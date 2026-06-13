@@ -528,6 +528,23 @@ async def task(background_tasks: BackgroundTasks):
 
 ---
 
+## Exercises
+
+1. **Echo endpoint.** Build a `POST /chat` that takes a Pydantic `ChatRequest` and returns the model's reply. Validate the request with a typed model, not a raw dict.
+2. **Stream it.** Add a `POST /stream` that returns a `StreamingResponse` yielding tokens as they arrive (`media_type="text/event-stream"`).
+3. **Fire-and-forget.** Add a `POST /task` that kicks off a slow job with `BackgroundTasks` and immediately returns a `task_id`.
+4. **Wire up lifespan.** Initialize your LLM client once at startup using the `lifespan` context manager (not `@app.on_event`) and reuse it across requests.
+
+<details><summary>Solutions (approaches)</summary>
+
+1. `class ChatRequest(BaseModel): message: str`; `async def chat(req: ChatRequest): ...` — FastAPI validates automatically.
+2. `def gen(): yield from token_stream`; `return StreamingResponse(gen(), media_type="text/event-stream")`.
+3. `async def task(bg: BackgroundTasks): bg.add_task(run_job, ...); return {"task_id": uuid4().hex}`.
+4. `@asynccontextmanager async def lifespan(app): app.state.client = OpenAI(); yield`; pass `lifespan=lifespan` to `FastAPI(...)`.
+</details>
+
+---
+
 ## What's Next?
 
-Now let's build beautiful **Agent UIs** with Streamlit and Gradio!
+Now let's handle **long-running agent jobs** with async task queues — submit/poll endpoints, worker pools, and Celery.
