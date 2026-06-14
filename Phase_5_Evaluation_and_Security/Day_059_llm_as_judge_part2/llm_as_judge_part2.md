@@ -60,13 +60,13 @@ Which response is better? Return JSON: {{"winner": "A" or "B", "reasoning": "...
     # UNBIASED judge therefore reports a *different* winning label across the two
     # runs (it followed the response, not the slot). The label staying the same
     # means the judge favored a position -> position bias.
-    consistent = order_1["winner"] != order_2["winner"]  # True == unbiased (label flipped)
+    unbiased = order_1["winner"] != order_2["winner"]  # True == winning label flipped
 
     return {
         "a_first_winner": order_1["winner"],
         "b_first_winner": order_2["winner"],
-        "consistent": consistent,
-        "position_biased": not consistent
+        "unbiased": unbiased,
+        "position_biased": not unbiased
     }
 ```
 
@@ -188,7 +188,9 @@ Return JSON: {{"score": 1-5, "reasoning": "...", "closest_anchor": "excellent/me
 
 ### Measuring Judge Reliability: Cohen's Kappa
 
-Compare your LLM judge against human evaluators (or against itself across runs) to measure agreement:
+Compare your LLM judge against human evaluators (or against itself across runs) to measure agreement.
+
+If two PR reviewers both approve 90% of PRs out of habit, they'll *agree* ~80% of the time purely by luck — so raw agreement overstates how much they actually think alike. Cohen's Kappa subtracts that luck: it measures how much they agree *beyond* random chance. `p_observed` = how often they actually matched; `p_expected` = how often they'd match by coincidence given how each rates overall; kappa rescales whatever agreement is left over.
 
 ```python
 # script_id: day_059_llm_as_judge_part2/cohens_kappa
@@ -241,7 +243,7 @@ from typing import Optional
 def multi_judge_evaluate(
     question: str,
     response: str,
-    models: list[str] = ["gpt-4o", "gpt-4o-mini"],
+    models: tuple[str, ...] = ("gpt-4o", "gpt-4o-mini"),
     threshold: float = 0.7
 ) -> dict:
     """Evaluate using multiple LLM judges with consensus scoring."""
@@ -264,6 +266,9 @@ Return JSON: {{"score": 1-5, "reasoning": "..."}}"""}],
         all_reasoning.append({"model": model, **parsed})
 
     avg_score = sum(all_scores) / len(all_scores)
+    # variance = how spread-out the judges' scores are (0 = identical scores).
+    # On a 1-5 scale, < 0.5 means scores sit within ~1 point of each other —
+    # treat that as the judges agreeing.
     score_variance = sum((s - avg_score) ** 2 for s in all_scores) / len(all_scores)
 
     return {
@@ -341,9 +346,10 @@ import random
 
 def sampled_evaluation(
     test_cases: list[dict],
-    eval_fn: callable,
+    eval_fn,
     sample_rate: float = 0.1,  # Evaluate 10% of cases
-    min_samples: int = 30       # Statistical minimum
+    min_samples: int = 30       # Below ~30 samples the estimate gets noisy;
+                                # 30 is the common rule-of-thumb floor for a usable average
 ) -> dict:
     """Evaluate a sample and estimate population quality."""
 
@@ -358,6 +364,9 @@ def sampled_evaluation(
     return {
         "estimated_mean": round(mean, 2),
         "std_dev": round(std, 2),
+        # 95% confidence interval = the range your *true* average is ~95% likely to
+        # fall in. 1.96 is the standard 95% multiplier; std / sqrt(n) is the standard
+        # error. A wide range means you sampled too few cases to trust the estimate.
         "confidence_interval": (round(mean - 1.96 * std / len(scores)**0.5, 2),
                                  round(mean + 1.96 * std / len(scores)**0.5, 2)),
         "samples_evaluated": len(scores),
@@ -387,7 +396,7 @@ Return JSON: {{"score": 1-5, "confidence": "high" or "low"}}"""}],
     screening = json.loads(screen.choices[0].message.content)
 
     # Clear pass (4-5) or clear fail (1-2) with high confidence → done
-    if screening.get("confidence") == "high" and screening["score"] not in [3]:
+    if screening.get("confidence") == "high" and screening["score"] != 3:
         return {"score": screening["score"], "tier": "screening", "model": "gpt-4o-mini"}
 
     # Tier 2: Borderline cases get full evaluation with gpt-4o
@@ -472,7 +481,7 @@ Tips:
 1. Wrap the position-bias check into a `position_bias_rate(pairs)` helper that runs `demonstrate_position_bias` over a list of pairs and returns the fraction that were position-biased.
 2. Add a fourth calibration anchor at score 3 ("fair") to `CALIBRATION_ANCHORS` and confirm `calibrated_judge` can map a borderline response to it via `closest_anchor`.
 3. Modify `multi_judge_evaluate` to also return `min_score` and `max_score`, then flag any evaluation where the spread (`max - min`) is 2 or more as `needs_review`.
-4. Using `cohens_kappa`, write a tiny experiment: score 10 responses with `gpt-4o-mini` twice (temperature 0) and compute self-agreement. Is it close to 1.0? Explain any gap.
+4. Using `cohens_kappa`, write a tiny experiment: score 10 responses with `gpt-4o-mini` twice (temperature 0) and compute self-agreement. Is it close to 1.0? Explain any gap. (Note: even at temperature 0, LLM outputs aren't perfectly repeatable — so don't expect exactly 1.0.)
 
 <details><summary>Solutions (approaches)</summary>
 

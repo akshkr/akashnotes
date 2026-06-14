@@ -40,6 +40,10 @@ client = chromadb.PersistentClient(path="./vectordb")
 # the default L2 space, `1 - distance` is meaningless (it can go negative).
 collection = client.get_or_create_collection(
     "documents",
+    # "hnsw:space" picks Chroma's similarity index setting — HNSW is just the
+    # name of that index (like choosing a B-tree vs hash index in SQL). What
+    # matters here is space="cosine", which makes `1 - distance` a clean
+    # 0-to-1 similarity score below.
     metadata={"hnsw:space": "cosine"},
 )
 openai_client = OpenAI()
@@ -55,6 +59,8 @@ def batch_index(
     for i in range(0, total, batch_size):
         batch_docs = documents[i:i + batch_size]
         batch_meta = metadatas[i:i + batch_size] if metadatas else [{}] * len(batch_docs)
+        # ids are positional within this run, so a second call reuses doc_0, doc_1, ...
+        # For stable, re-runnable ids derive them from content (see generate_doc_id below).
         batch_ids = [f"doc_{i + j}" for j in range(len(batch_docs))]
 
         # Get embeddings in batch
@@ -185,7 +191,15 @@ def filtered_search(
         include=["documents", "metadatas", "distances"]
     )
 
-    return results
+    # Format the same way as semantic_search so the return shape is consistent
+    return [
+        {
+            "document": results["documents"][0][i],
+            "metadata": results["metadatas"][0][i],
+            "similarity": 1 - results["distances"][0][i]
+        }
+        for i in range(len(results["ids"][0]))
+    ]
 
 # Examples
 # Filter by exact match
@@ -203,13 +217,16 @@ results = filtered_search(
 
 ### Hybrid Search (Keyword + Semantic)
 
+Semantic search finds things that *mean* the same thing, but it can whiff on exact tokens like error codes, SKUs, or names. Plain keyword matching nails those. Hybrid search runs both and blends the scores — like an `ORDER BY` that sorts on two columns at once.
+
 ```python
 # script_id: day_023_indexing_querying_updating/core_operations
 def hybrid_search(
     query: str,
     collection,
     n_results: int = 5,
-    keyword_weight: float = 0.3
+    keyword_weight: float = 0.3  # a dial: 0.3 leans mostly on meaning,
+                                 # 0.7 leans on exact words. Tune for your data.
 ) -> list[dict]:
     """Combine semantic search with keyword matching."""
 
@@ -222,7 +239,7 @@ def hybrid_search(
 
     semantic_results = collection.query(
         query_embeddings=[query_embedding],
-        n_results=n_results * 2,  # Get more for re-ranking
+        n_results=n_results * 2,  # fetch 2x candidates, then re-sort (re-rank) them by the blended score below
         include=["documents", "metadatas", "distances"]
     )
 
@@ -480,13 +497,15 @@ class OptimizedVectorStore:
 
 ## Retrieval Quality Metrics
 
-How do you know your search is actually returning good results? Before we get to full evaluation frameworks like RAGAS (covered in Phase 4), here are the three essential metrics every retrieval system should track:
+How do you know your search is actually returning good results? Before we get to full evaluation frameworks like RAGAS (covered in Phase 5), here are the three essential metrics every retrieval system should track:
 
 ### Precision: Are the results relevant?
 
 **Precision = relevant results / total returned results**
 
-If you return 10 chunks and only 6 are actually useful, your precision is 60%. High precision means less noise in your context window.
+If you return 10 documents and only 6 are actually useful, your precision is 60%. High precision means less noise in your context window.
+
+To measure any of these you first need a small hand-built answer key — the set of doc IDs you *know* are correct for a test query (think of it like the expected output in a unit test). Precision and recall compare what your search returned against that key.
 
 ```python
 # script_id: day_023_indexing_querying_updating/precision_metric
@@ -516,7 +535,9 @@ def calculate_recall(retrieved_docs: list[str], relevant_docs: set[str]) -> floa
 
 ### NDCG: Are the best results ranked first?
 
-**Normalized Discounted Cumulative Gain** measures whether the most relevant results appear at the top. A search that returns the best chunk at position 1 scores higher than one that buries it at position 5.
+**Normalized Discounted Cumulative Gain** measures whether the most relevant results appear at the top. A search that returns the best result at position 1 scores higher than one that buries it at position 5.
+
+Think of it like a teacher grading a results page. Each result gets a **relevance score** you (or a human labeler) assign: `3` = perfect answer, `2` = good, `1` = somewhat related, `0` = irrelevant. NDCG then asks: *did the high scores land at the top?* A correct answer buried at position 5 is worth less than the same answer at position 1, so we shrink (discount) each score the further down the list it sits — that's the `/ log2(position)` term. Finally we divide by the score of the *perfect* ordering, so the result is always 0-to-1 (1 = your ranking already matched the ideal).
 
 ```python
 # script_id: day_023_indexing_querying_updating/ndcg_metric
@@ -524,6 +545,8 @@ import math
 
 def calculate_dcg(relevance_scores: list[float]) -> float:
     """Discounted Cumulative Gain — rewards relevant docs ranked higher."""
+    # log2(i + 2) is a position penalty: a relevant hit at rank 1 counts fully,
+    # the same hit further down counts less, so ranking order matters.
     return sum(rel / math.log2(i + 2) for i, rel in enumerate(relevance_scores))
 
 def calculate_ndcg(relevance_scores: list[float]) -> float:
@@ -546,13 +569,13 @@ print(f"NDCG: {calculate_ndcg(scores):.3f}")  # < 1.0 because ranking isn't idea
 | Recall | "Am I missing relevant docs?" | Answers require multiple sources |
 | NDCG | "Are the best results on top?" | Using top-K with small K |
 
-> These metrics bridge directly to the RAGAS evaluation framework you'll learn in Phase 4. Building the measurement habit early pays off.
+> These metrics bridge directly to the RAGAS evaluation framework you'll learn in Phase 5. Building the measurement habit early pays off.
 
 ---
 
 ## Checkpoint
 
-Run `index_with_dedup` over a list that contains a duplicate, then `update_document` on one id, and confirm: the dedup pass reports it skipped the duplicate, and a re-query reflects the updated content rather than the old text. If duplicates slip through, check that your `generate_doc_id` hashes the content deterministically (same text in → same id out) so the store can recognize a repeat.
+Run `index_with_dedup(docs, collection)` over a list that contains a duplicate. Because it ids each doc with `generate_doc_id(text)`, you can recompute any doc's id the same way — e.g. `doc_id = generate_doc_id(my_text)` — then call `update_document(doc_id, new_text)` and re-query. Confirm: the dedup pass reports it skipped the duplicate, and the re-query reflects the updated content rather than the old text. If duplicates slip through, check that your `generate_doc_id` hashes the content deterministically (same text in → same id out) so the store can recognize a repeat.
 
 ---
 

@@ -2,7 +2,7 @@
 
 Understanding your agent's performance means tracking tokens and timing. This guide shows you how to capture and visualize these critical metrics.
 
-> **Coming from Software Engineering?** This is performance monitoring — the same discipline as tracking p50/p95/p99 latencies, request throughput, and resource utilization for your APIs. Token count is your "compute cost per request," latency is your response time, and throughput is your QPS. If you've built Grafana dashboards for service metrics or set up PagerDuty alerts on latency thresholds, you'll apply those exact skills here. The metrics just have different names.
+> **Coming from Software Engineering?** This is performance monitoring — the same discipline as tracking p50/p95/p99 latencies, request throughput, and resource utilization for your APIs. (p95 latency = the time 95% of your requests beat — what your slowest 5% of users feel.) Token count is your "compute cost per request," latency is your response time, and throughput is your QPS. If you've built Grafana dashboards for service metrics or set up PagerDuty alerts on latency thresholds, you'll apply those exact skills here. The one genuinely new axis: unlike a normal API where response size is basically free, here every token in and out is metered and billed — so token count is a first-class cost metric, not just a payload size.
 
 ---
 
@@ -32,6 +32,8 @@ Key reasons:
 ## Capturing Token Metrics
 
 ### From OpenAI Responses
+
+A **token** is roughly a chunk of a word — the unit the API bills you in (think: the LLM's equivalent of bytes transferred). Every call splits into `prompt_tokens` (what you sent in) and `completion_tokens` (what the model wrote back). They're billed at different rates — output is usually several times more expensive than input — which is why we track them separately.
 
 ```python
 # script_id: day_057_token_latency_visualization/metrics_system
@@ -75,16 +77,16 @@ def call_with_metrics(messages: list, model: str = "gpt-4o-mini") -> tuple[str, 
     return response.choices[0].message.content, metrics
 
 # Usage
-content, metrics = call_with_metrics(
+content, m = call_with_metrics(
     [{"role": "user", "content": "Explain quantum computing in simple terms"}]
 )
 
 print(f"Response: {content[:100]}...")
 print(f"\nMetrics:")
-print(f"  Prompt tokens: {metrics.prompt_tokens}")
-print(f"  Completion tokens: {metrics.completion_tokens}")
-print(f"  Total tokens: {metrics.total_tokens}")
-print(f"  Latency: {metrics.latency_ms:.0f}ms")
+print(f"  Prompt tokens: {m.prompt_tokens}")
+print(f"  Completion tokens: {m.completion_tokens}")
+print(f"  Total tokens: {m.total_tokens}")
+print(f"  Latency: {m.latency_ms:.0f}ms")
 ```
 
 ---
@@ -141,7 +143,8 @@ class MetricsCollector:
             "avg_tokens_per_call": total_tokens / len(self.calls),
             "avg_latency_ms": statistics.mean(latencies),
             "p50_latency_ms": statistics.median(latencies),
-            "p95_latency_ms": sorted(latencies)[int(len(latencies) * 0.95)] if len(latencies) > 1 else latencies[0],
+            # 95th percentile = the latency 95% of calls come in under (rough index method; fine for a dashboard)
+            "p95_latency_ms": sorted(latencies)[min(int(len(latencies) * 0.95), len(latencies) - 1)],
             "success_rate": sum(1 for c in self.calls if c.success) / len(self.calls)
         }
 
@@ -222,6 +225,9 @@ def print_latency_histogram(calls: List[APICall], buckets: int = 10):
 
     latencies = [c.latency_ms for c in calls]
     min_lat, max_lat = min(latencies), max(latencies)
+    if max_lat == min_lat:  # single call (or all identical) — nothing to bucket
+        print(f"\nAll {len(latencies)} call(s) ~{min_lat:.0f}ms")
+        return
     bucket_size = (max_lat - min_lat) / buckets
 
     # Count per bucket
@@ -255,7 +261,7 @@ def print_token_timeline(calls: List[APICall]):
         bar = "▓" * (call.total_tokens // 100)
         print(f"{time_str} | {bar} {call.total_tokens} (total: {cumulative})")
 
-# Usage
+# Usage (assumes you've already made some tracked_call() calls so metrics.calls is populated)
 print_latency_histogram(metrics.calls)
 print_token_timeline(metrics.calls)
 ```
@@ -339,7 +345,8 @@ Track and estimate costs:
 
 ```python
 # script_id: day_057_token_latency_visualization/metrics_system
-# Pricing per 1K tokens (example rates, check current pricing)
+# Prices are per 1,000 tokens. Providers usually list per 1M — divide by 1000.
+# As of 2026, verify at the provider; rates drift.
 PRICING = {
     "gpt-4o": {"prompt": 0.0025, "completion": 0.01},
     "gpt-4o-mini": {"prompt": 0.00015, "completion": 0.0006},
@@ -370,7 +377,7 @@ def get_cost_summary(calls: List[APICall]) -> Dict:
         "avg_cost_per_call": total_cost / len(calls) if calls else 0
     }
 
-# Usage
+# Usage (assumes metrics.calls has entries from earlier tracked_call() calls)
 cost_summary = get_cost_summary(metrics.calls)
 print(f"Total cost: ${cost_summary['total_cost']:.4f}")
 print(f"By model: {cost_summary['by_model']}")
@@ -380,7 +387,7 @@ print(f"By model: {cost_summary['by_model']}")
 
 ## Real-Time Monitoring
 
-Monitor metrics in real-time:
+Monitor metrics in real-time. This is just a background worker that polls for new entries — the same pattern as a watch-style loop or a metrics sidecar that scrapes every N seconds:
 
 ```python
 # script_id: day_057_token_latency_visualization/metrics_system
@@ -519,4 +526,4 @@ print(cs["total_cost"], cs["by_model"])
 
 ## What's Next?
 
-Now let's learn about **Automated Evaluation** - using LLMs to evaluate agent quality!
+Next, on Day 58, we cover **Automated Evaluation** — using LLMs to evaluate agent quality.

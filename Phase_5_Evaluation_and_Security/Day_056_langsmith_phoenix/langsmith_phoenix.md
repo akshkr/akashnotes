@@ -460,4 +460,4 @@ critical = [r for r in flagged if r["has_critical"]]
 
 ## What's Next?
 
-Now that you can see what's happening, let's learn how to **measure quality** with automated evaluation!
+Now that you can see what's happening with third-party tracing, next we **capture token counts and latency ourselves** and visualize them.
