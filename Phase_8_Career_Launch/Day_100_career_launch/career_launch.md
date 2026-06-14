@@ -144,7 +144,7 @@ If you found yourself more interested in "does this work?" than "how does this w
 Key resources: RAGAS paper, Hamel Husain's blog, Shreya Shankar's research on evaluation.
 
 **Path 4: Production AI Infrastructure**
-If the deployment day was the most satisfying, lean into infrastructure. Study model serving (vLLM, TensorRT-LLM), observability (LangSmith, Langfuse, Helicone), and cost optimization. Learn about caching strategies, prompt compression, and model routing.
+If the deployment day was the most satisfying, lean into infrastructure. Study model serving — the layer that runs an open-source model on your own GPUs and answers requests, like running your own server instead of calling someone else's API (vLLM, TensorRT-LLM) — observability (LangSmith, Langfuse, Helicone), and cost optimization. Learn about caching strategies, prompt compression, and model routing.
 
 Key resources: LangSmith docs, vLLM docs, Anyscale blog, the MLOps community.
 

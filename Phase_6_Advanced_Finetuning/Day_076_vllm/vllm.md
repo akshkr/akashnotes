@@ -39,9 +39,13 @@ flowchart LR
 | Production-ready | No | Dev/small | Yes |
 | OpenAI-compatible API | No | Yes | Yes |
 
+*Illustrative orders of magnitude on a single high-end GPU, not guarantees -- benchmark on your own hardware (Exercise 2).*
+
 ---
 
 ## PagedAttention Explained
+
+As an LLM generates text one token at a time, it must remember the work it already did for every previous token so it does not recompute it -- this saved scratchpad is the KV cache (think of it as a per-request memo table that grows by one entry per generated token). It lives in GPU memory, and longer conversations mean a bigger cache.
 
 The key innovation in vLLM is PagedAttention -- it applies virtual memory concepts from operating systems to the KV cache that LLMs use during generation.
 
@@ -301,6 +305,8 @@ flowchart TB
 
 For models too large for one GPU, vLLM supports tensor parallelism out of the box.
 
+A model is just a huge pile of numbers (its weights). If it will not fit in one GPU, tensor parallelism splits that pile across several GPUs that cooperate on each request -- like sharding a database table across nodes, except the shards work together on every query. You set the GPU count; vLLM handles the splitting.
+
 ```bash
 # Serve a 70B model across 4 GPUs
 vllm serve meta-llama/Llama-3.1-70B-Instruct \
@@ -349,11 +355,14 @@ VLLM_CONFIG = {
     "port": 8000,
     "max_model_len": 4096,
     "gpu_memory_utilization": 0.9,
-    "max_num_seqs": 256,           # Max concurrent sequences
-    "max_num_batched_tokens": 8192, # Max tokens per batch
-    "enforce_eager": False,         # Use CUDA graphs for speed
-    "swap_space": 4,                # CPU swap space in GB
+    "max_num_seqs": 256,           # concurrency cap: max requests in flight at once
+    "max_num_batched_tokens": 8192, # work-per-step cap: max tokens processed per scheduling step
+    "enforce_eager": False,         # let vLLM pre-compile a fast GPU execution path; set True only to debug
+    "swap_space": 4,                # spill KV cache to CPU RAM when GPU memory fills, like OS swap (GB)
 }
+
+# Apply via CLI: vllm serve $model --max-model-len 4096 --max-num-seqs 256 \
+#   --max-num-batched-tokens 8192 --gpu-memory-utilization 0.9 --swap-space 4
 
 # Health check endpoint
 import httpx

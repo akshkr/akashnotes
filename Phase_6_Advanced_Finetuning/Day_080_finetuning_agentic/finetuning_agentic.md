@@ -352,9 +352,12 @@ def evaluate_tool_calls(predictions: list, ground_truth: list) -> dict:
 
 A common production pattern: fine-tune a small open-source model to match or beat GPT-4o on your specific tool-calling task, then serve it locally for 10x cost savings.
 
+You can fine-tune via a hosted API (the OpenAI path shown above) or fine-tune an open model locally with LoRA (Day 079). This benchmark uses the local route.
+
 ```python
 # script_id: day_080_finetuning_agentic/benchmark_comparison
 # Benchmark: compare fine-tuned 8B vs GPT-4o on your tool-calling eval set
+# Illustrative numbers -- not a measured benchmark; real results depend on your task and data.
 
 benchmark_results = {
     "model": ["GPT-4o (baseline)", "Llama-3 8B (base)", "Llama-3 8B (fine-tuned)"],
@@ -362,7 +365,7 @@ benchmark_results = {
     "fuzzy_match":      [0.93, 0.58, 0.95],
     "functional_match": [0.96, 0.65, 0.97],
     "avg_latency_ms":   [1200, 180, 190],
-    "cost_per_1k":      [3.50, 0.00, 0.00],  # Local inference is free
+    "cost_per_1k":      [3.50, 0.00, 0.00],  # ~0 marginal API cost per call -- you still pay upfront for the GPU/hosting
 }
 
 # Print comparison table
@@ -378,8 +381,8 @@ for i in range(len(benchmark_results["model"])):
         f"${benchmark_results['cost_per_1k'][i]:>8.2f}"
     )
 
-# Key insight: the fine-tuned 8B beats GPT-4o on exact match
-# because it learned YOUR specific tool schemas, not generic ones
+# Key insight: a fine-tuned small model can match or beat a big general-purpose
+# model on a narrow, well-covered task because it learned YOUR specific tool schemas
 ```
 
 ---

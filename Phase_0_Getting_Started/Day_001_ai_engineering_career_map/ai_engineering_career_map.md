@@ -41,7 +41,7 @@ Needs: DevOps + ML ops"]
 
 **Data Scientist** — Primarily analytical. They explore data, run experiments, build models to generate insights. The output is often a report, a visualization, or a prototype model. Heavy on statistics and domain knowledge.
 
-**ML Engineer** — Closer to engineering, but focused on the full training pipeline. They optimize model architectures, manage distributed training, and handle the complexity of getting a model from research to production. Deep knowledge of PyTorch, CUDA, and ML theory is required.
+**ML Engineer** — Closer to engineering, but focused on the full training pipeline. They optimize how models are built and trained, manage training across many GPUs, and handle the deep math of getting a model from research to production.
 
 **MLOps Engineer** — The DevOps of ML. They build the infrastructure for training, versioning, serving, and monitoring models. Think Kubernetes, MLflow, Seldon, and SageMaker pipelines.
 

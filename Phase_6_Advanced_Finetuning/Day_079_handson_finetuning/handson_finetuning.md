@@ -67,7 +67,7 @@ import torch
 
 # Configuration
 max_seq_length = 2048
-dtype = None  # Auto-detect (Float16 for older GPUs, BFloat16 for Ampere+)
+dtype = None  # Leave as None -- Unsloth picks the right number format for your GPU automatically (you don't need to choose).
 load_in_4bit = True  # QLoRA: use 4-bit quantization
 
 # Load model and tokenizer
@@ -316,7 +316,7 @@ trainer = SFTTrainer(
 # Show GPU memory before training
 gpu_stats = torch.cuda.get_device_properties(0)
 print(f"GPU: {gpu_stats.name}")
-print(f"VRAM: {gpu_stats.total_mem / 1024**3:.1f} GB")
+print(f"VRAM: {gpu_stats.total_memory / 1024**3:.1f} GB")
 
 # Start training
 trainer_stats = trainer.train()

@@ -248,6 +248,8 @@ training_args = TrainingArguments(
 - A100 80GB ($2-4/hr): Up to 70B with QLoRA
 - H100 80GB ($3-5/hr): Fastest training for any size
 
+Cloud GPU prices shown are rough as-of-2026 figures and vary widely by provider and spot availability — verify current rates.
+
 ---
 
 ## Putting It Together: LoRA with PEFT

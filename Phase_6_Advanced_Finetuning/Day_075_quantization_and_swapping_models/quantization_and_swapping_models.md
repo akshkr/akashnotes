@@ -138,6 +138,8 @@ print(output["choices"][0]["text"])
 
 ---
 
+> **Heads up:** the AWQ and GPTQ examples below need an NVIDIA GPU — `.to("cuda")` will fail on a CPU-only or Apple-Silicon laptop. On a laptop, stick with the GGUF / Ollama path above, which runs on CPU.
+
 ## AWQ Quantization
 
 AWQ (Activation-aware Weight Quantization) preserves important weights:
@@ -229,6 +231,8 @@ print(outputs[0].outputs[0].text)
 ## GPTQ Quantization
 
 Another popular GPU-focused quantization:
+
+GPTQ is an older, very widely supported GPU quantization method. Quality is similar to AWQ — AWQ is usually a touch better and faster — but GPTQ has been around longer, so more tools and model repos ship GPTQ builds. That broader support is the "compatibility" the decision tree means.
 
 ```python
 # script_id: day_075_quantization_and_swapping_models/gptq_usage
