@@ -651,4 +651,4 @@ except (TimeoutError, KeyboardInterrupt):
 
 ## What's Next?
 
-Now you've built a complete agent from scratch! Next, let's explore **frameworks like LangChain and LlamaIndex** that provide these features out of the box.
+Now you've built the core agent loop by hand! Next, let's explore **frameworks like LangChain and LlamaIndex** that provide these features out of the box.

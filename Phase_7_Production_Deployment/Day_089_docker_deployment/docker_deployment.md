@@ -1,6 +1,6 @@
-# Cloud Deployment & Reliability
+# Docker Deployment
 
-Congratulations! You've reached the final lesson. Let's deploy your AI applications to the cloud and make them production-ready!
+Let's package your AI applications into Docker containers so they run the same way everywhere — the foundation for the cloud deployment you'll do on Day 93.
 
 > **Coming from Software Engineering?** This is standard containerized deployment — Dockerfile, docker-compose, health checks, environment variables, secrets. If you've deployed any web service with Docker, this is identical. The AI-specific additions are minimal: you need to pass API keys as secrets, configure model endpoints, and potentially mount volume storage for vector databases. Your Docker, CI/CD, and infrastructure skills are directly applicable.
 

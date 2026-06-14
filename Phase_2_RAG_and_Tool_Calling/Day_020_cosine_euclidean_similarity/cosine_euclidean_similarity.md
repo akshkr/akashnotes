@@ -585,4 +585,4 @@ def normalize(v):
 
 ## What's Next?
 
-You now understand the math of similarity! Next, let's learn about **Vector Databases** - specialized databases designed to store and search embeddings efficiently at scale.
+You now understand the math of similarity! Next, let's learn how to **generate embeddings via API** efficiently — batching, async, caching, and choosing a provider — before we store them in a vector database.

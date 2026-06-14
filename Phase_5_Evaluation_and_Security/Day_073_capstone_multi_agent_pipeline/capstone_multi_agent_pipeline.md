@@ -819,11 +819,11 @@ Tips:
 
 ## What's Next
 
-You've completed Phase 4. You've built the most complex system in this course. Now it's time to make it production-ready.
+You've completed Phase 5 — Evaluation & Security. You've built the most complex system in this course and learned to measure its quality and defend it against attacks.
 
-Phase 5 is about deployment: wrapping this in a real API, adding a UI, containerizing it, and putting it on the internet where someone can actually use it.
+Phase 6 shifts to optimization: running models locally with Ollama, quantization to shrink them, and fine-tuning smaller models for your own use case.
 
-See you on Day 82.
+See you on Day 74.
 
 ---
 

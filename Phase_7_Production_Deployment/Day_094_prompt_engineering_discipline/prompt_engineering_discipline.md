@@ -324,7 +324,7 @@ def llm_judge(
 ) -> EvalResult:
     """Use an LLM to evaluate another LLM's output quality.
     
-    This is the 'LLM-as-judge' pattern from Day 72.
+    This is the 'LLM-as-judge' pattern from Days 58-59.
     """
     judge_prompt = f"""Evaluate this AI response based on the rubric below.
 

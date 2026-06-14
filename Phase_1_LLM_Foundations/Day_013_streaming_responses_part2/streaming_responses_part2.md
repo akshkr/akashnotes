@@ -419,4 +419,4 @@ with client.messages.stream(
 
 ## What's Next?
 
-You now have complete API mastery! Next week, we'll learn about **Structured Output & Data Parsing** - forcing LLMs to return valid JSON using Pydantic!
+You now have complete API mastery! Next, we'll learn about **Structured Output & Data Parsing** - forcing LLMs to return valid JSON using Pydantic!

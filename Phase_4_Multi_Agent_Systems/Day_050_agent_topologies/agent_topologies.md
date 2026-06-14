@@ -458,4 +458,4 @@ Implementation tips:
 
 ## What's Next?
 
-Now let's explore **CrewAI** - a framework designed specifically for multi-agent task orchestration!
+Next, let's build the **Supervisor-Worker pattern** — a supervisor agent that routes work to specialized workers, the most common way to put these topologies into practice.

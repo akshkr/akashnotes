@@ -550,7 +550,7 @@ mindmap
 
 ## Exercises
 
-1. Build an MCP server that exposes your Day 40 RAG chatbot's vector database as a queryable tool.
+1. Build an MCP server that exposes your Day 34 RAG chatbot's vector database as a queryable tool.
 2. Create a simple MCP server for a REST API you use (weather, news, etc.) and connect it to Claude Desktop.
 3. Add a `search_schema` tool to the database server that finds tables matching a keyword.
 4. Write an MCP server that exposes your local git repository: `git_log`, `git_diff`, `git_status` tools.

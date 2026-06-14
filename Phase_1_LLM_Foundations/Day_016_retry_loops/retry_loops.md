@@ -686,9 +686,9 @@ messages.append({"role": "user", "content": f"Error: {e}. Please fix."})
 
 ---
 
-## Congratulations!
+## How Far You've Come
 
-You've completed **Month 1**! You now understand:
+You're almost through the Phase 1 foundations. You now understand:
 - How LLMs work (Transformers, tokenization, sampling)
 - Advanced prompting (few-shot, CoT, system prompts)
 - API mastery (SDKs, async, streaming)

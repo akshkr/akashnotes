@@ -332,4 +332,4 @@ You now understand the three pillars of LLM interaction:
 2. How they see text (Tokenization)
 3. How to control their output (Sampling Parameters)
 
-Next week, we'll dive into **Advanced Prompting Techniques** - the art of communicating effectively with LLMs to get exactly what you want!
+Next, we'll dive into **Advanced Prompting Techniques** - the art of communicating effectively with LLMs to get exactly what you want!

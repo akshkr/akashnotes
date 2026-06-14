@@ -619,4 +619,4 @@ Tips:
 
 ## What's Next?
 
-Now let's learn about **Safe Sandboxing** - running agent code securely with Docker!
+Next, let's learn about **Output Sanitization** — cleaning what the agent sends back to users (PII, harmful content, injection echoes) before it ever reaches them.

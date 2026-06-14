@@ -1,6 +1,6 @@
 # Running Models Locally with Ollama
 
-Welcome to Month 6! You've learned to build powerful AI systems. Now let's explore running models **locally** - no API calls, no costs, complete privacy.
+Welcome to Phase 6! You've learned to build powerful AI systems. Now let's explore running models **locally** - no API calls, no costs, complete privacy.
 
 > **Coming from Software Engineering?** Ollama is like Docker for ML models — you `pull` a model, `run` it, and it exposes a local API on a port. If you've used Docker Hub to pull images and run containers locally, or even Homebrew to install services, the workflow is nearly identical. The local API is OpenAI-compatible, so your existing API integration code works unchanged — just swap the base URL to `localhost:11434`.
 
