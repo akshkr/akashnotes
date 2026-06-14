@@ -77,3 +77,37 @@ model/price/cross-reference agreeing with `REFERENCE.md`.
 2. P1 checkpoints, capstone threading, right-sizing.
 3. P1/P2 gap swap-map + provider standardization.
 4. Ongoing quarterly accuracy refresh.
+
+---
+
+## Batch 5 backlog (from the 2026-06 multi-agent review — needs author sign-off)
+
+The review applied ~1,120 single-file findings in place (see `CHANGELOG.md`).
+These items were held because they touch **content across multiple days**, the
+**day map**, or **provider strategy** — high blast radius per CLAUDE.md §7.
+Rule for all of them: **repurpose in place, keep day numbers, no renumber.**
+
+### A — Cross-day consolidation (PROPOSED; awaiting approval)
+
+| # | Overlap | Proposed resolution (no renumber) |
+|---|---|---|
+| A1 | **D089 Docker ↔ D093 Cloud** (substantial duplication; reliability patterns also in D090) | D089 = containerizing only (Dockerfile/Compose/health probes). D093 = deploying that image to cloud (Render/Railway/AWS/GCP, CI/CD, secrets). Move retry/circuit-breaker reliability to live **only in D090**; D089/D093 link to it. |
+| A2 | **D044 Checkpoints ↔ D045 Time-Travel** | D045 stays the canonical time-travel home; D044's subsection already teasered to a pointer. Confirm no remaining code overlap. |
+| A3 | **D069 HITL ↔ D072 Injecting Feedback** (069–071 are HITL×3) | D072 = canonical "inject feedback into agent state"; trim D069's overlapping feedback section to a pointer. Optionally free one of 069–071 for the gap-topic swap below. |
+| A4 | **D047 Debugging re-teaches D045 time-travel** | Trim D047's LangGraph time-travel re-teach to a one-line pointer to D045; keep D047 on logging/tracing/failure modes. |
+
+### B — Long-day trims (judgment calls)
+- **D026** context injection (741 lines) and **D044** (692) exceed the 400–650 band. Trim *duplicated/secondary* sections only; do not cut on-topic content.
+
+### C — Within-day dedup
+- **D083** fastapi two SSE sections — **resolved** in Batches 2-4 (differentiated + `[DONE]` standardized).
+
+### D — Provider standardization
+- Phase 7 (and D052) lean OpenAI while the course centers Anthropic. The review
+  only fixed internal contradictions + added setup notes; a full standardization
+  pass (pick one primary provider, show the other as a labeled aside) remains a
+  product decision. Pairs with the long-standing open item in §"P2".
+
+### Related existing swap-map (P1/P2 above, still open)
+069–071 → retrieval eval · 067 → PII/privacy · 092 → reranking depth · 046 →
+structured outputs. A3's freed HITL slot could feed the retrieval-eval swap.
