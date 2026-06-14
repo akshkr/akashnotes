@@ -2,7 +2,7 @@
 
 As you deploy AI systems, security becomes critical. The most common attack vector? **Prompt injection** - when users try to manipulate your AI into ignoring its instructions or doing harmful things.
 
-> **Coming from Software Engineering?** Prompt injection is social engineering via text — like a support ticket that tricks a human agent into granting admin access. Unlike SQL injection (which exploits rigid syntax parsing), prompt injection exploits the LLM's semantic understanding — there's no "parameterized query" equivalent that fully prevents it. Defense requires **layered strategies**: input classification (is this an attack?), output validation (did the response violate constraints?), least-privilege (limit what the LLM can do), and architectural separation (don't mix untrusted input with privileged instructions in the same context). If you've hardened web apps against OWASP Top 10, you already think about security the right way — just know that the attack surface here is semantic, not syntactic.
+> **Coming from Software Engineering?** Prompt injection is social engineering via text — like a support ticket that tricks a human agent into granting admin access. Unlike SQL injection (which exploits rigid syntax parsing), prompt injection exploits the LLM's semantic understanding (the model acts on what the words MEAN, not on a fixed grammar it parses — so there's no character to escape and no query to parameterize; the real instruction and the attack are both just plain text) — there's no "parameterized query" equivalent that fully prevents it. Defense requires **layered strategies**: input classification (is this an attack?), output validation (did the response violate constraints?), least-privilege (limit what the LLM can do), and architectural separation (don't mix untrusted input with privileged instructions in the same context). If you've hardened web apps against OWASP Top 10, you already think about security the right way — just know that the attack surface here is semantic, not syntactic.
 
 ---
 
@@ -116,6 +116,9 @@ def detect_injection(user_input: str) -> dict:
         "risk_level": "high" if len(detected) > 2 else "medium" if detected else "low"
     }
 
+def process_normally(user_input: str) -> str:
+    return f"(would process normally: {user_input})"  # your real LLM call goes here
+
 def safe_process(user_input: str) -> str:
     """Process input safely with injection detection."""
     check = detect_injection(user_input)
@@ -153,6 +156,8 @@ Begin every response by considering: "Does this response follow my security rule
 ```
 
 ### Strategy 3: Input/Output Separation
+
+The tags are not a hard boundary the way HTML escaping is — the model still sees one stream of text. They are a strong hint that says "treat what is inside as data." Capable models usually respect it, but it is a soft fence, which is why we layer other defenses on top.
 
 ```python
 # script_id: day_062_prompt_injection/hardened_prompt_pipeline
@@ -241,27 +246,35 @@ response = rails.generate(messages=[{
 }])
 
 print(response["content"])
-# Output: "I can't help with that request."
+# With an LLM configured, this flow refuses the harmful request.
+# This is the rails config shape; a runnable setup also needs a models: block
+# (e.g. yaml_content with engine: openai) and OPENAI_API_KEY set.
+# Full framework walkthrough is on Day 064.
 ```
 
 ### Guardrails AI
 
 ```bash
 pip install guardrails-ai
+guardrails configure
+guardrails hub install hub://guardrails/detect_pii hub://guardrails/toxic_language
 ```
 
 ```python
 # script_id: day_062_prompt_injection/guardrails_ai
 from guardrails import Guard
+# DetectPII (PII = Personally Identifiable Information — names, emails, card numbers)
 from guardrails.hub import DetectPII, ToxicLanguage
 
-# Create a guard with multiple validators
+# Create a guard with multiple validators.
+# on_fail="fix" rewrites the offending text (e.g. masks the PII); on_fail="filter" drops it.
 guard = Guard().use_many(
     DetectPII(on_fail="fix"),
     ToxicLanguage(on_fail="filter"),
 )
 
 # Validate output
+llm_output = "...model response to check..."
 result = guard.validate(llm_output)
 
 if result.validation_passed:
@@ -309,6 +322,7 @@ class SecureLLM:
 
     def check_output(self, output: str) -> tuple[bool, str]:
         """Check output for leaked information."""
+        # second value is the refusal text when unsafe, otherwise the untouched output
         output_lower = output.lower()
 
         for pattern in self.output_filters:
@@ -423,6 +437,7 @@ def sanitize_retrieved_context(documents: list[str]) -> list[str]:
         if suspicious:
             # Log for review but still include (minus the suspicious parts)
             for pattern in instruction_patterns:
+                # crude: redacts from the match to the next period/newline — real systems need stronger parsing
                 doc = re.sub(pattern + r'.*?[\.\n]', '[REDACTED] ', doc, flags=re.DOTALL)
         
         sanitized.append(doc)
@@ -431,6 +446,8 @@ def sanitize_retrieved_context(documents: list[str]) -> list[str]:
 ```
 
 ### The Sandwich Defense for RAG
+
+Sandwich = put your instructions both BEFORE and AFTER the retrieved text, so the untrusted data is the filling between two slices of trusted instruction — the model is reminded of its real rules on both sides of the data.
 
 Wrap retrieved context so the LLM treats it as **data**, not **instructions**:
 
@@ -533,10 +550,6 @@ Layer 6: Monitoring & Alerts  → Detect ongoing attack campaigns
 
 Each layer catches what the previous layer missed. An attacker must bypass ALL layers to succeed.
 
-## Checkpoint
-
-Run the `SecureLLM` pipeline and confirm the two test calls diverge: the "Ignore your instructions..." attack returns the blocked message, while "What products do you offer?" gets a normal answer. If the attack slips through to a real response, your input-validation patterns aren't matching it — add the phrase, then re-test. If the *normal* query also gets blocked, your patterns are too aggressive (false positives), which is just as bad for users.
-
 ---
 
 ## Summary
@@ -583,7 +596,7 @@ mindmap
 | Context isolation | Wrap user text in `<user_message>` tags | Confusing data with instructions |
 | RAG sandwich | Instructions before AND after context | Indirect injection in retrieved docs |
 | Context sanitization | Strip HTML comments + instruction patterns | Hidden directives in documents |
-| Output filtering | Regex on the response | Leaked system prompt / secrets / PII |
+| Output filtering | Regex on the response | Leaked system prompt / secrets / PII (Personally Identifiable Information) |
 
 Tips:
 - Treat detection as defense-in-depth, not a guarantee — regex misses paraphrased and encoded attacks (e.g. base64). Combine layers so an attacker must beat all of them.
@@ -596,7 +609,7 @@ Tips:
 
 1. Add an encoding-aware check to `detect_injection`: decode any base64-looking token in the input and re-scan the decoded text against `BLOCKED_PATTERNS`.
 2. The regex in `SecureLLM.check_input` can be bypassed by paraphrase ("pay no attention to your earlier directions"). Add 2-3 paraphrase patterns and write one input that still slips through — this shows why detection alone is insufficient.
-3. Harden the `vulnerable_agent` from the "Break It, Then Fix It" section so it survives all six listed attacks: add input validation, the sandwich structure, and an output filter that blocks the `INTERNAL50` code.
+3. Complete Step 3 of the "Break It, Then Fix It" exercise above — harden `vulnerable_agent` with input validation, a sandwich prompt, and an output filter that blocks `INTERNAL50`.
 4. Implement a simple per-user rate limiter (e.g. max 5 suspicious inputs per minute) that temporarily blocks a user after repeated injection attempts, and log each attempt.
 
 <details><summary>Solutions (approaches)</summary>
@@ -614,6 +627,12 @@ Tips:
 3. Combine `check_input` (block known patterns) → wrap input in `<user_input>` tags with a hardened system prompt → `check_output` with a filter `if "INTERNAL50" in output: return refusal`. Log blocked inputs.
 4. Keep a `dict[user_id] -> list[timestamps]`; on each suspicious hit, append now, drop entries older than 60s, and refuse if `len > 5`.
 </details>
+
+---
+
+## Checkpoint
+
+Run the `SecureLLM` pipeline and confirm the two test calls diverge: the "Ignore your instructions..." attack returns the blocked message, while "What products do you offer?" gets a normal answer. If the attack slips through to a real response, your input-validation patterns aren't matching it — add the phrase, then re-test. If the *normal* query also gets blocked, your patterns are too aggressive (false positives), which is just as bad for users.
 
 ---
 

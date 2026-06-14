@@ -17,8 +17,8 @@ Let's get coding!
 pip install openai anthropic
 
 # Or add to requirements.txt
-# openai>=1.0.0
-# anthropic>=0.18.0
+# openai          (use the latest)
+# anthropic       (use the latest — the messages API shown here needs a recent version)
 ```
 
 ### API Keys Setup
@@ -91,6 +91,7 @@ result = simple_chat("What is Python in one sentence?")
 print(result)
 # 💰 This call costs ~$0.00001 with GPT-4o-mini (~20 tokens in, ~20 out)
 # With GPT-4o it would be ~$0.0003 — 30x more. Always know your model's pricing!
+# Prices as of 2026-06; verify current rates in REFERENCE.md / at the provider.
 ```
 
 ### Understanding the Response Object
@@ -116,6 +117,8 @@ print("Created:", response.created)
 print("\nChoices:", len(response.choices))
 choice = response.choices[0]
 print("Finish reason:", choice.finish_reason)
+# finish_reason = WHY it stopped: "stop" = finished normally;
+# "length" = hit max_tokens and got cut off, like a truncated HTTP response.
 print("Message role:", choice.message.role)
 print("Message content:", choice.message.content)
 
@@ -128,6 +131,7 @@ print("  Total tokens:", response.usage.total_tokens)
 # 💰 Cost estimation (always track this!)
 # GPT-4o: $2.50/1M input, $10.00/1M output
 # GPT-4o-mini: $0.15/1M input, $0.60/1M output
+# Prices as of 2026-06; verify current rates in REFERENCE.md / at the provider.
 input_cost = response.usage.prompt_tokens * 2.50 / 1_000_000
 output_cost = response.usage.completion_tokens * 10.00 / 1_000_000
 print(f"\n  Estimated cost (GPT-4o): ${input_cost + output_cost:.6f}")
@@ -166,12 +170,12 @@ client = OpenAI()
 def advanced_chat(
     messages: list,
     model: str = "gpt-4o-mini",
-    temperature: float = 0.7,
-    max_tokens: int = 1000,
-    top_p: float = 1.0,
-    frequency_penalty: float = 0,
-    presence_penalty: float = 0,
-    stop: list = None
+    temperature: float = 0.7,      # higher = more random (Day 4)
+    max_tokens: int = 1000,        # caps reply length
+    top_p: float = 1.0,            # alternative to temperature (Day 4)
+    frequency_penalty: float = 0,  # discourage repeating words (Day 4)
+    presence_penalty: float = 0,   # discourage repeating words (Day 4)
+    stop: list = None              # strings that end generation
 ) -> dict:
     """
     Make an advanced chat completion request with all common parameters.
@@ -226,7 +230,9 @@ client = Anthropic()
 def simple_claude_chat(message: str) -> str:
     """Make a simple message request to Claude."""
     response = client.messages.create(
-        model="claude-sonnet-4-5",
+        model="claude-sonnet-4-6",
+        # max_tokens caps how long the reply can be. OpenAI defaults it for you;
+        # Anthropic makes you set it, so the API can never run away and bill you for a giant response.
         max_tokens=1024,
         messages=[
             {"role": "user", "content": message}
@@ -248,7 +254,7 @@ from anthropic import Anthropic
 client = Anthropic()
 
 response = client.messages.create(
-    model="claude-sonnet-4-5",
+    model="claude-sonnet-4-6",
     max_tokens=1024,
     messages=[{"role": "user", "content": "Hello!"}]
 )
@@ -258,8 +264,12 @@ print("Response type:", type(response))
 print("ID:", response.id)
 print("Model:", response.model)
 print("Stop reason:", response.stop_reason)
+# stop_reason: "end_turn" = done; "max_tokens" = truncated. Same idea, different label.
 
 # The content (can be multiple blocks!)
+# Anthropic always returns content as a LIST of blocks (text, images, tool calls).
+# Today it is a single text block, so content[0].text works — like a response
+# that is always an array even when it usually has one element.
 print("\nContent blocks:", len(response.content))
 for i, block in enumerate(response.content):
     print(f"  Block {i} type:", block.type)
@@ -276,7 +286,7 @@ flowchart TB
     subgraph "Anthropic Response"
         R["Message"]
         R --> ID["id: 'msg_...'"]
-        R --> Model["model: 'claude-sonnet-4-5'"]
+        R --> Model["model: 'claude-sonnet-4-6'"]
         R --> SR["stop_reason: 'end_turn'"]
         R --> Content["content: [...]"]
         R --> Usage["usage: {...}"]
@@ -301,7 +311,7 @@ client = Anthropic()
 def advanced_claude_chat(
     messages: list,
     system: str = None,
-    model: str = "claude-sonnet-4-5",
+    model: str = "claude-sonnet-4-6",
     max_tokens: int = 1024,
     temperature: float = 1.0,
     top_p: float = None,
@@ -320,6 +330,7 @@ def advanced_claude_chat(
     # Add optional parameters
     if system:
         kwargs["system"] = system
+    # 1.0 is the API default, so we omit it to keep the request minimal; pass any other value to override.
     if temperature != 1.0:
         kwargs["temperature"] = temperature
     if top_p is not None:
@@ -343,7 +354,7 @@ result = advanced_claude_chat(
         {"role": "user", "content": "Write a Python function to reverse a string."}
     ],
     system="You are a helpful coding assistant. Write clean, well-documented code.",
-    model="claude-sonnet-4-5",
+    model="claude-sonnet-4-6",
     temperature=0,  # Deterministic for code
     max_tokens=500
 )
@@ -364,6 +375,10 @@ Pass a list of content blocks instead of a plain string. Mix `text` and `image_u
 
 ```python
 # script_id: day_010_openai_anthropic_sdks_part1/openai_vision
+from openai import OpenAI
+
+client = OpenAI()
+
 response = client.chat.completions.create(
     model="gpt-4o",
     messages=[
@@ -388,12 +403,15 @@ Anthropic requires base64-encoded image data (or a URL source). The content bloc
 ```python
 # script_id: day_010_openai_anthropic_sdks_part1/anthropic_vision
 import base64
+from anthropic import Anthropic
+
+client = Anthropic()
 
 with open("document.png", "rb") as f:
     image_data = base64.standard_b64encode(f.read()).decode("utf-8")
 
 response = client.messages.create(
-    model="claude-sonnet-4-5",
+    model="claude-sonnet-4-6",
     max_tokens=1024,
     messages=[
         {
@@ -450,7 +468,7 @@ mindmap
       Multiply tokens by price for cost
     More inputs
       Vision: text + image blocks
-      Async clients for concurrency
+      Async clients for concurrency (demonstrated in Day 11)
 ```
 
 ## Quick Reference

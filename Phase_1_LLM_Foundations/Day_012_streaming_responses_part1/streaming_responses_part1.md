@@ -38,6 +38,8 @@ flowchart LR
 
 ## OpenAI Streaming Basics
 
+Each chunk's `delta` is the NEW text added since the last chunk — not the full answer rebuilt each time. Coming from SWE: think of it like a git diff or an append-only log line, not a fresh snapshot. To get the whole reply you concatenate the deltas in order.
+
 ```python
 # script_id: day_012_streaming_responses_part1/basic_stream_chat
 from openai import OpenAI
@@ -124,6 +126,10 @@ Finish reason: None
 ...
 ```
 
+Notice Chunk 0 has an empty delta — the first chunk usually just carries metadata (the role/id) before any text starts, and some later chunks are empty too. That is why every loop checks `if content:` before printing — to skip the empty pieces.
+
+`finish_reason` is `None` on every chunk until the last one, where it becomes `"stop"` (the model finished on its own) or `"length"` (it hit max_tokens and got cut off). It is your signal that the stream is done and whether the answer was truncated.
+
 ```mermaid
 flowchart TB
     subgraph "Stream Chunks"
@@ -152,7 +158,7 @@ client = Anthropic()
 def stream_claude(prompt: str):
     """Stream a Claude response."""
     with client.messages.stream(
-        model="claude-sonnet-4-5",
+        model="claude-sonnet-4-6",
         max_tokens=1024,
         messages=[{"role": "user", "content": prompt}]
     ) as stream:
@@ -166,6 +172,8 @@ stream_claude("Write a haiku about Python")
 
 ### Anthropic Stream Events
 
+Claude emits events in order: `message_start` (the reply is beginning), `content_block_start`, a series of `content_block_delta` events (each carrying a `delta` with the next text piece — the Anthropic equivalent of OpenAI's delta), `content_block_stop`, then `message_stop` (done). The code below just confirms this sequence.
+
 ```python
 # script_id: day_012_streaming_responses_part1/anthropic_stream_events
 from anthropic import Anthropic
@@ -175,7 +183,7 @@ client = Anthropic()
 def detailed_claude_stream(prompt: str):
     """Show detailed stream events from Claude."""
     with client.messages.stream(
-        model="claude-sonnet-4-5",
+        model="claude-sonnet-4-6",
         max_tokens=1024,
         messages=[{"role": "user", "content": prompt}]
     ) as stream:
@@ -245,6 +253,7 @@ client = AsyncOpenAI()
 
 async def async_stream(prompt: str) -> str:
     """Async streaming with collection."""
+    # await opens the stream; the async for below then pulls chunks as they arrive (both steps are required)
     stream = await client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[{"role": "user", "content": prompt}],
@@ -319,7 +328,7 @@ asyncio.run(parallel_streams())
 
 ## Checkpoint
 
-Run `stream_chat` and confirm: text appears token-by-token in your terminal instead of all at once after a pause. If it still arrives in one lump, check that you passed `stream=True` and that your `print(..., end="", flush=True)` uses `flush=True` — without the flush, Python buffers stdout and hides the streaming effect.
+Run `stream_chat` and confirm: text appears token-by-token in your terminal instead of all at once after a pause. If it still arrives in one lump, check that you passed `stream=True` and that your `print(..., end="", flush=True)` uses `flush=True` — without the flush, Python buffers stdout and hides the streaming effect. Just like an SSE connection, the tokens arrive as a live stream rather than one buffered payload.
 
 ---
 
@@ -354,12 +363,12 @@ mindmap
 | Get each text piece | `chunk.choices[0].delta.content` | `for text in stream.text_stream:` |
 | Guard empty pieces | `if content:` | text pieces are already non-empty |
 | Inspect raw events | iterate the stream object | `for event in stream:` |
-| Async variant | `AsyncOpenAI()` + `async for chunk in stream` | `AsyncAnthropic()` + `async with ... as stream` |
+| Async variant | `AsyncOpenAI()` + `async for chunk in stream` | same pattern via `AsyncAnthropic()` — see Day 13 |
 | Run several at once | `await asyncio.gather(*tasks)` | same |
 
 ## Exercises
 
-1. **Stream then collect.** Modify `simple_chat` so it prints tokens live *and* returns the full joined string at the end.
+1. **Stream then collect.** Modify `stream_chat` so it prints tokens live *and* returns the full joined string at the end.
 2. **Time the difference.** Measure time-to-first-token for a streaming call vs. total time for a non-streaming call on the same prompt. Which feels faster, and why?
 3. **Add a token counter.** Count the number of streamed chunks and print it after the response completes; compare it to the `usage` token count from a non-streaming call.
 4. **Stream from Anthropic.** Port the OpenAI streaming function to Anthropic using `client.messages.stream(...)` and its `text_stream`.

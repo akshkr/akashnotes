@@ -2,7 +2,7 @@
 
 Make your agent's output beautiful and understandable! This guide shows you how to display rich content in Streamlit and Gradio.
 
-> **Coming from Software Engineering?** This is frontend rendering — taking structured data and displaying it nicely. If you've worked with template engines (Jinja2, Handlebars), component libraries (Material UI), or even just rendered API responses in a UI, these are the same skills. The AI-specific challenge is rendering streaming content (tokens arriving one by one) and displaying agent "thinking" steps transparently, which is like building a live log viewer.
+> **Coming from Software Engineering?** This is frontend rendering — taking structured data and displaying it nicely. If you've worked with template engines (Jinja2, Handlebars), component libraries (Material UI), or even just rendered API responses in a UI, these are the same skills. The AI-specific challenge is rendering streaming content (the model emits its answer in small chunks — words or word-pieces called tokens — one at a time, so the UI updates as they arrive) and displaying agent "thinking" steps transparently, which is like building a live log viewer.
 
 ---
 
@@ -30,7 +30,7 @@ Here's what I found:
 Learn more at [this link](https://example.com).
 """)
 
-# With syntax highlighting
+# Triple-backtick fences inside st.markdown render as a highlighted code block; for single snippets st.code() (below) is preferred.
 st.markdown("""
 ```python
 def hello():
@@ -69,7 +69,8 @@ with gr.Blocks() as demo:
         response = "This is the agent's response..."
         return format_response(response)
 
-    gr.Textbox().submit(process, outputs=output)
+    inp = gr.Textbox()
+    inp.submit(process, inputs=inp, outputs=output)
 
 demo.launch()
 ```
@@ -77,6 +78,8 @@ demo.launch()
 ---
 
 ## Tables Display
+
+Use `st.table` for a static result and `st.dataframe` when users need to sort, scroll, or interact.
 
 ### Streamlit Tables
 
@@ -87,9 +90,9 @@ import pandas as pd
 
 # From dictionary
 data = {
-    "Model": ["GPT-4", "Claude", "Llama 2"],
-    "Parameters": ["1.7T", "Unknown", "70B"],
-    "Strengths": ["Reasoning", "Safety", "Open Source"]
+    "Model": ["claude-opus-4-8", "gpt-4o", "llama-3.1-70b"],
+    "Provider": ["Anthropic", "OpenAI", "Local"],
+    "Best for": ["Reasoning", "Vision", "Self-hosting"]
 }
 df = pd.DataFrame(data)
 
@@ -97,7 +100,7 @@ df = pd.DataFrame(data)
 st.table(df)
 
 # Interactive dataframe
-st.dataframe(df, use_container_width=True)
+st.dataframe(df, width="stretch")
 
 # Editable dataframe
 edited_df = st.data_editor(df)
@@ -105,7 +108,7 @@ edited_df = st.data_editor(df)
 # Styled dataframe
 st.dataframe(
     df.style.highlight_max(axis=0),
-    use_container_width=True
+    width="stretch"
 )
 ```
 
@@ -138,7 +141,7 @@ def display_search_results(results: list):
             ),
             "url": st.column_config.LinkColumn("Source")
         },
-        use_container_width=True
+        width="stretch"
     )
 
 # Example usage
@@ -155,6 +158,8 @@ display_search_results(results)
 ## Agent Reasoning Steps
 
 ### Expandable Steps
+
+Agents that reason step-by-step (the thought -> action -> observation loop from Phase 3) emit a list of typed steps; here we just render each type differently — like a structured trace or step log.
 
 ```python
 # script_id: day_088_displaying_content_ui/expandable_reasoning
@@ -392,6 +397,7 @@ def streaming_response(message, history):
 
 demo = gr.ChatInterface(
     streaming_response,
+    type="messages",
     title="Streaming Agent"
 )
 demo.launch()
@@ -494,12 +500,22 @@ for word in response.split():
 ## Exercises
 
 1. **Syntax-highlighted code.** Render an agent response containing a fenced code block with correct language highlighting.
-2. **Streaming markdown.** Stream a response token-by-token with a trailing cursor (`▌`), re-rendering markdown only when a block completes to avoid flicker.
+2. **Streaming markdown.** Stream a response chunk-by-chunk (here we approximate tokens with words) with a trailing cursor (`▌`), re-rendering markdown only when a block completes to avoid flicker.
 3. **Interactive table.** Display a results table with a progress/score column rendered as a bar.
 4. **Collapsible reasoning.** Put the agent's intermediate steps behind an expander so the final answer stays front and center.
+
+<details>
+<summary>Solutions (approaches)</summary>
+
+1. Pass the snippet to `st.code(code, language="python")`, or embed a fenced block inside `st.markdown(...)` for inline rendering.
+2. Accumulate words into a buffer, append `▌` as a cursor, and re-render via `placeholder.markdown(...)` only on block boundaries (end of a sentence or list item) to avoid mid-render flicker.
+3. Use `st.column_config.ProgressColumn` on the score column so the value renders as a bar.
+4. Wrap each intermediate step in `st.expander(...)` (collapsed by default) and show the final answer outside the expanders.
+
+</details>
 
 ---
 
 ## What's Next?
 
-Now let's deploy your agent to the **cloud** with Docker and production best practices!
+Next, we'll containerize your agent with Docker and prepare it for production deployment.

@@ -1,8 +1,8 @@
 # Sequential and Parallel Processes in CrewAI
 
-How do your tasks execute? CrewAI supports different process types: sequential (one after another) and hierarchical (manager delegates). This guide shows you how to control task execution flow.
+CrewAI gives you two independent levers. The PROCESS controls who runs the tasks: sequential (tasks run one after another, in order) or hierarchical (a manager agent decides who does what). Separately, `async_execution` lets independent tasks run at the same time within either process. This guide covers all three. (Note: there is no `Process.parallel` — parallelism comes from async tasks, not a process type.)
 
-> **Coming from Software Engineering?** Sequential vs. parallel execution is the same tradeoff you face with any pipeline: sequential is simpler to debug and guarantees ordering, parallel is faster but requires coordination. Think of it like synchronous vs. async request handling, or a Makefile with vs. without `-j` flag. The DAG dependency concepts from build systems (Make, Bazel, Gradle) apply directly here.
+> **Coming from Software Engineering?** Sequential vs. parallel execution is the same tradeoff you face with any pipeline: sequential is simpler to debug and guarantees ordering, parallel is faster but requires coordination. Think of it like synchronous vs. async request handling, or a Makefile with vs. without `-j` flag. The DAG (directed acyclic graph — the dependency graph of which task must finish before which) concepts from build systems (Make, Bazel, Gradle) apply directly here.
 
 ---
 
@@ -28,6 +28,7 @@ flowchart TB
 |---------|-------------|
 | Sequential | Tasks depend on each other |
 | Hierarchical | Manager coordinates workers |
+| Async tasks | Run independent tasks concurrently within either process |
 
 ---
 
@@ -139,6 +140,8 @@ manager = Agent(
 )
 
 # Create tasks (manager will assign these)
+# Note: no agent= here on purpose — under a hierarchical process the manager
+# decides which agent handles each task.
 research_task = Task(
     description="Research the topic of machine learning in healthcare",
     expected_output="Comprehensive research findings"
@@ -200,13 +203,15 @@ crew = Crew(
 )
 ```
 
-> **Note:** CrewAI 0.70+ may have changed this API. The `manager_llm` parameter may now require a model object (e.g., `ChatOpenAI(model="gpt-4o")`) rather than a plain string. Check the [CrewAI docs](https://docs.crewai.com) for the latest syntax.
+> **Note:** A plain string model id like `manager_llm="gpt-4o"` works in current CrewAI and is the idiomatic form. If you want explicit LLM configuration, use CrewAI's own wrapper — `from crewai import LLM; manager_llm=LLM(model="gpt-4o")` — not LangChain's `ChatOpenAI`. Verify against the [CrewAI docs](https://docs.crewai.com) for your installed version.
 
 ---
 
 ## Async Task Execution
 
 Run independent tasks in parallel:
+
+`process=Process.sequential` still controls the overall walk through the task list. `async_execution=True` is per-task: when CrewAI hits a run of async tasks it launches them together instead of waiting one at a time. The first non-async task that lists them in `context` acts as a join point (like awaiting `Promise.all`, or a WaitGroup) — it blocks until all the async tasks it depends on finish.
 
 ```python
 # script_id: day_055_sequential_parallel/async_task_execution
@@ -319,6 +324,8 @@ crew = Crew(
 
 Combine sequential and async for optimal flow:
 
+This is the same dependency graph a build system computes: `async_execution` marks the targets with no edges between them (free to run in parallel), and `context` lists the edges (what must finish first).
+
 ```python
 # script_id: day_055_sequential_parallel/mixing_approaches
 # Phase 1: Parallel research
@@ -389,7 +396,7 @@ flowchart TB
 
 ## Execution Control
 
-### Max Iterations
+### Rate Limiting (max_rpm)
 
 ```python
 # script_id: day_055_sequential_parallel/max_iterations
@@ -469,9 +476,9 @@ crew = Crew(
     verbose=True  # See what's happening
 )
 
-# Note: older CrewAI accepted integer verbosity levels (verbose=2). Current
-# CrewAI (0.70+) takes a boolean only — use verbose=True. Check the
-# [CrewAI docs](https://docs.crewai.com) for the latest syntax.
+# Note: current CrewAI takes a boolean only — use verbose=True. (Older 0.x
+# releases accepted integer levels like verbose=2.) Check the CrewAI docs for
+# your installed version.
 crew = Crew(
     agents=[...],
     tasks=[...],
@@ -480,10 +487,6 @@ crew = Crew(
 ```
 
 ---
-
-## Checkpoint
-
-Run the Async Task Execution example: mark `task1`/`task2`/`task3` with `async_execution=True` and give the `synthesis_task` `context=[task1, task2, task3]`. The three research tasks should run concurrently while the synthesis task waits for all three before starting — time it against a fully sequential version and the parallel run should be noticeably faster. If the synthesis task starts before the others finish (or errors on missing context), confirm it has `async_execution=False` and lists all three upstream tasks in its `context`.
 
 ## Summary
 
@@ -561,6 +564,12 @@ synth = Task(..., context=[t1, t2], async_execution=False)
 
 4. Follow the "Mixing Approaches" section verbatim — it already wires the four phases via `async_execution` flags and `context` lists.
 </details>
+
+---
+
+## Checkpoint
+
+Run the Async Task Execution example: mark `task1`/`task2`/`task3` with `async_execution=True` and give the `synthesis_task` `context=[task1, task2, task3]`. The three research tasks should run concurrently while the synthesis task waits for all three before starting — time it against a fully sequential version and the parallel run should be noticeably faster. If the synthesis task starts before the others finish (or errors on missing context), confirm it has `async_execution=False` and lists all three upstream tasks in its `context`. Wrap `crew.kickoff()` in `time.perf_counter()` before and after to measure. Note: parallel speedup only shows up when the tasks really overlap — give each async task its own agent, and watch for provider rate limits, which can serialize the calls anyway.
 
 ---
 

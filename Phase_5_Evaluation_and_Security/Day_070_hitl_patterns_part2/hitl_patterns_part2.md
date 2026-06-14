@@ -8,7 +8,7 @@ For critical workflows, require approval at multiple stages:
 
 ```python
 # script_id: day_070_hitl_patterns_part2/multi_stage_approval_pipeline
-from typing import Callable, List, Dict, Any
+from typing import Callable, List, Dict, Any, Optional
 from dataclasses import dataclass
 from enum import Enum
 
@@ -23,7 +23,7 @@ class Stage:
     name: str
     action: Callable
     requires_approval: bool = True
-    approvers: List[str] = None
+    approvers: Optional[List[str]] = None
 
 class ApprovalPipeline:
     """Multi-stage pipeline with human approvals."""
@@ -111,7 +111,7 @@ result = pipeline.run("Project update for stakeholders")
 
 ## LangGraph Human-in-the-Loop
 
-LangGraph provides built-in HITL support through **interrupt** nodes and **breakpoints** that pause graph execution for human review:
+LangGraph pauses a graph by marking a node as a breakpoint with `interrupt_before` — the named node (`human_review`) becomes a checkpoint where execution stops and waits for input:
 
 ```python
 # script_id: day_070_hitl_patterns_part2/langgraph_hitl_interrupt
@@ -131,8 +131,9 @@ def plan_step(state: AgentState) -> AgentState:
     return {"plan": f"Proposed plan for: {state['task']}"}
 
 def human_review(state: AgentState) -> AgentState:
-    """This node is interrupted — human provides feedback."""
-    # The graph pauses here; human input is injected via update_state()
+    """Checkpoint node where the graph pauses for human feedback."""
+    # Intentionally a no-op placeholder — the pause is caused by interrupt_before
+    # at compile time, not by code in this node. Human input arrives via update_state().
     return state
 
 def execute_step(state: AgentState) -> AgentState:
@@ -160,6 +161,9 @@ graph.add_conditional_edges("human_review", should_continue, {
 graph.add_edge("execute", END)
 
 # Compile with checkpointer and interrupt
+# MemorySaver is the same checkpointer role from Part 1 — it stores the paused
+# state so the run can resume — just in-memory for demos, vs SqliteSaver when the
+# pause must survive a process restart.
 memory = MemorySaver()
 app = graph.compile(
     checkpointer=memory,
@@ -176,9 +180,15 @@ app.update_state(config, {"human_feedback": "Approved - proceed"})
 
 # Resume execution
 final = app.invoke(None, config)
+# Resume reuses the same thread_id — the checkpointer restores the paused state.
+# A new thread_id would start over from the beginning.
 ```
 
-### Multi-Stage Approval Pipeline
+Think of `thread_id` like a session or transaction ID. The first `invoke` runs the graph until it hits the pause and saves its state under that `thread_id` (like a debugger stopped at a breakpoint). `update_state` patches the human feedback into that saved state. Calling `invoke(None, config)` means "don't start a new run — resume the saved one for this `thread_id` and continue from the pause." The `None` is what distinguishes resume from restart.
+
+### Risk-Based Escalation
+
+Like routing a deploy to different approvers based on target environment — prod needs senior sign-off, dev auto-approves.
 
 ```python
 # script_id: day_070_hitl_patterns_part2/risk_based_escalation
@@ -192,9 +202,13 @@ def classify_risk(state: AgentState) -> Literal["low", "medium", "high"]:
         return "medium"
     return "low"
 
-# Low risk: auto-approve
-# Medium risk: single reviewer
-# High risk: interrupt for senior approval
+# Wire classify_risk in as a conditional edge: low risk skips the pause,
+# medium/high route through human_review before executing.
+graph.add_conditional_edges("plan", classify_risk, {
+    "low": "execute",         # auto-approve, no human pause
+    "medium": "human_review",  # single reviewer
+    "high": "human_review",    # senior approval
+})
 ```
 
 ```mermaid
@@ -235,7 +249,9 @@ action = {
     "recipient": "john@example.com",
     "subject": "Meeting Confirmation",
     "body": "Your meeting is confirmed for tomorrow at 2pm.",
-    "impact": "Email will be sent immediately and cannot be unsent"
+    "details": "Send confirmation email to john@example.com",
+    "impact": "Email will be sent immediately and cannot be unsent",
+    "reversible": False
 }
 ```
 
@@ -265,6 +281,8 @@ def format_approval_request(action: dict, context: dict) -> str:
 ```
 
 ### 3. Timeout Handling
+
+Same instinct as a deny-by-default firewall rule or a circuit breaker that opens when it gets no response — when in doubt, block.
 
 ```python
 # script_id: day_070_hitl_patterns_part2/timeout_handling
@@ -301,20 +319,16 @@ Call `get_approval_with_timeout("test action", timeout=3)` and just don't type a
 mindmap
   root((HITL))
     Patterns
-      Basic approval
-      Breakpoints
-      Feedback injection
-      Confidence-based
-    Tools
-      LangGraph interrupts
+      Multi-stage pipeline
+      Risk-based escalation
+    Mechanics
       LangGraph interrupt_before
-      LangGraph update_state
-      Custom pipelines
+      update_state resume
+      Timeout fail-closed
     Best Practices
-      Clear descriptions
+      Clear action descriptions
       Provide context
       Handle timeouts
-      Log decisions
 ```
 
 ---
@@ -344,7 +358,7 @@ result = app.invoke({"task": "Deploy"}, config)
 app.update_state(config, {"feedback": "Approved"})
 final = app.invoke(None, config)
 
-# Confidence-based HITL
+# Confidence-based HITL (covered in Part 1): the model self-reports a 0-1 score; pause when it dips below your cutoff.
 if agent_confidence < threshold:
     human_feedback = get_human_input()
 ```
@@ -355,14 +369,14 @@ if agent_confidence < threshold:
 
 1. Extend `ApprovalPipeline` so that a `NEEDS_REVISION` result loops back and re-reviews the revised output (instead of accepting it after a single revision).
 2. Add a `default_on_timeout` parameter to `get_approval_with_timeout` so a caller can choose whether an unanswered prompt defaults to approve or reject — and explain which default is safer for an irreversible action.
-3. Wire `classify_risk` into the LangGraph example so low-risk tasks skip the `interrupt_before=["human_review"]` pause entirely while high-risk tasks still pause.
+3. Extend the `classify_risk` routing above with a fourth `"critical"` tier that requires a second reviewer before executing.
 4. Add a fourth pipeline stage that logs every approval decision (who, what, when, outcome) to an audit trail before the next stage runs.
 
 <details><summary>Solutions (approaches)</summary>
 
 1. After the revision, call `self._get_approval(stage, result)` again inside a `while status == ApprovalStatus.NEEDS_REVISION:` loop so each revision is re-reviewed.
 2. `def get_approval_with_timeout(action, timeout=300, default_on_timeout=False)`; return `default_on_timeout` when the thread is still alive. Safer default for irreversible actions is `False` (reject) — fail closed.
-3. Add a conditional edge from `plan` using `classify_risk`: `"low"` routes straight to `execute`, `"medium"`/`"high"` route to `human_review`.
+3. Add a `"critical"` branch to the `classify_risk` conditional edges that routes to a `second_review` node before `execute`; classify a task critical when it touches both production and data deletion.
 4. Insert a `Stage("Audit", log_decision, requires_approval=False)` whose action appends `{"approver", "stage", "ts", "status"}` to a JSONL file.
 </details>
 
@@ -370,4 +384,4 @@ if agent_confidence < threshold:
 
 ## What's Next?
 
-You've built multi-stage approval pipelines. Next, we'll cover **Breakpoints Design** — placing conditional and risk-based breakpoints so agents pause only when a high-risk operation actually warrants human review.
+You've built multi-stage approval pipelines. Next up is **Day 071 — Breakpoints Design**, where you'll place conditional and risk-based breakpoints so agents pause only when a high-risk operation actually warrants human review.

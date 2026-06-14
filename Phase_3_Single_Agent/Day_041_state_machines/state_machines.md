@@ -63,12 +63,17 @@ class AgentState(TypedDict):
     iteration: int              # Loop counter
 ```
 
+A normal field gets **overwritten** when a node returns it — like assigning a variable (`results = new`). Wrapping a field in `Annotated[list, add]` tells LangGraph to **merge** updates instead: it appends the node's returned list to the existing one (`results += new`, not `results = new`). `add` here is just `operator.add`. This is how history/results accumulate across steps instead of being replaced. (Unlike a Redux reducer that returns the full next state, a LangGraph node returns only the keys it changes and LangGraph merges them in.)
+
 ### 2. Nodes
 
 Functions that process the state:
 
 ```python
 # script_id: day_041_state_machines/node_example
+# fragment
+# Illustrates the SHAPE of a node function — do_research is a placeholder
+# you'd implement; the first complete runnable graph is below.
 def research_node(state: AgentState) -> dict:
     """Do research and update state."""
     # Process state
@@ -82,6 +87,9 @@ Connections between nodes (can be conditional):
 
 ```python
 # script_id: day_041_state_machines/edge_example
+# fragment
+# Illustrates the SHAPE of an edge function — needs_more_research is a placeholder;
+# the first complete runnable graph is below.
 def should_continue(state: AgentState) -> str:
     """Decide which node to go to next."""
     if state["iteration"] >= 5:
@@ -99,18 +107,20 @@ def should_continue(state: AgentState) -> str:
 ```python
 # script_id: day_041_state_machines/first_graph
 from typing import TypedDict, Annotated
+from operator import add
 from langgraph.graph import StateGraph, END
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, AIMessage
 
-# Define state
+# Define state — reducers (Annotated[list, add]) make these fields ACCUMULATE,
+# so each node returns only the NEW items and LangGraph appends them.
 class ResearchState(TypedDict):
-    messages: list
-    research_results: list
+    messages: Annotated[list, add]
+    research_results: Annotated[list, add]
     final_answer: str
 
 # Initialize LLM
-llm = ChatOpenAI(model="gpt-4o", temperature=0)
+llm = ChatOpenAI(model="gpt-4o", temperature=0)  # deterministic / most predictable output (covered earlier)
 
 # Define nodes
 def researcher(state: ResearchState) -> dict:
@@ -122,9 +132,10 @@ def researcher(state: ResearchState) -> dict:
         *messages
     ])
 
+    # Return only the NEW items — the reducers append them to existing state.
     return {
         "research_results": [response.content],
-        "messages": messages + [response]
+        "messages": [response]
     }
 
 def synthesizer(state: ResearchState) -> dict:
@@ -186,13 +197,12 @@ print(result["final_answer"])
 print(app.get_graph().draw_mermaid())
 ```
 
-Output:
+Roughly renders as (conceptual view — the router function isn't drawn as its own node; LangGraph draws conditional edges as dashed, labeled edges straight from the source node to each possible target):
 ```mermaid
 flowchart TD
     __start__ --> research
-    research --> should_continue{should_continue}
-    should_continue -->|research| research
-    should_continue -->|synthesize| synthesize
+    research -.->|research| research
+    research -.->|synthesize| synthesize
     synthesize --> __end__
 ```
 
@@ -203,7 +213,7 @@ flowchart TD
 ```python
 # script_id: day_041_state_machines/agent_with_tools
 from typing import TypedDict, Annotated
-from langgraph.graph import StateGraph, END
+from langgraph.graph import StateGraph, END, add_messages
 from langgraph.prebuilt import ToolNode
 from langchain_openai import ChatOpenAI
 from langchain_core.tools import tool
@@ -216,24 +226,19 @@ def search(query: str) -> str:
 
 @tool
 def calculate(expression: str) -> str:
-    """Calculate mathematical expression."""
-    import ast, operator
-    def safe_eval(node):
-        if isinstance(node, ast.Constant): return node.value
-        elif isinstance(node, ast.BinOp):
-            ops = {ast.Add: operator.add, ast.Sub: operator.sub,
-                   ast.Mult: operator.mul, ast.Div: operator.truediv}
-            return ops[type(node.op)](safe_eval(node.left), safe_eval(node.right))
-        elif isinstance(node, ast.UnaryOp) and isinstance(node.op, ast.USub):
-            return -safe_eval(node.operand)
-        raise ValueError("Unsupported expression")
-    return str(safe_eval(ast.parse(expression, mode='eval').body))
+    """Evaluate a simple math expression."""
+    # Tool internals aren't the point — the point is how the agent loops
+    # tools -> agent. Simplified; use a real expression parser in production.
+    import ast
+    return str(ast.literal_eval(expression))
 
 tools = [search, calculate]
 
-# State
+# State — add_messages is LangGraph's built-in reducer for chat history; it
+# appends each node's returned messages so the full HumanMessage + AIMessage
+# (tool_calls) + ToolMessage ordering is preserved (the API requires it).
 class AgentState(TypedDict):
-    messages: list
+    messages: Annotated[list, add_messages]
 
 # LLM with tools
 llm = ChatOpenAI(model="gpt-4o").bind_tools(tools)
@@ -247,6 +252,8 @@ def agent(state: AgentState) -> dict:
 def should_continue(state: AgentState) -> str:
     """Check if we should use tools or end."""
     last_message = state["messages"][-1]
+    # When the model decides to use a tool, its response carries a populated
+    # tool_calls list; if it's empty/absent the model answered directly, so we stop.
     if hasattr(last_message, "tool_calls") and last_message.tool_calls:
         return "tools"
     return "end"
@@ -420,6 +427,8 @@ print(f"Iterations: {result['iterations']}")
 ## Checkpoint
 
 Run the Cycles and Iteration example with an initial `quality_score` of `0.3` and `max_iterations` of `5`. The `improve` node should loop back into itself, bumping the score by `0.15` each pass, and exit once it crosses `0.9` (or hits the iteration cap) — printing a final score around `0.9` after roughly four iterations. If it exits immediately after one pass, check your `should_improve_more` router: it has to return `"improve"` (mapped back to the same node) until a stop condition is met.
+
+---
 
 ## Summary
 

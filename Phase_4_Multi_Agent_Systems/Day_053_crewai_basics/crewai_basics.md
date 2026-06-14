@@ -2,7 +2,7 @@
 
 CrewAI is a framework for orchestrating **role-playing AI agents**. Think of it as assembling a team where each member has a specific role, backstory, and goal.
 
-> **Coming from Software Engineering?** CrewAI is essentially a dependency injection framework for LLM agents. You define roles (like service interfaces), tasks (like API contracts), and a crew (like a service mesh). If you've used Spring Boot with its component scanning, or even Docker Compose with service definitions, the mental model is similar: declare your components and their relationships, then let the framework handle orchestration.
+> **Coming from Software Engineering?** CrewAI is a workflow/job orchestrator for LLM agents — think Airflow, Celery, or a CI pipeline. You declare workers (agents) by giving each a job description, and tasks that can depend on earlier tasks' output (`context=[...]` is like a CI step's `needs:`). You declare the pieces and their dependencies; the framework runs them in order.
 
 ---
 
@@ -11,10 +11,10 @@ CrewAI is a framework for orchestrating **role-playing AI agents**. Think of it 
 ```mermaid
 flowchart TB
     subgraph "CrewAI Concepts"
-        A["Agents\n(Team members)"]
-        B["Tasks\n(Assignments)"]
-        C["Crew\n(The team)"]
-        D["Process\n(Workflow)"]
+        A["Agents<br/>(Team members)"]
+        B["Tasks<br/>(Assignments)"]
+        C["Crew<br/>(The team)"]
+        D["Process<br/>(Workflow)"]
     end
 
     A --> C
@@ -39,6 +39,17 @@ CrewAI provides:
 pip install crewai crewai-tools
 ```
 
+Every agent is backed by an LLM, and CrewAI reads your provider key from the environment. By default it looks for `OPENAI_API_KEY`; to use Anthropic (this course's convention), set `ANTHROPIC_API_KEY` and point agents at a model:
+
+```python
+# script_id: day_053_crewai_basics/llm_setup
+from crewai import LLM
+
+llm = LLM(model="anthropic/claude-sonnet-4-6")  # then pass llm=llm to each Agent
+```
+
+Without a configured key, `crew.kickoff()` fails with an authentication error. (Verify the exact `LLM()` syntax against current CrewAI docs — its API has shifted between versions.)
+
 ---
 
 ## Core Concepts
@@ -46,6 +57,8 @@ pip install crewai crewai-tools
 ### 1. Agents
 
 Agents are team members with roles and personalities:
+
+`role`, `goal`, and `backstory` are just text that CrewAI stitches into the instructions (system prompt) it sends to the LLM — they steer how the model writes, the same way a well-worded prompt does. There is no real PhD; you are shaping the model's behavior with words.
 
 ```python
 # script_id: day_053_crewai_basics/crew_pipeline
@@ -179,6 +192,8 @@ crew = Crew(
 
 A manager agent coordinates others:
 
+In hierarchical mode the manager is an extra LLM agent that decides who does what and reviews the results — useful when the order of work isn't fixed in advance. This is more advanced than sequential; Day 055 covers the manager configuration in full.
+
 ```mermaid
 flowchart TB
     M["Manager"] --> A["Researcher"]
@@ -231,11 +246,13 @@ researcher = Agent(
 )
 ```
 
+These are optional add-ons — agents work fine with no tools. `SerperDevTool` needs a Serper.dev key in `SERPER_API_KEY`, and `WebsiteSearchTool` pulls in extra embedding dependencies. For a tool you can run with no external service, see the Custom Tools example below.
+
 ### Custom Tools
 
 ```python
 # script_id: day_053_crewai_basics/custom_tool
-from crewai_tools import BaseTool
+from crewai.tools import BaseTool  # CrewAI has moved import paths between versions — verify against current docs if you hit an ImportError
 from pydantic import BaseModel, Field
 
 class CalculatorInput(BaseModel):
@@ -487,6 +504,16 @@ result = crew.kickoff(inputs={"key": "value"})
 2. **Code Review Pipeline**: Build a crew with a developer, reviewer, and tester for code quality
 
 3. **Customer Support**: Design a crew that handles customer inquiries with specialists for different areas
+
+<details><summary>Solutions (approaches)</summary>
+
+1. **Research Team** — Create three researcher agents, each assigned a different angle of the topic (e.g. technical, market, risks), with a task apiece. Add a fourth synthesizer task whose `context=[...]` lists all three research tasks, so it receives every finding and merges them into one report.
+
+2. **Code Review Pipeline** — Define developer, reviewer, and tester agents and run them in a sequential crew. Chain each task to the prior one with `context`: the reviewer's task takes `context=[dev_task]`, the tester's takes `context=[review_task]`, so each stage builds on the last.
+
+3. **Customer Support** — Build a triage agent that classifies the inquiry, plus billing and technical specialist agents. The triage task routes the request, and the specialist tasks take its output via `context=[...]` so the right specialist answers.
+
+</details>
 
 ---
 

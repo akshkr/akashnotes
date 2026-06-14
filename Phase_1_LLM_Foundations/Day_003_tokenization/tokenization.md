@@ -2,7 +2,7 @@
 
 Ever wondered what happens to your text before an LLM processes it? Spoiler: the model doesn't see words like you do. It sees **tokens** - and understanding this will save you money and help you write better prompts!
 
-> **Coming from Software Engineering?** Tokenization is like character encoding (UTF-8, ASCII) but for meaning. Just as you've dealt with encoding bugs where one byte doesn't equal one character, in LLMs one word doesn't equal one token. Understanding this mapping is crucial for cost control and debugging — it's the impedance mismatch between human text and model input.
+> **Coming from Software Engineering?** Tokenization is like character encoding (UTF-8, ASCII), but instead of mapping each character to bytes, it maps text to a fixed vocabulary of integer IDs — and frequent chunks (whole words or common word-parts) each get a single ID. Just as one byte doesn't equal one character, one word doesn't equal one token. That mapping is where cost control and debugging live.
 
 ---
 
@@ -57,6 +57,8 @@ flowchart TB
     style H fill:#90EE90
 ```
 
+You don't need the internals yet, but the intuition: the model learns about each token separately, so if `running`, `runner`, and `runs` all contain the `run` token, whatever it learned about `run` is reused for all three — instead of learning each full word from scratch.
+
 ### Benefits of Tokenization
 
 1. **Smaller vocabulary**: Instead of millions of words, models use ~50,000-100,000 tokens
@@ -68,9 +70,9 @@ flowchart TB
 
 ## How Tokenization Actually Works
 
-Most modern LLMs use **Byte-Pair Encoding (BPE)** or similar algorithms.
+Most modern LLMs build their token vocabulary by repeatedly merging the most common adjacent pairs.
 
-### The BPE Intuition
+### The Intuition
 
 Imagine you're creating a texting shorthand:
 
@@ -101,6 +103,8 @@ The algorithm:
 3. Merges them into a new token
 4. Repeats until vocabulary size is reached
 
+This frequency-based merging is called **Byte-Pair Encoding (BPE)** — the algorithm most modern tokenizers use.
+
 ---
 
 ## Let's See Real Tokenization in Python!
@@ -127,7 +131,7 @@ print(f"Number of tokens: {len(tokens)}")
 
 # Output:
 # Text: Hello, how are you doing today?
-# Tokens: [9906, 11, 1268, 527, 499, 3815, 3432, 30]
+# Tokens: [13225, 11, 1495, 553, 481, 5306, 4044, 30]
 # Number of tokens: 8
 ```
 
@@ -148,13 +152,13 @@ for token in tokens:
     print(f"Token {token} = '{decoded}'")
 
 # Output:
-# Token 9906 = 'Hello'
+# Token 13225 = 'Hello'
 # Token 11 = ','
-# Token 1268 = ' how'
-# Token 527 = ' are'
-# Token 499 = ' you'
-# Token 3815 = ' doing'
-# Token 3432 = ' today'
+# Token 1495 = ' how'
+# Token 553 = ' are'
+# Token 481 = ' you'
+# Token 5306 = ' doing'
+# Token 4044 = ' today'
 # Token 30 = '?'
 ```
 
@@ -182,12 +186,12 @@ for num in numbers:
     print(f"'{num}' = {len(tokens)} tokens: {tokens}")
 
 # Output:
-# '42' = 1 tokens: [2983]
-# '1000' = 1 tokens: [1041]
-# '123456789' = 3 tokens: [4513, 10961, 19608]
+# '42' = 1 tokens: [4689]
+# '1000' = 2 tokens: [1353, 15]
+# '123456789' = 3 tokens: [7633, 19354, 29338]
 ```
 
-Large numbers get split into multiple tokens!
+Numbers are split into chunks of up to three digits — so even 1000 becomes two tokens.
 
 ### Example 2: Different Languages
 
@@ -210,12 +214,12 @@ for text in texts:
 
 # Output:
 # 'Hello world' = 2 tokens
-# 'Bonjour monde' = 3 tokens
-# 'こんにちは世界' = 5 tokens
-# 'مرحبا بالعالم' = 8 tokens
+# 'Bonjour monde' = 2 tokens
+# 'こんにちは世界' = 2 tokens
+# 'مرحبا بالعالم' = 4 tokens
 ```
 
-Non-English text often uses more tokens because the tokenizer was trained primarily on English!
+Modern tokenizers like gpt-4o's handle major languages far better than older ones — but less-common or right-to-left scripts can still cost more (Arabic is about 2x English here). On older tokenizers the gap was much larger.
 
 ### Example 3: Code vs Text
 
@@ -237,7 +241,7 @@ print(f"Prose ({len(prose)} chars): {len(prose_tokens)} tokens")
 print(f"Code ({len(code)} chars): {len(code_tokens)} tokens")
 
 # Prose (47 chars): 9 tokens
-# Code (38 chars): 14 tokens
+# Code (37 chars): 11 tokens
 ```
 
 Code often requires more tokens than natural language!
@@ -247,6 +251,8 @@ Code often requires more tokens than natural language!
 ## Counting Tokens Before You Call the API
 
 The most practical use of tokenization is estimating cost and staying under context limits *before* you send a request. Count first, then decide.
+
+Quick mental math for English: ~4 characters or ¾ of a word per token; ~100 tokens ≈ 75 words. Verify with a real count for code or non-English.
 
 ```python
 # script_id: day_003_tokenization/estimate_cost
@@ -262,7 +268,7 @@ def estimate_cost(text: str, price_per_1m_input: float = 2.50) -> dict:
 
 prompt = "Summarize the following article:\n\n" + ("lorem ipsum " * 500)
 print(estimate_cost(prompt))
-# {'tokens': 1012, 'estimated_input_cost_usd': 0.00253}
+# {'tokens': 1009, 'estimated_input_cost_usd': 0.002522}
 ```
 
 > **A note on tokenizers:** `tiktoken` is OpenAI's tokenizer. Other providers tokenize differently — Anthropic's Claude models, for example, use their own tokenizer, so a `tiktoken` count is only an approximation for non-OpenAI models. For an exact Claude count, use the Anthropic SDK's token-counting endpoint (`client.messages.count_tokens(...)`) rather than `tiktoken`.
@@ -326,6 +332,16 @@ mindmap
 2. **Compare languages.** Tokenize the same sentence translated into three languages. How much more does the most expensive one cost?
 3. **Code vs prose.** Count tokens for a 50-line Python file and a 50-line prose document of similar character length. Which is more token-dense, and why?
 4. **Context budgeting.** Given a 128K-token context window, how many ~500-word documents could you fit if you also reserve 4K tokens for the system prompt and response?
+
+<details>
+<summary>Solutions (approaches)</summary>
+
+1. Count with `len(encoder.encode(prompt))`, then estimate cost as `tokens / 1_000_000 * 2.50` for gpt-4o input (verify current pricing before relying on it).
+2. Tokenize each translation and compare counts. Per the example above, Arabic runs about 2x English on gpt-4o; on older tokenizers the gap was larger.
+3. Code is usually denser than prose for the same character length — punctuation, symbols, and digit-splitting each consume tokens, and identifiers often break into several sub-word pieces.
+4. Roughly `(128000 - 4000) / 667 ≈ 185` documents: ~500 English words is about 667 tokens (¾ word per token), and you reserve 4K. Verify the tokens-per-document figure empirically, since it varies with content.
+
+</details>
 
 ---
 

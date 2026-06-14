@@ -2,7 +2,7 @@
 
 Did your agent take the best path? Trajectory evaluation measures not just the final answer, but how the agent got there.
 
-> **Coming from Software Engineering?** Trajectory evaluation is algorithmic complexity analysis applied to agent behavior. Just as you'd evaluate whether an algorithm took O(n) or O(n²) steps, you're evaluating whether the agent found the answer efficiently or wandered. Think of it like profiling a slow endpoint — you trace the execution path and ask "were all these steps necessary, or did it make redundant calls?" The metrics (step efficiency, tool selection accuracy, goal convergence) are performance metrics for reasoning.
+> **Coming from Software Engineering?** Trajectory evaluation is algorithmic complexity analysis applied to agent behavior. Just as you'd evaluate whether an algorithm took O(n) or O(n²) steps, you're evaluating whether the agent found the answer efficiently or wandered. Think of it like profiling a slow endpoint — you trace the execution path and ask "were all these steps necessary, or did it make redundant calls?" The metrics (step efficiency, step relevance, action correctness, goal achievement) are performance metrics for reasoning.
 
 ---
 
@@ -18,9 +18,10 @@ flowchart LR
     end
 
     subgraph "Evaluation"
-        A1 --> E1["Was this needed?"]
-        A2 --> E2["Was this efficient?"]
-        A3 --> E3["Was this correct?"]
+        A1 --> E1["Relevant?"]
+        A2 --> E2["Efficient?"]
+        A3 --> E3["Correct?"]
+        E --> E4["Goal met?"]
     end
 ```
 
@@ -33,6 +34,8 @@ Trajectory evaluation asks:
 ---
 
 ## Capturing Agent Trajectories
+
+An agent runs in a loop of thought -> action -> observation (the ReAct loop from Day 035): the model writes a short reasoning note (the *thought*), picks a tool to call (the *action*) with arguments (*action_input*), then reads the tool's result (*observation*). A trajectory is just the ordered log of these steps — think of it as a request trace.
 
 First, record what the agent does:
 
@@ -120,11 +123,14 @@ trajectory.complete(
     final_answer="The weather in Tokyo is 22°C and sunny",
     success=True
 )
+# Two steps: search (gets Fahrenheit) then calculate (F->C). That minimal path is why optimal_steps=2 below.
 ```
 
 ---
 
 ## Trajectory Evaluation Metrics
+
+Step efficiency is plain arithmetic. But relevance, correctness, and goal achievement are judgment calls with no exact answer to diff against — so we hand them to an LLM judge (the LLM-as-judge pattern from Days 058-059). Think code reviewer, not unit-test assert: the judge is itself a model, so its scores are non-deterministic and can be wrong — treat them as directional signals, not ground truth.
 
 ### 1. Step Efficiency
 
@@ -152,6 +158,8 @@ def evaluate_efficiency(trajectory: AgentTrajectory, optimal_steps: int) -> Dict
 result = evaluate_efficiency(trajectory, optimal_steps=2)
 print(f"Efficiency: {result['efficiency_score']:.2%}")
 ```
+
+`optimal_steps` is the human-judged minimum number of tool calls a task should take — you set it from a reference solution or a domain expert, the same way you set a target latency budget for an endpoint. For the Tokyo task: one search + one conversion = 2.
 
 ### 2. Step Relevance
 
@@ -206,7 +214,7 @@ def evaluate_all_steps_relevance(trajectory: AgentTrajectory) -> Dict:
     return {
         "step_scores": step_scores,
         "average_relevance": avg_relevance,
-        "irrelevant_steps": [s for s in step_scores if s["relevance"] < 0.5]
+        "irrelevant_steps": [s for s in step_scores if s["relevance"] <= 0.5]
     }
 ```
 
@@ -522,4 +530,4 @@ print(f"Overall: {results['overall_score']:.1%}")
 
 ## What's Next?
 
-Now let's learn about **Security & Guardrails** - protecting your agents from attacks and misuse!
+Next up, Day 62: **Security & Guardrails** — protecting your agents from prompt injection and misuse.

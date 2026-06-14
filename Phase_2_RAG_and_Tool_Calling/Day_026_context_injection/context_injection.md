@@ -2,7 +2,7 @@
 
 You've parsed documents, chunked them, and stored them in a vector database. Now comes the magic moment: **combining retrieved context with LLM prompts** to create a RAG system that actually works!
 
-> **Coming from Software Engineering?** Context injection in RAG is just dependency injection for knowledge. Instead of injecting a database connection, you're injecting relevant documents into the prompt. The same patterns — interface-based injection, factory methods, lazy loading — apply to managing context.
+> **Coming from Software Engineering?** Context injection in RAG is just dependency injection for knowledge. Instead of injecting a database connection, you're injecting relevant documents into the prompt. The same dependency-injection mindset applies to managing context.
 
 ---
 
@@ -133,6 +133,8 @@ def structured_rag(question: str, n_results: int = 5) -> dict:
         {
             "document": results["documents"][0][i],
             "metadata": results["metadatas"][0][i],
+            # Chroma returns a *distance* (0 = identical, bigger = less similar);
+            # flip to a 0-1 similarity so higher = better, matching Day 20.
             "similarity": 1 - results["distances"][0][i]
         }
         for i in range(len(results["ids"][0]))
@@ -346,6 +348,8 @@ Guidelines:
         self,
         question: str,
         n_results: int = 5,
+        # 0.5 is a loose starting point. Calibrate it by printing similarities for
+        # known-good vs off-topic queries on your own data, then raise it until junk is excluded.
         similarity_threshold: float = 0.5
     ) -> RAGResponse:
         """Process a question through the RAG pipeline."""
@@ -449,7 +453,7 @@ In production RAG systems with multiple users or organizations, you **must** ens
 
 ### The Problem
 
-Without access control, a vector similarity search returns the nearest neighbors across **all** documents in your collection — regardless of who uploaded them.
+Without access control, a vector similarity search returns the closest matches by vector distance (the "nearest neighbors") across **all** documents in your collection — regardless of who uploaded them.
 
 ### Solutions
 
@@ -465,6 +469,8 @@ collection.add(
 )
 
 # When querying — ALWAYS include the owner filter
+# This block highlights the where= filter; in this lesson's stack you'd embed the query
+# and pass query_embeddings=[...] alongside where={...}, as in the blocks above.
 results = collection.query(
     query_texts=["quarterly results"],
     where={"owner_id": "org_123"},  # Critical: never omit this
@@ -482,9 +488,11 @@ results = collection.query(
 
 ## Reranking: Improving Retrieval Quality
 
-Vector similarity search is fast but approximate. The top-K chunks from embedding search aren't always the *most useful* results — they're just the nearest neighbors in embedding space. **Reranking** adds a second pass: a more powerful model re-scores each candidate for actual relevance to the query.
+Vector similarity search is fast but approximate. The top-K chunks from embedding search aren't always the *most useful* results — they're just the nearest neighbors in embedding space; they're just the closest by raw distance, which isn't the same as the most useful answer to the question. **Reranking** adds a second pass: a more powerful model re-scores each candidate for actual relevance to the query.
 
 ### Two-Stage Retrieval Pipeline
+
+> **Coming from Software Engineering?** This is the same pattern as a two-phase search: a fast, approximate index scan (like Elasticsearch BM25 or vector ANN) followed by a precise re-scoring pass. If you've built search systems with a "candidate generation -> ranking" pipeline, reranking in RAG is exactly the same idea.
 
 ```mermaid
 flowchart LR
@@ -498,9 +506,10 @@ flowchart LR
 ```python
 # script_id: day_026_context_injection/cohere_rerank
 # pip install cohere
+# assumes `vector_results` = your top-20 candidates from the vector search above (each with a .text attribute)
 import cohere
 
-co = cohere.Client()  # Uses COHERE_API_KEY env var
+co = cohere.ClientV2()  # Uses COHERE_API_KEY env var
 
 # After vector search returns 20 candidates
 results = co.rerank(
@@ -518,8 +527,11 @@ reranked_chunks = [vector_results[r.index] for r in results.results]
 
 If you want to self-host and avoid API costs, cross-encoders give you the same two-stage pattern with no external dependency:
 
+A cross-encoder reads the question and a candidate chunk *together* and outputs one relevance score — unlike embedding search, which scores them separately. That joint look is slower but more accurate, which is why it makes a good second pass.
+
 ```python
 # script_id: day_026_context_injection/cross_encoder_rerank
+# assumes `vector_results` = your top-20 candidates from the vector search above (each with a .text attribute)
 from sentence_transformers import CrossEncoder
 
 reranker = CrossEncoder("cross-encoder/ms-marco-MiniLM-L-6-v2")
@@ -537,8 +549,6 @@ reranked = sorted(zip(scores, vector_results), reverse=True)[:5]
 - **High-stakes applications** (legal, medical) where retrieval precision matters
 - **Existing RAG pipelines** where answers sometimes miss the right context — reranking is often the highest-ROI fix
 
-> **Coming from Software Engineering?** This is the same pattern as a two-phase search: a fast, approximate index scan (like Elasticsearch BM25 or vector ANN) followed by a precise re-scoring pass. If you've built search systems with a "candidate generation -> ranking" pipeline, reranking in RAG is exactly the same idea.
-
 ---
 
 ## The Long-Context Alternative
@@ -547,7 +557,7 @@ Everything above assumes you *need* retrieval. But the ground is shifting fast.
 
 > **SWE Analogy:** RAG is like building a microservice with a search index to find relevant config files. Long-context is like just... loading the entire config directory into memory. If it fits, why build the plumbing?
 
-With Claude supporting 200K tokens and Gemini pushing 1M tokens, many use cases that previously *required* RAG can now just stuff all the documents directly into the context window. No chunking, no embeddings, no vector database — just read the files and send them.
+With Claude and Gemini both supporting up to ~1M tokens (as of 2026-06; verify with the provider), many use cases that previously *required* RAG can now just stuff all the documents directly into the context window. No chunking, no embeddings, no vector database — just read the files and send them.
 
 ### When to Use RAG vs Long-Context
 
@@ -699,20 +709,6 @@ messages = [
     {"role": "user", "content": f"Context: {context}\n\nQuestion: {question}"}
 ]
 ```
-
----
-
-## Long-Context Models vs RAG
-
-Models with large context windows -- Gemini (1M tokens), Claude (1M tokens), GPT-4o (128K tokens) -- can sometimes replace RAG entirely for smaller document sets. If your entire corpus fits in the context window, you can skip chunking, embeddings, and vector databases altogether and just send everything directly to the model.
-
-However, RAG is still necessary when:
-- Your documents are **too large** to fit in any context window (millions of pages, entire codebases)
-- Your data **changes frequently** and re-sending everything each query is impractical or expensive
-- You need **source attribution** -- RAG naturally tracks which chunks contributed to an answer
-- You need **precise retrieval** across thousands of heterogeneous documents where the model might lose focus
-
-For a deeper look at this tradeoff, see the "Long-Context Alternative" section earlier in this guide.
 
 > **Framework Note:** Frameworks like **LangChain** and **LlamaIndex** (covered in Phase 3) can significantly simplify RAG pipeline construction -- handling chunking, embedding, retrieval, and prompt assembly with just a few lines of code. If you find yourself rebuilding these patterns from scratch, consider reaching for a framework.
 

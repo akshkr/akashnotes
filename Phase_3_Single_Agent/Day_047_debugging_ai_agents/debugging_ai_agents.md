@@ -38,9 +38,9 @@ flowchart TD
 
 **2. Wrong tool selection** — The agent picks a tool that does not match the subtask. Usually a prompt problem: tool descriptions are ambiguous or overlap.
 
-**3. Hallucinated actions** — The model tries to call a tool that does not exist, or passes arguments that do not match the schema. Often happens when the tool list changes but the system prompt is stale.
+**3. Hallucinated actions** — The model tries to call a tool that does not exist, or passes arguments that do not match the schema. Often happens when the tool list changes but the system prompt is stale. Hallucinated action just means the model confidently invents a tool name or argument that was never in its tool list — like calling a function you never defined; the runtime then throws an unknown-tool error (exactly what the HALLUCINATED TOOL check below catches).
 
-**4. Context overflow** — After many iterations, the conversation history exceeds the context window. The model gets confused, repetitive, or starts ignoring earlier instructions.
+**4. Context overflow** — After many iterations, the conversation history exceeds the context window. The model gets confused, repetitive, or starts ignoring earlier instructions. The context window is the model's fixed-size input buffer — like a function with a hard cap on total argument size. Every past message and tool result is re-sent on every call, so a long run eventually overflows that cap; the model then silently drops or ignores the oldest content.
 
 **5. Error retry loops** — A tool returns an error. The agent retries. Same error. Retries again. 20 times. You owe the API $3.
 
@@ -125,7 +125,7 @@ class AgentTrace:
 
 ## Building a Traceable Agent
 
-Here is a ReAct agent with full tracing built in:
+Here is a ReAct agent — the same think → call tool → observe loop from the flowchart above (introduced on Day 35) — now wrapped so every step is recorded:
 
 ```python
 # script_id: day_047_debugging_ai_agents/traceable_agent_debug
@@ -157,7 +157,8 @@ class TraceableAgent:
 
             message = response.choices[0].message
             trace.total_tokens += response.usage.total_tokens
-            messages.append(message)
+            # store as a dict so it composes with trim_messages() and the rest of the message history
+            messages.append(message.model_dump())
 
             # No tool calls = final answer
             if not message.tool_calls:
@@ -233,6 +234,8 @@ class TraceableAgent:
         ]
 
     def _get_tool_schemas(self) -> list[dict]:
+        # Placeholder schema: empty properties means tools take no arguments. Real tools must
+        # declare their parameters here (name, type, required) or the model will call them with no args.
         return [
             {
                 "type": "function",
@@ -251,6 +254,8 @@ class TraceableAgent:
 ## Debugging LangGraph State Machines
 
 LangGraph gives you visibility into state at each node — but you have to ask for it.
+
+Recall from Day 41 that LangGraph models the agent as a state machine — nodes are functions and the state is a dict passed between them. A checkpointer is just an autosave: it snapshots that dict after every node, like git commits you can check out or Redux time-travel. `Annotated[list, operator.add]` tells LangGraph to append updates to that field instead of overwriting it, and `invoke(None, config)` means re-run from a saved snapshot rather than starting fresh. You built the full rewind/replay debugger on Day 45 (Time-Travel Debugging); here it becomes a targeted debugging move — rewind to the checkpoint just before the agent went wrong and replay from there.
 
 ```python
 # script_id: day_047_debugging_ai_agents/langgraph_debugging
@@ -360,6 +365,8 @@ def agent_debugging_checklist(trace: AgentTrace) -> list[str]:
         issues.append(f"LOOP DETECTED: Repeated tool calls: {list(duplicates.keys())[:3]}")
 
     # 4. Did token count explode?
+    # tokens = the word-pieces the model reads and bills you for (~3/4 of a word each).
+    # ~50k of accumulated history is a huge running total — almost always a runaway loop, not real work.
     if trace.total_tokens > 50_000:
         issues.append(f"TOKEN EXPLOSION: {trace.total_tokens:,} tokens used")
 
@@ -430,6 +437,8 @@ class CircuitBreakerAgent:
 ```
 
 ### Mistake 3: Context Overflow — Unbounded History
+
+We budget by tokens — the unit the window is actually measured in — not by message count, since one message can be a sentence or a 5,000-token document.
 
 ```python
 # script_id: day_047_debugging_ai_agents/traceable_agent_debug
@@ -524,17 +533,10 @@ def print_trace(trace: AgentTrace):
 ## Key Takeaways
 
 1. **Add tracing before you need it** — retrofitting observability is painful
-2. **The most common failure is hitting max iterations** — always check this first
-3. **Repeated tool calls with same input = stuck loop** — detect and break it
-4. **Context overflow is silent** — the model just gets confused; trim proactively
-5. **LangGraph checkpoints let you replay execution** — use them for complex debugging
-6. **Log every tool call** — input, output, error, and token count
+2. **Check max iterations first** — hitting the iteration cap without a final answer is the most common failure
+3. **Context overflow is silent** — the model just gets confused; trim proactively rather than waiting for a visible error
 
 ---
-
-## Checkpoint
-
-Feed `agent_debugging_checklist` a hand-built `AgentTrace` whose `steps` contain the *same* `(tool_name, tool_input)` three times. The returned list should include a `"LOOP DETECTED"` line — the `Counter`-based check fires when an identical call repeats more than twice. Then run a clean trace through `print_trace(...)` and confirm each step shows ✅/❌ with its tool and output. If "LOOP DETECTED" never appears, make sure your duplicate steps serialize to identical `json.dumps(..., sort_keys=True)` strings (same keys, same values).
 
 ## Summary
 
@@ -579,17 +581,23 @@ mindmap
 ## Exercises
 
 1. Add `AgentTrace` and `TraceableAgent` to your Day 48 capstone and print a trace for each run.
-2. Write a test that triggers the "repeated tool call" detection in `agent_debugging_checklist`.
+2. Write a test that triggers the `TOKEN EXPLOSION` (or `TOO MANY STEPS`) branch of `agent_debugging_checklist` — build an `AgentTrace` with `total_tokens` over 50,000 (or more than 15 steps) and assert the matching warning appears.
 3. Implement `trim_messages` and verify it stays under 100K tokens after 200 simulated iterations.
 4. Use LangGraph's state history to replay an execution step-by-step and print state at each checkpoint.
 
 <details><summary>Solutions (approaches)</summary>
 
 1. Wrap each call in an `AgentStep`, append to `trace`, and call `print_trace(trace)` at the end — both helpers are defined in this lesson.
-2. Feed `agent_debugging_checklist` a hand-built `AgentTrace` whose `steps` contain three identical `(tool_name, tool_input)` entries; assert "LOOP DETECTED" appears.
+2. Build an `AgentTrace` with `total_tokens=60_000` (or append 16+ `AgentStep`s), run it through `agent_debugging_checklist`, and assert the `"TOKEN EXPLOSION"` (or `"TOO MANY STEPS"`) line appears.
 3. Build 200 fake messages, run `trim_messages(messages, max_tokens=100_000)`, and assert the re-encoded total is under budget.
 4. `for cp in app.get_state_history(config): print(cp.values)` — newest first; reverse it to read forward.
 </details>
+
+---
+
+## Checkpoint
+
+Feed `agent_debugging_checklist` a hand-built `AgentTrace` whose `steps` contain the *same* `(tool_name, tool_input)` three times. The returned list should include a `"LOOP DETECTED"` line — the `Counter`-based check fires when an identical call repeats more than twice. Then run a clean trace through `print_trace(...)` and confirm each step shows ✅/❌ with its tool and output. If "LOOP DETECTED" never appears, make sure your duplicate steps serialize to identical `json.dumps(..., sort_keys=True)` strings (same keys, same values).
 
 ---
 

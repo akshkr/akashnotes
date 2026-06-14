@@ -2,6 +2,8 @@
 
 Every software engineer's first question when they see LLM code: "How do I test this?" It is a great question, and one the AI community has been slow to answer. The non-deterministic nature of LLMs breaks every assumption traditional testing relies on. Today we fix that.
 
+Non-deterministic just means: call the LLM twice with the exact same input and you can get two different outputs — like a function that quietly returns a slightly different result each time. That single fact breaks `assert output == expected`, which is why traditional tests do not work as-is.
+
 > **Coming from Software Engineering?** You already have strong testing instincts — unit tests, integration tests, CI/CD pipelines. LLM testing reuses that entire mental model but swaps exact assertions for statistical ones. Think of it like testing a microservice that returns slightly different JSON each time: you stop asserting exact equality and start asserting *properties* (contains required fields, sentiment is positive, length is within range). Your pytest/Jest skills transfer directly — you're just writing different assertions.
 
 ---
@@ -16,7 +18,7 @@ flowchart LR
     end
 
     subgraph "LLM Software"
-        E["Input: 'Summarize this'"] --> F["LLM"] --> G["Output: varies\nevery time"]
+        E["Input: 'Summarize this'"] --> F["LLM"] --> G["Output: varies<br/>every time"]
         G --> H["Assert == ??? 🤔"]
     end
 
@@ -44,9 +46,9 @@ The trick is to **test what you can control** and **validate the shape of what y
 ```mermaid
 graph TB
     subgraph "LLM Testing Pyramid"
-        A["🔺 End-to-End\n(Real LLM, full pipeline)\nSlow, expensive, essential"]
-        B["🔶 Integration Tests\n(Real LLM, assertions on structure)\nMedium speed, targeted"]
-        C["🟩 Unit Tests (Mocked LLM)\nFast, free, deterministic"]
+        A["🔺 End-to-End<br/>(Real LLM, full pipeline)<br/>Slow, expensive, essential"]
+        B["🔶 Integration Tests<br/>(Real LLM, assertions on structure)<br/>Medium speed, targeted"]
+        C["🟩 Unit Tests (Mocked LLM)<br/>Fast, free, deterministic"]
     end
 
     A --- B --- C
@@ -65,6 +67,8 @@ Most of your tests should be at the bottom: mocked, fast, and free. But you need
 The foundation. Replace LLM calls with predictable responses and test everything around them.
 
 ### Setting Up pytest Fixtures
+
+The real OpenAI client returns a nested object you access as `response.choices[0].message.content`. Our mock must return that exact same shape — otherwise the code we are testing would pass against the mock but break against the real API.
 
 ```python
 # script_id: day_015_testing_llm_applications/unit_tests_with_mocks
@@ -298,7 +302,7 @@ class TestSentimentSchema:
 You'll build retry loops in Day 16. Here's how to test them.
 
 ```python
-# script_id: day_015_testing_llm_applications/unit_tests_with_mocks
+# script_id: day_015_testing_llm_applications/test_retry_logic
 # test_retry.py
 import pytest
 from unittest.mock import MagicMock, call
@@ -321,7 +325,8 @@ def extract_with_retry(client, text: str, max_retries: int = 3) -> UserInfo | No
             )
             data = json.loads(response.choices[0].message.content)
             return UserInfo(**data)
-        except (json.JSONDecodeError, Exception):
+        except Exception:
+            # Any failure (bad JSON, schema mismatch) just triggers a retry.
             continue
     return None
 
@@ -378,6 +383,8 @@ class TestRetryLogic:
 ## Snapshot Testing for Prompts
 
 Prompts change. You need to know when they change and whether the change was intentional.
+
+Snapshot testing records a value on first run and flags any later change — like a golden-file test. Install with `pip install syrupy`; it provides the `snapshot` fixture.
 
 ```python
 # script_id: day_015_testing_llm_applications/test_prompt_snapshots
@@ -436,7 +443,7 @@ class TestPromptSnapshots:
 
 ## Integration Testing: Real LLM Calls
 
-These tests hit real APIs. They are slow, expensive, and essential.
+These tests hit real APIs. They are slow, expensive, and essential. Setting temperature to 0 makes the model as deterministic as it can be — it will not guarantee identical text, which is exactly why we still assert structure, not exact strings.
 
 ```python
 # script_id: day_015_testing_llm_applications/test_llm_integration
@@ -483,7 +490,7 @@ class TestLLMIntegration:
                 {"role": "user", "content": "Return a JSON object with keys: title, rating (1-5), genre for the movie Inception."}
             ],
             response_format={"type": "json_object"},
-            temperature=0,
+            temperature=0,  # minimize randomness so the test is as repeatable as possible
         )
 
         data = json.loads(response.choices[0].message.content)
@@ -504,7 +511,7 @@ class TestLLMIntegration:
                 {"role": "user", "content": "Review the movie Inception"},
             ],
             response_format={"type": "json_object"},
-            temperature=0,
+            temperature=0,  # minimize randomness so the test is as repeatable as possible
         )
 
         data = json.loads(response.choices[0].message.content)
@@ -577,12 +584,12 @@ pytest -m "not slow" --cov=src --cov-report=term-missing
 
 ```mermaid
 flowchart TB
-    A["PR Opened"] --> B["Unit Tests\n(mocked, fast, free)"]
+    A["PR Opened"] --> B["Unit Tests<br/>(mocked, fast, free)"]
     B --> C{"Pass?"}
     C -->|No| D["Block Merge"]
-    C -->|Yes| E["Integration Tests\n(real LLM, slow, costs $)"]
+    C -->|Yes| E["Integration Tests<br/>(real LLM, slow, costs $)"]
     E --> F{"Pass?"}
-    F -->|No| G["Warn but\ndon't block"]
+    F -->|No| G["Warn but<br/>don't block"]
     F -->|Yes| H["Ready to Merge"]
 
     style B fill:#90EE90
@@ -680,7 +687,8 @@ def test_all_cases_mocked(mock_client, text):
 @pytest.mark.slow
 def test_sample_integration():
     client = OpenAI()
-    extract(client, sample_inputs[:3])  # Just 3 real calls
+    for text in sample_inputs[:3]:
+        extract(client, text)  # Just 3 real calls
 ```
 
 ---
@@ -695,26 +703,6 @@ def test_sample_integration():
 | Contract tests | Pydantic schema validation |
 | Load tests | Token count and cost monitoring |
 | Flaky test handling | `continue-on-error` for non-deterministic tests |
-
----
-
-## Key Takeaways
-
-1. **Mock aggressively** - Most of your tests should never call a real LLM
-2. **Test the contract, not the content** - Validate structure, types, and constraints
-3. **Separate test tiers** - Fast/free unit tests vs slow/paid integration tests
-4. **Snapshot your prompts** - Know when prompts change
-5. **Budget your integration tests** - They cost real money
-6. **Make integration tests optional in CI** - Do not block deploys on non-deterministic failures
-
----
-
-## Practice Exercises
-
-1. Write a test suite for a function that classifies customer support tickets using an LLM
-2. Add snapshot tests for three different prompt templates
-3. Set up pytest markers so `pytest -m "not slow"` runs in under 2 seconds
-4. Write a parametrized test that validates 10 different Pydantic schemas against mock LLM outputs
 
 ---
 
@@ -765,6 +753,8 @@ mindmap
 2. **Parametrize schema validation.** Write one `@pytest.mark.parametrize` test that feeds five mock outputs (valid, missing field, wrong type, extra field, empty) into your Pydantic model and asserts the expected pass/fail.
 3. **Add a cost guard to integration tests.** In a real-call test, assert `response.usage.total_tokens` stays under a budget so a runaway prompt fails loudly.
 4. **Wire the CI tiers.** Configure pytest markers so `pytest -m "not slow"` runs only mocked tests, and a separate job runs the `slow` integration tests with `continue-on-error`.
+5. **Test a support-ticket classifier.** Write a test suite for a function that classifies customer support tickets using an LLM — mock the client and assert the returned category is one of your allowed labels.
+6. **Hit a speed budget.** Set up pytest markers so `pytest -m "not slow"` runs in under 2 seconds (mock every LLM call; keep real-API tests behind `@pytest.mark.slow`).
 
 <details><summary>Solutions (approaches)</summary>
 
@@ -772,6 +762,8 @@ mindmap
 2. Build a list of `(payload, should_pass)` tuples; inside the test, `try: Model.model_validate_json(payload)` and assert success/`ValidationError` matches `should_pass`.
 3. After the real call, `assert response.usage.total_tokens < 2000` — a cheap regression guard against prompt bloat.
 4. Mark integration tests with `@pytest.mark.slow`; in CI run two steps — the fast one gating merges, the slow one informational (`continue-on-error: true`).
+5. Mock the client to return a category string; assert it is `in {"billing", "technical", "account", ...}` rather than checking exact text, since the wording can vary.
+6. Mock every LLM call (no real `OpenAI()` in unit tests) and tag any real-API test `@pytest.mark.slow`; the `not slow` selection then runs only fast mocked tests.
 </details>
 
 ## What's Next?

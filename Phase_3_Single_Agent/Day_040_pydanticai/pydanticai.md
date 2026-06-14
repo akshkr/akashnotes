@@ -65,7 +65,7 @@ agent = Agent(
 
 # Run the agent synchronously
 result = agent.run_sync("What is the capital of France?")
-print(result.data)  # "Paris"
+print(result.output)  # "Paris"
 ```
 
 That's it -- no chains, no runnables, no output parsers. Just a function call.
@@ -90,12 +90,12 @@ class CityInfo(BaseModel):
 # Agent that returns structured data
 agent = Agent(
     "openai:gpt-4o-mini",
-    result_type=CityInfo,
+    output_type=CityInfo,
     system_prompt="Extract city information from the user's query.",
 )
 
 result = agent.run_sync("Tell me about Tokyo")
-city = result.data  # CityInfo instance, fully validated
+city = result.output  # CityInfo instance, fully validated
 
 print(f"{city.name}, {city.country}")
 print(f"Population: {city.population:,}")
@@ -106,7 +106,7 @@ print(f"Famous for: {', '.join(city.famous_for)}")
 sequenceDiagram
     participant App as Your App
     participant Agent as PydanticAI Agent
-    participant LLM as LLM (GPT-4o)
+    participant LLM as LLM (gpt-4o-mini)
     participant Val as Pydantic Validator
 
     App->>Agent: agent.run_sync("Tell me about Tokyo")
@@ -122,6 +122,12 @@ sequenceDiagram
 ## Adding Tools with @agent.tool
 
 Tools let your agent call Python functions to fetch data, perform calculations, or interact with external systems.
+
+You don't call the tool -- the model does. The framework registers your function name, parameters, and docstring with the model as an available capability (like registering a route handler). When the model decides it needs the data, it returns a structured request `{tool: get_weather, args: {city: London}}`; PydanticAI runs your function, hands the return value back, and the model writes the final answer. The docstring IS the spec the model reads -- treat it like an API contract, not a comment.
+
+Every tool's first parameter is `ctx: RunContext[...]`, passed in automatically by the framework (like `request: Request` in a FastAPI handler). It carries any injected dependencies; use `RunContext[None]` when a tool needs none. We use it for real in the Dependency Injection section below.
+
+This first tool is async because it makes an HTTP call -- exactly like any async Python function (`await` + `asyncio.run` drive it). Tools can also be plain synchronous functions used with `run_sync`, as the Multiple Tools example below shows.
 
 ```python
 # script_id: day_040_pydanticai/weather_tool
@@ -150,7 +156,7 @@ import asyncio
 
 async def main():
     result = await agent.run("What's the weather in London?")
-    print(result.data)
+    print(result.output)
 
 asyncio.run(main())
 ```
@@ -200,7 +206,7 @@ def search_docs(ctx: RunContext[None], query: str) -> str:
     return "No relevant documentation found."
 
 result = agent.run_sync("What's the refund policy and what time is it?")
-print(result.data)
+print(result.output)
 ```
 
 ---
@@ -208,6 +214,8 @@ print(result.data)
 ## Dependency Injection
 
 Dependency injection is what makes PydanticAI agents testable and modular. You define a dependency type, and the agent receives it at runtime through `RunContext`.
+
+Just as a FastAPI endpoint declares `db: Session = Depends(get_db)` and receives it per request, a PydanticAI agent declares `deps_type=SupportDeps` and receives the instance per-run via `ctx.deps`.
 
 ```python
 # script_id: day_040_pydanticai/dependency_injection
@@ -248,7 +256,7 @@ def lookup_order(ctx: RunContext[SupportDeps], order_id: str) -> str:
 # Run with real dependencies
 deps = SupportDeps(
     customer_id=42,
-    db_connection=get_db(),  # Your real DB
+    db_connection=object(),  # your real DB connection
     is_premium=True,
 )
 result = agent.run_sync("Where is my order #12345?", deps=deps)
@@ -298,7 +306,7 @@ def test_standard_customer_flow(mock_deps):
         "What's your return policy?",
         deps=mock_deps,
     )
-    assert result.data  # Agent produced a response
+    assert result.output  # Agent produced a response
     # Check the mock DB was not called for this query
     mock_deps.db_connection.query.assert_not_called()
 
@@ -309,7 +317,7 @@ def test_order_lookup(mock_deps):
         "Where is order #999?",
         deps=mock_deps,
     )
-    assert "order" in result.data.lower()
+    assert "order" in result.output.lower()
 ```
 
 ---
@@ -322,26 +330,26 @@ from pydantic_ai import Agent
 
 agent = Agent(
     "openai:gpt-4o-mini",
-    system_prompt="You are a math tutor. Explain step by step.",
+    system_prompt="You are a programming tutor. Explain step by step.",
 )
 
 # First turn
-result1 = agent.run_sync("What is a derivative?")
-print(result1.data)
+result1 = agent.run_sync("What is a closure?")
+print(result1.output)
 
 # Continue the conversation using message_history
 result2 = agent.run_sync(
     "Can you give me an example?",
     message_history=result1.all_messages(),
 )
-print(result2.data)
+print(result2.output)
 
 # The agent remembers the context from result1
 result3 = agent.run_sync(
-    "Now explain integration",
+    "Now explain a decorator",
     message_history=result2.all_messages(),
 )
-print(result3.data)
+print(result3.output)
 ```
 
 ---
@@ -361,6 +369,8 @@ flowchart TB
     style PA fill:#90EE90
 ```
 
+State machines here = workflows with branches, loops, and checkpoints you control explicitly (covered next, in LangGraph). PydanticAI keeps the control flow inside the model's own reasoning loop instead. (The **OpenAI Agents SDK** is OpenAI's own minimal agent runtime, OpenAI models only.)
+
 | Feature | PydanticAI | LangChain | LangGraph | OpenAI Agents SDK |
 |---------|------------|-----------|-----------|-------------------|
 | Type safety | Native | Weak | Moderate | Weak |
@@ -376,7 +386,7 @@ flowchart TB
 
 ## Checkpoint
 
-Run the Structured Results example: define the `CityInfo` model and `agent.run_sync("Tell me about Tokyo")`. `result.data` should come back as a fully-typed `CityInfo` instance — you can do `city.population:,` and iterate `city.famous_for` without any manual `json.loads`. PydanticAI validated the LLM's JSON against your schema for you. If you get a raw string or a `ValidationError`, confirm you passed `result_type=CityInfo` to the `Agent(...)` constructor.
+Run the Structured Results example: define the `CityInfo` model and `agent.run_sync("Tell me about Tokyo")`. `result.output` should come back as a fully-typed `CityInfo` instance — you can do `city.population:,` and iterate `city.famous_for` without any manual `json.loads`. PydanticAI validated the LLM's JSON against your schema for you. If you get a raw string or a `ValidationError`, confirm you passed `output_type=CityInfo` to the `Agent(...)` constructor.
 
 ## Summary
 
@@ -414,7 +424,7 @@ from pydantic import BaseModel
 agent = Agent("openai:gpt-4o-mini", system_prompt="...")
 
 # Structured output
-agent = Agent("openai:gpt-4o-mini", result_type=MyModel)
+agent = Agent("openai:gpt-4o-mini", output_type=MyModel)
 
 # With dependencies
 agent = Agent("openai:gpt-4o-mini", deps_type=MyDeps)
@@ -431,7 +441,7 @@ def dynamic_prompt(ctx: RunContext[MyDeps]) -> str:
 
 # Run
 result = agent.run_sync("query", deps=my_deps)
-print(result.data)
+print(result.output)
 
 # Multi-turn
 result2 = agent.run_sync("follow up", message_history=result.all_messages())

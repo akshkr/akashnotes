@@ -36,7 +36,7 @@ flowchart TB
 
 ## Full Fine-tuning vs PEFT
 
-Full fine-tuning updates every parameter in the model. For a 7B model, that means modifying 7 billion weights -- requiring massive GPU memory and risking catastrophic forgetting.
+Full fine-tuning updates every parameter in the model. For a 7B model, that means modifying 7 billion weights -- requiring massive GPU memory and risking catastrophic forgetting -- where retraining on your narrow data overwrites general skills the model already had, like a global find-and-replace that fixes one file but corrupts everything else it touched.
 
 **Parameter-Efficient Fine-Tuning (PEFT)** methods update only a tiny fraction of parameters while keeping most weights frozen.
 
@@ -76,6 +76,8 @@ flowchart LR
 
 LoRA (Low-Rank Adaptation) inserts small trainable matrices into the model's attention layers. Instead of updating a massive weight matrix W directly, it learns two small matrices A and B such that the update is W + BA.
 
+A model layer is just a big grid of numbers (a matrix W) that transforms its input. Full fine-tuning rewrites all d x d of those numbers. LoRA leaves W untouched and instead learns two skinny grids, A and B, whose product BA has the same shape as W but is built from far fewer numbers -- that skinniness is what "low-rank" means. At runtime the model computes the original Wx plus a small correction BAx.
+
 ```mermaid
 flowchart LR
     subgraph "Original Layer"
@@ -114,15 +116,15 @@ lora_config = {
 }
 ```
 
-**Rank (r)**: Controls adapter capacity
+**Rank (r)** is the width of those skinny A and B grids -- bigger r means more numbers the adapter can use, so it learns more but costs more memory.
 - `r=8`: Minimal, good for simple tasks
 - `r=16`: Balanced (most common)
 - `r=32-64`: For complex tasks requiring more capacity
 - Higher rank = more parameters = more VRAM
 
-**Alpha**: Scaling factor, typically `alpha = 2 * r`
+**Alpha** controls how strongly the adapter's correction is applied on top of the frozen model; the common rule `alpha = 2 * r` keeps that strength balanced as you change rank.
 
-**Target modules**: Which weight matrices get LoRA adapters
+**Target modules**: Which weight matrices get LoRA adapters. These strings are just PEFT's names for specific layers inside the model -- you don't need the math, only which to target. The q/k/v/o layers are the attention layers (where the model decides which parts of the input to focus on); the gate/up/down layers are its general-purpose compute layers. Start with the attention ones and add the rest only if quality falls short.
 - At minimum: `q_proj`, `v_proj` (attention queries and values)
 - Better: add `k_proj`, `o_proj` (all attention projections)
 - Maximum: add `gate_proj`, `up_proj`, `down_proj` (MLP layers too)
@@ -145,12 +147,12 @@ sequenceDiagram
     Quant->>LoRA: Attach LoRA adapters (FP16)
     Note over LoRA: Small adapters stay in full precision
     LoRA->>Train: Only train adapter weights
-    Note over Train: Gradients computed in FP16
+    Note over Train: Adjustments to the adapters are calculated in 16-bit precision, even though the frozen base model is squeezed to 4-bit.
     Train->>LoRA: Update adapters only
 ```
 
 Key innovations in QLoRA:
-- **4-bit NormalFloat (NF4)**: Quantization format optimized for normally-distributed neural network weights
+- **4-bit NormalFloat (NF4)**: a 4-bit number format tuned for the typical spread of values in model weights (most cluster near zero, a few are large), so it loses less quality than generic 4-bit rounding
 - **Double quantization**: Quantize the quantization constants too, saving additional memory
 - **Paged optimizers**: Offload optimizer states to CPU when GPU runs out
 
@@ -171,6 +173,14 @@ bnb_config = BitsAndBytesConfig(
 ---
 
 ## Training Hyperparameters
+
+A few knobs you'll actually tune below:
+- **epoch** = one full pass over your dataset (like one loop over a list)
+- **learning_rate** = how big each adjustment step is -- too high overshoots, too low never finishes
+- **batch size** = how many examples are processed before each adjustment
+- **warmup** = start with tiny steps so early noisy updates do not wreck the adapter
+
+The gradient/optimizer settings (`gradient_accumulation_steps`, `weight_decay`, `optim`) are sensible defaults -- leave them as-is.
 
 ```python
 # script_id: day_078_finetuning_fundamentals/training_args
@@ -244,7 +254,7 @@ training_args = TrainingArguments(
 
 ```python
 # script_id: day_078_finetuning_fundamentals/qlora_peft_workflow
-from peft import LoraConfig, get_peft_model, TaskType
+from peft import LoraConfig, get_peft_model, TaskType, prepare_model_for_kbit_training
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 # Load base model
@@ -255,6 +265,8 @@ model = AutoModelForCausalLM.from_pretrained(
     device_map="auto",
 )
 tokenizer = AutoTokenizer.from_pretrained(model_name)
+
+model = prepare_model_for_kbit_training(model)  # required prep step when training a 4-bit model
 
 # Configure LoRA
 lora_config = LoraConfig(
@@ -403,4 +415,4 @@ merged = model.merge_and_unload()
 
 ## What's Next?
 
-Theory done! Let's get hands-on and **fine-tune a real model** using Unsloth!
+Theory done! On Day 79 we get hands-on and **fine-tune a real model** using Unsloth.

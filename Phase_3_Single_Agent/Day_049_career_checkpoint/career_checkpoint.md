@@ -2,7 +2,7 @@
 
 Stop. Before you write another line of code, take a breath.
 
-> **Coming from Software Engineering?** This checkpoint is your performance review with yourself. As a SWE making the AI transition, you have a unique advantage: you're not learning to code *and* learning AI — you're layering AI skills on top of battle-tested engineering fundamentals. Today, map what you've built to job requirements you've seen. You'll find that your SWE background makes your AI projects more impressive than those from someone who learned coding and AI simultaneously.
+> **Coming from Software Engineering?** This checkpoint is a code review of your career: diff Day 1 vs Day 49, note the deltas, and file the action items. As a SWE making the AI transition, you have a unique advantage: you're not learning to code *and* learning AI — you're layering AI skills on top of battle-tested engineering fundamentals. Today, map what you've built to job requirements you've seen. You'll find that your SWE background makes your AI projects more impressive than those from someone who learned coding and AI simultaneously.
 
 You're 48 days in. You've built three real projects. You've gone from "I've used ChatGPT in the browser" to "I can build autonomous agents with LangGraph and persistent state." That's not a small thing. Today we're going to take stock of what you've actually learned, map it to what employers are looking for, and figure out what to do right now to capitalize on the progress you've made.
 
@@ -14,41 +14,19 @@ This is also a day to refuel. The rest of the journey is the hardest part — mu
 
 Remember the skills audit from Day 1? Pull it out. Here's how your capabilities have changed:
 
-```mermaid
-radar
-    title Skills Progress: Day 1 vs Day 49
-    "LLM API Integration"
-    "Prompt Engineering"
-    "Structured Output"
-    "RAG & Vector DBs"
-    "Agent Design"
-    "Tool Calling"
-    "State Machines"
-    "Eval Basics"
-    "Python/SWE"
-```
+| Skill | Day 1 | Day 49 |
+|---|---|---|
+| LLM API Integration | 1/5 | 4/5 |
+| Prompt Engineering | 1/5 | 3/5 |
+| Structured Output | 0/5 | 4/5 |
+| RAG & Vector DBs | 0/5 | 3/5 |
+| Agent Design | 0/5 | 3/5 |
+| Tool Calling | 0/5 | 3/5 |
+| State Machines | 0/5 | 3/5 |
+| Eval Basics | 0/5 | 1/5 |
+| Python/SWE | 4/5 | 4/5 |
 
-*Day 1 baseline (estimated for a typical SWE):*
-- LLM API Integration: 1/5
-- Prompt Engineering: 1/5
-- Structured Output: 0/5
-- RAG & Vector DBs: 0/5
-- Agent Design: 0/5
-- Tool Calling: 0/5
-- State Machines (LangGraph): 0/5
-- Python/SWE: 4/5
-
-*Day 49 (where you should be):*
-- LLM API Integration: 4/5
-- Prompt Engineering: 3/5
-- Structured Output: 4/5
-- RAG & Vector DBs: 3/5
-- Agent Design: 3/5
-- Tool Calling: 3/5
-- State Machines: 3/5
-- Python/SWE: 4/5 (unchanged, but applied to new domains)
-
-That's a significant shift. Let's make it concrete.
+(Day 1 scores are estimates for a typical SWE; Python/SWE is unchanged but now applied to new domains.) Eyeball the gap between the two columns — that's a significant shift. Let's make it concrete.
 
 ---
 
@@ -70,18 +48,18 @@ You can take any unstructured text — job postings, product reviews, legal docu
 ### 2. RAG Chatbot (Day 34 Capstone)
 
 You can build a chatbot that answers questions from a document collection with cited sources. You know how to:
-- Chunk and embed documents into ChromaDB
-- Implement semantic retrieval with cosine similarity
+- Chunk and embed documents into ChromaDB (turn text into numeric vectors so you can search by meaning, not exact keywords)
+- Implement semantic retrieval with cosine similarity (rank stored chunks by closeness of meaning to the question)
 - Inject retrieved context into prompts
 - Use tool calling for dynamic retrieval within a conversation
-- Evaluate answer quality with LLM-as-judge
+- Evaluate answer quality with LLM-as-judge (a second model call grades the answer)
 
 **Real-world equivalent:** Customer support bots, internal knowledge base assistants, document Q&A for legal and compliance, product documentation chatbots.
 
 ### 3. Autonomous Research Agent (Day 48 Capstone)
 
 You can build an agent that autonomously researches a topic and produces a report. You know how to:
-- Define LangGraph state machines with conditional routing
+- Define LangGraph state machines with conditional routing (the same control-flow graph you would draw for a multi-step backend job — except the LLM picks the branch)
 - Bind tools to an LLM and handle tool call/result cycles
 - Implement iteration limits and graceful termination
 - Persist agent state to SQLite
@@ -126,9 +104,9 @@ Not all AI engineering jobs use the same title. Here's a translation guide:
 | AI Engineer | LLM apps, RAG, agents, deployment | Strong after Day 100 |
 | LLM Engineer | Deep LLM expertise, prompt engineering, evals | Emerging now |
 | Applied AI Engineer | ML + LLM, more research-adjacent | Partial fit |
-| ML Engineer | Model training, not just inference | Weak fit (different role) |
+| ML Engineer | Model training (building the model), not just inference (calling a finished model to get answers — which is what AI Engineering does) | Weak fit (different role) |
 | AI Product Engineer | Full-stack + AI features | Strong if you have FE skills |
-| AI Infrastructure Engineer | MLOps, serving, scaling | Weak fit (DevOps heavy) |
+| AI Infrastructure Engineer | MLOps (the ops discipline of serving and scaling models) | Weak fit (DevOps heavy) |
 | Prompt Engineer | Pure prompt design (declining as role) | Overqualified |
 
 **The sweet spot for SWE transitions:** AI Engineer and LLM Engineer titles at companies that are building *with* AI rather than *doing* AI research. These are product companies, not research labs.
@@ -169,7 +147,7 @@ Add these three projects. Be specific about what they do and what technologies t
 
 ---
 
-**RAG Chatbot with Document Q&A** | Python, OpenAI, ChromaDB, LangGraph
+**RAG Chatbot with Document Q&A** | Python, OpenAI, ChromaDB
 - Built a retrieval-augmented generation chatbot that answers questions from custom document collections with cited sources
 - Implemented semantic chunking, embedding-based retrieval, and context injection with source attribution
 - Added LLM-as-judge evaluation framework measuring correctness, completeness, and groundedness
@@ -177,11 +155,13 @@ Add these three projects. Be specific about what they do and what technologies t
 ---
 
 **Autonomous Research Agent** | Python, LangGraph, OpenAI
-- Built an autonomous agent that researches topics using web search tools, synthesizes findings, and produces structured reports
+- Built an autonomous agent that researches topics using pluggable search tools (mock by default; drop in Tavily/SerpAPI for live search), synthesizes findings, and produces structured reports
 - Implemented LangGraph state machine with conditional routing, configurable iteration limits, and graceful termination
 - Added SQLite persistence for session history and streaming execution for real-time progress
 
 ---
+
+If any term in these bullets (embedding-based retrieval, LLM-as-judge, groundedness) isn't second nature yet, re-skim the Day 34 capstone before an interview — you will be asked to explain what you wrote.
 
 ### LinkedIn Headline Options
 
@@ -202,7 +182,7 @@ The honest answer: yes, but strategically.
 
 **Do apply to:**
 - Companies that are a stretch but not your dream job
-- Roles where the JD aligns closely with what you've already built
+- Roles where the JD (job description) aligns closely with what you've already built
 - Companies where you have a warm intro through your network
 
 **Why apply now?**
@@ -312,25 +292,6 @@ See you on Day 50.
 
 ---
 
-## Exercises
-
-These are reflection prompts, not code. Spend 20–30 honest minutes on them today.
-
-1. Re-score yourself on the Day 1 skills audit. Write one concrete piece of evidence ("I built X that does Y") for each skill that moved.
-2. Pick one real AI Engineer job posting. Paste its requirements and mark each line ✅ / ⚠️ / ❌ against what you can do today.
-3. Rewrite your three capstones as resume bullets — each one outcome-first ("Built…", "Implemented…", "Added…"), naming the tech.
-4. Name one company in your network where you could have a *conversation* (not an application) about AI roles, and draft the one-line message you'd send.
-
-<details><summary>Solutions (reflection guide)</summary>
-
-1. There are no wrong scores — the point is evidence. If you can't cite a project for a skill, that's the skill to revisit.
-2. Most "nice to have" gaps (multi-agent, eval, fine-tuning, deployment) map directly onto Phases 4–8, so a wall of ⚠️ is expected and temporary.
-3. Use the project descriptions in "What to Put on Your Resume RIGHT NOW" as templates; tighten them to your own wording.
-4. The strongest framing is "actively building AI engineering skills, completed projects in X/Y/Z, currently working on …" — honest beats inflated.
-</details>
-
----
-
 ## Summary
 
 ```mermaid
@@ -359,6 +320,25 @@ mindmap
 | LinkedIn headline | "Software Engineer → AI Engineer \| RAG, agents, LLM apps" |
 | Where to apply now | Stretch roles + warm intros, not dream jobs (save those for Day 100) |
 | Framing for gaps | "Actively building; completed X/Y/Z; currently working on …" |
+
+---
+
+## Exercises
+
+These are reflection prompts, not code. Spend 20–30 honest minutes on them today.
+
+1. Re-score yourself on the Day 1 skills audit. Write one concrete piece of evidence ("I built X that does Y") for each skill that moved.
+2. Pick one real AI Engineer job posting. Paste its requirements and mark each line ✅ / ⚠️ / ❌ against what you can do today.
+3. Rewrite your three capstones as resume bullets — each one outcome-first ("Built…", "Implemented…", "Added…"), naming the tech.
+4. Name one company in your network where you could have a *conversation* (not an application) about AI roles, and draft the one-line message you'd send.
+
+<details><summary>Solutions (reflection guide)</summary>
+
+1. There are no wrong scores — the point is evidence. If you can't cite a project for a skill, that's the skill to revisit.
+2. Most "nice to have" gaps (multi-agent, eval, fine-tuning, deployment) map directly onto Phases 4–8, so a wall of ⚠️ is expected and temporary.
+3. Use the project descriptions in "What to Put on Your Resume RIGHT NOW" as templates; tighten them to your own wording.
+4. The strongest framing is "actively building AI engineering skills, completed projects in X/Y/Z, currently working on …" — honest beats inflated.
+</details>
 
 ---
 

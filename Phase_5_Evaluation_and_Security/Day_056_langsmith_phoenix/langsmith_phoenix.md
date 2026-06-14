@@ -49,6 +49,8 @@ pip install langsmith langchain langchain-openai
 import os
 
 # Set environment variables
+# Current LangSmith docs use LANGSMITH_TRACING / LANGSMITH_API_KEY / LANGSMITH_PROJECT;
+# the LANGCHAIN_* names below are still-supported aliases.
 os.environ["LANGCHAIN_TRACING_V2"] = "true"
 os.environ["LANGCHAIN_API_KEY"] = "your-langsmith-api-key"
 os.environ["LANGCHAIN_PROJECT"] = "my-ai-project"
@@ -126,7 +128,7 @@ from langsmith import traceable
 @traceable(
     name="production_query",
     tags=["production", "v2"],
-    metadata={"version": "2.0", "team": "ml"}
+    metadata={"version": "2.0", "team": "ai-platform"}
 )
 def production_query(user_id: str, query: str) -> str:
     """Query with rich metadata for filtering."""
@@ -154,7 +156,7 @@ Phoenix is a free, open-source alternative:
 ### Setup
 
 ```bash
-pip install arize-phoenix opentelemetry-sdk opentelemetry-exporter-otlp
+pip install arize-phoenix openinference-instrumentation-openai openai
 ```
 
 ```python
@@ -235,6 +237,10 @@ mindmap
       Popular queries
 ```
 
+**Time to first token** = how long until the model starts streaming its answer — the LLM equivalent of time-to-first-byte. It drives perceived speed even when the full response takes longer.
+
+We go deeper on capturing and visualizing these in Day 057 — here they are just a byproduct of tracing.
+
 ### Building a Metrics Dashboard
 
 ```python
@@ -253,7 +259,7 @@ class QueryMetrics:
     output_tokens: int
     total_cost: float
     success: bool
-    error: str = None
+    error: str | None = None
 
 class MetricsCollector:
     """Collect and analyze metrics."""
@@ -282,6 +288,7 @@ class MetricsCollector:
             "latency": {
                 "mean": statistics.mean(latencies),
                 "median": statistics.median(latencies),
+                # p95 needs enough samples to be meaningful; fall back to max for small batches
                 "p95": sorted(latencies)[int(len(latencies) * 0.95)] if len(latencies) > 20 else max(latencies),
             },
             "cost": {
@@ -325,7 +332,7 @@ flowchart TB
     B -->|"Tool calls"| E["Cache results,\nparallelize"]
 
     F["Bad Quality"] --> G{"Which step\nfailed?"}
-    G -->|"Retrieval"| H["Check chunk size,\nembedding quality"]
+    G -->|"Retrieval"| H["Check chunk size,\ntry stronger embeddings"]
     G -->|"Generation"| I["Improve prompt,\nadd examples"]
     G -->|"Context"| J["Add more context,\nbetter ranking"]
 ```
@@ -364,7 +371,12 @@ def analyze_trace(trace: dict) -> dict:
             "details": trace["error"]
         })
 
-    # Check retrieval relevance
+    # Check retrieval relevance.
+    # A retrieval score is how closely a fetched chunk matches the query — on a 0-1
+    # scale where 1 means near-identical meaning (the same embedding-similarity
+    # numbers you computed back in Phase 2). Below ~0.7 usually means the retriever
+    # pulled in only loosely related text; treat it as a rule of thumb, not a law,
+    # and tune it to your data.
     retrieval_scores = trace.get("retrieval_scores", [])
     if retrieval_scores and max(retrieval_scores) < 0.7:
         issues.append({
@@ -380,10 +392,6 @@ def analyze_trace(trace: dict) -> dict:
         "has_critical": any(i["severity"] == "critical" for i in issues)
     }
 ```
-
-## Checkpoint
-
-Run the `MetricsCollector` example above and call `collector.summary()` after recording a couple of queries — you should see a non-zero `total_queries` and a real `latency.mean` in the printed dict. If it comes back `{"error": "No data"}`, you're almost certainly printing a different collector instance than the one you called `.record(...)` on (or you skipped the `record` step entirely).
 
 ---
 
@@ -415,6 +423,8 @@ mindmap
 ```python
 # script_id: day_056_langsmith_phoenix/quick_reference
 # LangSmith
+# Current docs use LANGSMITH_TRACING / LANGSMITH_API_KEY / LANGSMITH_PROJECT;
+# the LANGCHAIN_* names below are still-supported aliases.
 import os
 os.environ["LANGCHAIN_TRACING_V2"] = "true"
 os.environ["LANGCHAIN_API_KEY"] = "key"
@@ -455,6 +465,12 @@ flagged = [analyze_trace(t) for t in traces]
 critical = [r for r in flagged if r["has_critical"]]
 ```
 </details>
+
+---
+
+## Checkpoint
+
+Run the `MetricsCollector` example above and call `collector.summary()` after recording a couple of queries — you should see a non-zero `total_queries` and a real `latency.mean` in the printed dict. If it comes back `{"error": "No data"}`, you're almost certainly printing a different collector instance than the one you called `.record(...)` on (or you skipped the `record` step entirely).
 
 ---
 

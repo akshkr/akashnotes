@@ -61,9 +61,9 @@ flowchart LR
 **What interviewers want to hear:**
 - Chunking strategy and why (semantic vs fixed-size, overlap rationale)
 - Embedding model choice and trade-offs
-- Vector DB selection (managed vs self-hosted, ANN algorithm)
+- Vector DB selection (managed vs self-hosted, ANN algorithm — approximate nearest-neighbor, the index that avoids scanning every vector, like a DB index trading exactness for speed)
 - Retrieval quality: hybrid search (keyword + semantic), reranking
-- Caching: exact-match for repeated queries, semantic cache
+- Caching: exact-match for repeated queries, semantic cache (cache by meaning, not exact string match)
 - Evaluation: RAGAS metrics (faithfulness, answer relevance, context recall)
 - Cost: embedding is cheap, LLM is expensive; optimize context window usage
 - Scaling: async ingestion pipeline, batch embedding
@@ -88,7 +88,7 @@ This one signals seniority. Most candidates skip evaluation — interviewers not
 ```
 Components to cover:
 1. Test set construction (golden examples, edge cases, adversarial)
-2. Metric selection (task-dependent: accuracy, F1, BLEU, RAGAS, custom)
+2. Metric selection (task-dependent: accuracy/F1 — classic classification scores; BLEU — text-overlap score for generated vs reference text, common in translation/summarization; RAGAS — the RAG quality metrics from Phase 5; or a custom metric)
 3. LLM-as-judge (when human eval doesn't scale)
 4. Regression testing (detect quality drops between versions)
 5. A/B testing infrastructure (prompt versions, model versions)
@@ -152,6 +152,8 @@ For remote: true only if explicitly stated as remote/hybrid.""",
     return JobPosting(**data)
 ```
 
+Note: `response_format` `json_object` only guarantees the model returns *valid JSON*, not that it matches your schema — the model can still omit a field or send a string where you expect an int. That is exactly why we re-validate with Pydantic: the `@field_validator` and `int | None` typing are the real contract, and a bad response surfaces as a clean validation error at `JobPosting(**data)`.
+
 ### Pattern 2: Tool Calling Implementation
 
 ```python
@@ -202,7 +204,7 @@ def run_stock_agent(question: str) -> str:
         message = response.choices[0].message
 
         if not message.tool_calls:
-            return message.content
+            return message.content or ""
 
         messages.append(message)
 
@@ -254,7 +256,7 @@ Great (stands out):
 
 ### The README Template That Works
 
-```markdown
+````markdown
 # [Project Name]
 
 ## What it does
@@ -279,7 +281,7 @@ Results on my test set of N examples: [metric] = [value]
 - Better evaluation with RAGAS
 - Semantic caching to reduce costs
 - Streaming responses for better UX
-```
+````
 
 ---
 
@@ -289,17 +291,17 @@ These are different from standard behavioral questions because they probe your A
 
 **"Tell me about a time your model/agent failed in production."**
 
-Structure: situation → what failed → how you detected it → what you did → what you changed.
+Use the STAR format (Situation, Task, Action, Result) — here adapted as: situation → what failed → how you detected it → what you did → what you changed.
 
 Good answer includes: a specific failure mode (not just "it gave wrong answers"), how you detected it (monitoring? user report?), a root cause analysis, and a systemic fix (not just "I fixed the prompt").
 
 **"How do you evaluate whether an AI system is working well?"**
 
-They want: offline metrics + online monitoring + human evaluation + A/B testing. Not just "I tested it manually."
+They want: offline metrics (scored against a fixed test set before you ship) + online monitoring (watching real production traffic after you ship) + human evaluation + A/B testing. Not just "I tested it manually."
 
 **"How do you decide which model to use for a task?"**
 
-They want: quality/cost/latency triangle, task-specific considerations (long context? structured output? reasoning?), benchmark results, and your own empirical testing.
+They want: the quality/cost/latency triangle (the AI version of fast/cheap/good — pick two; e.g. a bigger model raises quality but costs more and is slower), task-specific considerations (long context? structured output? reasoning?), benchmark results, and your own empirical testing.
 
 **"How do you handle non-determinism in your AI systems?"**
 
@@ -439,7 +441,7 @@ mindmap
 
 ---
 
-## Practice Exercises
+## Exercises
 
 1. Give yourself 45 minutes to design a RAG system for a company blog on a whiteboard (or paper). Time yourself.
 2. Record yourself answering "Tell me about a time your model failed" — watch it back and refine your story

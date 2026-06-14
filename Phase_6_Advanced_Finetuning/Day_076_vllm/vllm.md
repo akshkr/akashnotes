@@ -67,7 +67,7 @@ flowchart TB
 Traditional inference pre-allocates a contiguous block of GPU memory for each request's KV cache. This leads to:
 - **Internal fragmentation**: allocated memory that goes unused
 - **External fragmentation**: free memory too scattered to use
-- **Over-reservation**: must assume max sequence length
+- **Over-reservation**: must assume max sequence length -- e.g. you reserve room for a 4096-token answer, but the model stops at 200 tokens, so the other ~3900 slots sat locked and idle the whole time
 
 PagedAttention splits the KV cache into fixed-size pages (like OS virtual memory):
 - Pages allocated on demand as tokens are generated
@@ -82,8 +82,8 @@ PagedAttention splits the KV cache into fixed-size pages (like OS virtual memory
 # Basic installation (requires CUDA)
 pip install vllm
 
-# With specific CUDA version
-pip install vllm --extra-index-url https://download.pytorch.org/whl/cu121
+# vLLM ships prebuilt CUDA wheels, so `pip install vllm` is enough for most setups.
+# For a specific CUDA toolchain, follow the official vLLM install docs (verify the current CUDA version there).
 ```
 
 **Hardware requirements:**
@@ -264,6 +264,8 @@ for r in results:
     print(f"{r['provider']}: {r['tokens_per_second']} tok/s, {r['avg_latency']} avg latency")
 ```
 
+> **Note:** this loop is sequential, so it measures per-request latency, not the concurrent throughput continuous batching is built for. See Exercise 1 for a concurrent version (fire requests in parallel with `asyncio.gather`).
+
 ---
 
 ## Decision Matrix: When to Use What
@@ -351,7 +353,6 @@ VLLM_CONFIG = {
     "max_num_batched_tokens": 8192, # Max tokens per batch
     "enforce_eager": False,         # Use CUDA graphs for speed
     "swap_space": 4,                # CPU swap space in GB
-    "disable_log_requests": True,   # Reduce log noise in production
 }
 
 # Health check endpoint
@@ -432,6 +433,13 @@ client = OpenAI(base_url="http://localhost:8000/v1", api_key="na")
 2. **Benchmark Battle**: Run the same prompt through vLLM, Ollama, and direct HuggingFace Transformers. Compare throughput, latency, and memory usage. Create a table of results.
 
 3. **Production Wrapper**: Build a FastAPI application that proxies requests to vLLM, adding rate limiting, request logging, and a health check endpoint. Test with concurrent requests using `asyncio.gather`.
+
+<details><summary>Solutions (approaches)</summary>
+
+1. Fire N concurrent OpenAI-client calls with `asyncio.gather` (or a thread pool), then divide summed `completion_tokens` by wall-clock time to get true concurrent tok/s.
+2. Reuse `benchmark_provider`, add an HF Transformers `pipeline()` baseline, and tabulate tok/s plus peak `nvidia-smi` memory for each.
+3. FastAPI app with a `lifespan`-managed `httpx.AsyncClient`, a token-bucket/slowapi rate limiter, structured request logging, and a `/health` route proxying vLLM's `/health`.
+</details>
 
 ---
 

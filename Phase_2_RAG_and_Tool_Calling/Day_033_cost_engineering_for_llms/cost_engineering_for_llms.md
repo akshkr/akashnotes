@@ -14,12 +14,12 @@ Cost engineering is the discipline that prevents that moment. It is not about be
 
 > **Note:** API prices change frequently. The rates below are approximate as of early 2025. Always check provider pricing pages for current rates before making budget decisions.
 
-Every LLM call costs money based on tokens. Here is the current landscape:
+Every LLM call costs money based on tokens. A token is a chunk of text the model bills you for — like a character-encoding unit, but for words: roughly 4 characters of English, or about 0.75 words, per token. Here is the current landscape:
 
 | Model | Input (per 1M tokens) | Output (per 1M tokens) | Notes |
 |---|---|---|---|
 | GPT-4o | $2.50 | $10.00 | OpenAI flagship |
-| GPT-4o-mini | $0.15 | $0.60 | 17x cheaper than GPT-4o |
+| GPT-4o-mini | $0.15 | $0.60 | ~16x cheaper than GPT-4o |
 | Claude Sonnet 4.6 | $3.00 | $15.00 | Balanced Anthropic model |
 | Claude Haiku 4.5 | $1.00 | $5.00 | Fast, cheap Anthropic model |
 | Claude Opus 4.6 | $5.00 | $25.00 | Most capable Opus-tier |
@@ -51,7 +51,9 @@ def count_message_tokens(messages: list[dict], model: str = "gpt-4o") -> int:
     """Count tokens for a messages array (includes formatting overhead)."""
     enc = tiktoken.encoding_for_model(model)
     
-    # OpenAI adds per-message overhead
+    # OpenAI wraps each message in a few formatting tokens; these constants
+    # approximate that overhead and shift between model versions. For an exact
+    # count, trust response.usage from the API.
     tokens_per_message = 3
     tokens_per_name = 1
     
@@ -104,7 +106,7 @@ class ModelPricing:
 PRICING = {
     "gpt-4o": ModelPricing(input_per_million=2.50, output_per_million=10.00),
     "gpt-4o-mini": ModelPricing(input_per_million=0.15, output_per_million=0.60),
-    "claude-sonnet-4-5": ModelPricing(input_per_million=3.00, output_per_million=15.00),
+    "claude-sonnet-4-6": ModelPricing(input_per_million=3.00, output_per_million=15.00),
     "claude-haiku-4-5": ModelPricing(input_per_million=1.00, output_per_million=5.00),
 }
 
@@ -157,6 +159,8 @@ flowchart LR
 
     style D fill:#FFE4B5
 ```
+
+A RAG query costs money twice: once to embed the question (billed per token, but the question is short) and once for the LLM answer (the question plus retrieved context — far more tokens). The model below adds both.
 
 ```python
 # script_id: day_033_cost_engineering_for_llms/cost_calculation
@@ -230,7 +234,7 @@ print(f"  Cost per user/month: ${budget['cost_per_user_per_month_usd']:.4f}")
 
 ## Model Routing: Smart Cost Optimization
 
-The best strategy is not to always use the cheap model or always use the expensive one. It is to **route intelligently**: use the cheap model for easy queries, escalate to the expensive model only when needed.
+The best strategy is not to always use the cheap model or always use the expensive one. It is to **route intelligently**: use the cheap model for easy queries, escalate to the expensive model only when needed — right-sizing the instance per request, to echo the capacity-planning analogy from the top of this lesson.
 
 ```mermaid
 flowchart TB
@@ -252,6 +256,7 @@ flowchart TB
 
 ```python
 # script_id: day_033_cost_engineering_for_llms/model_routing
+import json
 from openai import OpenAI
 from pydantic import BaseModel
 from enum import Enum
@@ -289,7 +294,6 @@ Respond with JSON: {"complexity": "simple" or "complex", "reason": "brief reason
         max_tokens=50,  # Keep routing cheap
     )
     
-    import json
     data = json.loads(response.choices[0].message.content)
     return QueryComplexity(data["complexity"])
 
@@ -337,7 +341,7 @@ for q in queries:
 
 ### Exact Match Cache
 
-For deterministic queries (same input = same output), cache aggressively.
+For deterministic queries (same input = same output), cache aggressively. `temperature` controls how random the model's output is — 0 means it picks the most likely answer every time, so the same input reliably gives the same output (safe to cache); higher values add variation and break that guarantee.
 
 ```python
 # script_id: day_033_cost_engineering_for_llms/cost_calculation
@@ -410,6 +414,8 @@ def cached_completion(
 ```
 
 ### Semantic Cache
+
+An embedding turns a query into a list of numbers capturing its meaning; queries that mean the same thing produce nearby lists. Cosine similarity scores how close two lists are, from 0 (unrelated) to 1 (identical) — so threshold 0.95 means "only reuse the cached answer if the new query means almost exactly the same thing."
 
 For similar queries that should get the same answer, use embedding similarity.
 
@@ -514,7 +520,7 @@ client = Anthropic()
 # The system prompt and documents are cached after the first request
 # Subsequent requests with the same prefix get 90% input discount
 response = client.messages.create(
-    model="claude-sonnet-4-5",
+    model="claude-sonnet-4-6",
     max_tokens=1024,
     system=[
         {
@@ -744,6 +750,8 @@ Embeddings are so cheap they are almost free. The LLM call dominates. This means
 
 ```python
 # script_id: day_033_cost_engineering_for_llms/cost_conscious_chunking
+import tiktoken
+
 # Cost-conscious chunking: fewer, better chunks
 def optimize_context(chunks: list[str], query: str, max_tokens: int = 800) -> list[str]:
     """Select top chunks that fit within a token budget."""
@@ -783,7 +791,7 @@ def optimize_context(chunks: list[str], query: str, max_tokens: int = 800) -> li
 ## Key Takeaways
 
 1. **Output tokens cost 4-5x more than input** — optimize for shorter responses when quality allows
-2. **GPT-4o-mini is 17x cheaper than GPT-4o** — most queries do not need the flagship model
+2. **GPT-4o-mini is ~16x cheaper than GPT-4o** — most queries do not need the flagship model
 3. **Model routing saves 50-70%** — classify query complexity before choosing a model
 4. **Caching is the highest-leverage optimization** — identical queries should never hit the API twice
 5. **Prompt caching cuts input costs by 90%** — mark stable prefixes (system prompts, context docs) as cacheable
@@ -831,7 +839,7 @@ mindmap
 | Count tokens | `count_tokens(text, model)` before sending | Know cost up front |
 | Cheap default | Route simple queries to `gpt-4o-mini` / `claude-haiku-4-5` | Up to ~16x cheaper than flagship |
 | Model routing | Classify complexity, pick model per query | Pay for capability only when needed |
-| Prompt caching | Mark a stable system prefix cacheable (Anthropic) | ~75%+ off the cached prefix |
+| Prompt caching | Mark a stable system prefix cacheable (Anthropic) | ~90% off the cached prefix |
 | Batch API | OpenAI Batch for non-urgent work | ~50% off real-time pricing |
 | Budget alerts | Track spend/hour, alert at 50% of cap | Catch runaway cost early |
 

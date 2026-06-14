@@ -33,6 +33,8 @@ Issues with synchronous:
 
 ## Pattern 1: Background Tasks
 
+You saw the bare `BackgroundTasks` version on Day 083; here we build it out toward production.
+
 FastAPI's built-in background tasks:
 
 ```python
@@ -89,6 +91,10 @@ async def get_task_status(task_id: str):
 
     return task_results[task_id]
 ```
+
+Note: `run_agent_task` is a plain `def` (not `async`), so FastAPI runs it in a threadpool and the blocking `time.sleep` is fine. Inside an `async` function you must use `await asyncio.sleep` instead — a blocking call there freezes the whole server. That is why Patterns 3-5 use asyncio.
+
+Note: `task_results` lives in this process's memory, so it only works on a single worker/server and is wiped on restart. Patterns 2-3 fix that with a shared store/queue.
 
 ---
 
@@ -190,6 +196,7 @@ class TaskQueue:
         self.queue = asyncio.Queue()
         self.max_workers = max_workers
         self.workers_started = False
+        self._workers = []
 
     async def start_workers(self):
         """Start background workers."""
@@ -197,7 +204,7 @@ class TaskQueue:
             return
 
         for i in range(self.max_workers):
-            asyncio.create_task(self._worker(i))
+            self._workers.append(asyncio.create_task(self._worker(i)))
 
         self.workers_started = True
 
@@ -335,6 +342,7 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 import httpx
 import asyncio
+import uuid
 
 app = FastAPI()
 
@@ -383,10 +391,13 @@ async def submit_with_callback(request: TaskWithCallback):
 
 ## Best Practices
 
+These snippets build on the `Task`/`TaskQueue` classes from Pattern 3 — they are illustrative and assume those definitions are in scope.
+
 ### 1. Task Timeouts
 
 ```python
 # script_id: day_084_async_task_handling/task_timeout
+# fragment: illustrative best-practice snippet / not standalone-runnable
 async def run_with_timeout(task: Task, timeout: int = 300):
     """Run task with timeout."""
     try:
@@ -405,26 +416,28 @@ async def run_with_timeout(task: Task, timeout: int = 300):
 
 ```python
 # script_id: day_084_async_task_handling/progress_updates
+# fragment: illustrative best-practice snippet / not standalone-runnable
 async def run_agent_with_progress(task: Task):
     """Run agent with progress updates."""
-
+    # The steps are just an example - the point is you set task.progress between each slow step.
     task.progress = 10
-    documents = await fetch_documents()
+    step1 = await load_inputs()
 
-    task.progress = 30
-    embeddings = await generate_embeddings(documents)
+    task.progress = 40
+    step2 = await process(step1)
 
-    task.progress = 60
-    result = await query_llm(embeddings)
+    task.progress = 70
+    step3 = await call_model(step2)
 
     task.progress = 100
-    return result
+    return step3
 ```
 
 ### 3. Cleanup Old Tasks
 
 ```python
 # script_id: day_084_async_task_handling/cleanup_old_tasks
+# fragment: illustrative best-practice snippet / not standalone-runnable
 from datetime import datetime, timedelta
 
 async def cleanup_old_tasks(task_queue: TaskQueue, max_age_hours: int = 24):
@@ -441,10 +454,6 @@ async def cleanup_old_tasks(task_queue: TaskQueue, max_age_hours: int = 24):
 ```
 
 ---
-
-## Checkpoint
-
-Run the `background_tasks` API: POST a job and confirm you get back a task ID immediately (not a blocked request), then poll the status endpoint with the `polling_client` and watch it flip from `pending` to `completed`. If the status never changes, check that the background worker is actually running and writing back to the same task store the status endpoint reads from.
 
 ## Summary
 
@@ -506,6 +515,12 @@ task.result  # Get result
 3. `@celery.task def run_agent(prompt): ...`; `task = run_agent.delay(prompt)`; map Celery states to your API's status strings.
 4. Use `asyncio.wait_for(coro, timeout=N)` (or Celery `soft_time_limit`); a periodic sweep removes entries older than the TTL.
 </details>
+
+---
+
+## Checkpoint
+
+Run the `background_tasks` API: POST a job and confirm you get back a task ID immediately (not a blocked request), then poll the status endpoint with the `polling_client` and watch it flip from `pending` to `completed`. If the status never changes, check that the background worker is actually running and writing back to the same task store the status endpoint reads from.
 
 ---
 

@@ -3,12 +3,16 @@
 Want to run large models on your laptop? Quantization makes models smaller and faster while keeping quality. This guide explains how.
 
 > **Coming from Software Engineering?** Quantization is like image compression (JPEG vs. PNG) or video encoding (bitrate settings) applied to neural network weights. You're trading precision for size/speed — going from 32-bit floats to 8-bit or 4-bit integers, just like going from lossless to lossy compression. The quality-vs-size tradeoff curves behave similarly: the first rounds of compression are nearly free, but aggressive compression eventually degrades output quality noticeably.
+>
+> A model is, under the hood, just a giant list of numbers (called *weights* or *parameters*) — a 7B model has 7 billion of them, each stored as a 32-bit float by default. Quantization stores each number in fewer bits, the same way you would downcast a `double` to a `float`, or a `float` to an `int8`, to save memory.
 
 > **This is a two-part day.** **Part 1** covers quantization formats (GGUF / AWQ / GPTQ) and choosing one for your hardware. **Part 2** ("Swapping OpenAI for Local Models") shows how to point existing code at a local model with minimal changes. Part 1 is the concepts; Part 2 is the migration recipe.
 
 ---
 
 ## What is Quantization?
+
+This expands on the quantization teaser from Day 074 — here we go deeper on formats and choosing one.
 
 ```mermaid
 flowchart LR
@@ -36,6 +40,8 @@ Quantization reduces precision of model weights:
 - **INT8**: 8 bits per parameter (1/4 size)
 - **INT4**: 4 bits per parameter (1/8 size)
 
+Fewer bits means each number is rounded more coarsely — like storing 3.14159 as 3.14, or as just 3. Do that across billions of numbers and the model's answers drift slightly. That rounding error is the whole quality-vs-size tradeoff.
+
 ---
 
 ## Why Quantize?
@@ -45,7 +51,7 @@ Quantization reduces precision of model weights:
 | Size | 28 GB | 4 GB |
 | RAM needed | 32+ GB | 6 GB |
 | Speed | Slow | Fast |
-| Quality | Best | ~95% of original |
+| Quality | Best | Very close for most tasks (measure your own prompts) |
 
 Trade-offs:
 - **Smaller** = fits on consumer hardware
@@ -68,6 +74,8 @@ llama-2-7b-chat.Q4_K_M.gguf
          └────────────── Q4 = 4-bit quantization
 ```
 
+The *K* (K-quant) just means a newer, smarter rounding scheme than the original method — you rarely need to care beyond picking a row from the table below. The S/M/L suffix trades a little more size for a little more quality.
+
 ### Quantization Levels
 
 | Name | Bits | Size (7B) | Quality | Use Case |
@@ -85,10 +93,10 @@ llama-2-7b-chat.Q4_K_M.gguf
 
 ```bash
 # Ollama automatically uses GGUF
-ollama pull llama3.3:7b-q4_K_M
+ollama pull llama3.1:8b-instruct-q4_K_M
 
 # Or specify quantization
-ollama run llama3.3:7b-chat-q5_K_M
+ollama run llama3.1:8b-instruct-q5_K_M
 ```
 
 ### Using GGUF with llama.cpp
@@ -134,9 +142,11 @@ print(output["choices"][0]["text"])
 
 AWQ (Activation-aware Weight Quantization) preserves important weights:
 
+Not all of a model's numbers matter equally — a small fraction carry most of the weight on output quality. AWQ runs a sample of real prompts through the model to spot which numbers are most-used, keeps those at higher precision, and rounds the rest aggressively. Result: better quality at the same average bit-width.
+
 ```mermaid
 flowchart TB
-    A["Original Model"] --> B["Analyze activations"]
+    A["Original Model"] --> B["Run sample prompts through it"]
     B --> C["Find important weights"]
     C --> D["Protect important weights"]
     D --> E["Quantize rest aggressively"]
@@ -160,6 +170,8 @@ pip install autoawq transformers
 # Or with vLLM
 pip install vllm
 ```
+
+> Note: the standalone `autoawq` package is in maintenance mode and no longer actively developed. The code below still runs, but for new work prefer loading/serving AWQ checkpoints via vLLM (shown next), which is the maintained path. Verify the current state at the autoawq and vLLM repos before relying on it.
 
 ```python
 # script_id: day_075_quantization_and_swapping_models/awq_load_generate
@@ -287,8 +299,8 @@ python convert_hf_to_gguf.py /path/to/model --outfile model-f16.gguf
 from awq import AutoAWQForCausalLM
 from transformers import AutoTokenizer
 
-model_path = "meta-llama/Llama-2-7b-hf"
-quant_path = "llama-2-7b-awq"
+model_path = "meta-llama/Llama-3.1-8B-Instruct"
+quant_path = "llama-3.1-8b-awq"
 
 # Load model
 model = AutoAWQForCausalLM.from_pretrained(model_path)
@@ -296,9 +308,9 @@ tokenizer = AutoTokenizer.from_pretrained(model_path)
 
 # Quantize
 quant_config = {
-    "zero_point": True,
-    "q_group_size": 128,
-    "w_bit": 4
+    "zero_point": True,    # allow an offset so the rounded range need not be centered on 0
+    "q_group_size": 128,   # how many numbers share one rounding scale; 128 is the common default
+    "w_bit": 4             # target precision: 4-bit
 }
 
 model.quantize(tokenizer, quant_config=quant_config)
@@ -308,12 +320,15 @@ model.save_quantized(quant_path)
 tokenizer.save_pretrained(quant_path)
 ```
 
+These defaults match most published AWQ models — change them only if you re-quantize and measure. Use any current AWQ/GPTQ repo for your model — these IDs are examples; verify the repo exists on Hugging Face before pulling.
+
 ---
 
 ## Quality Comparison
 
 ```python
 # script_id: day_075_quantization_and_swapping_models/compare_quantizations
+# fragment: illustrative comparison helper / not standalone-runnable
 def compare_quantizations(prompt: str, original_model, quantized_model):
     """Compare output quality between models."""
 
@@ -336,7 +351,7 @@ def compare_quantizations(prompt: str, original_model, quantized_model):
 
 ## Checkpoint
 
-Run the `compare_quantizations` example and confirm the quantized model loads with a noticeably smaller memory footprint than the full-precision one while still returning sensible text. If you hit an out-of-memory error or the load fails, check that you've installed the matching backend (`autoawq`/`auto-gptq` or a `llama.cpp` build) and that the GGUF/AWQ file path actually points to the quantized weights, not the original checkpoint.
+Load the Q4_K_M GGUF with `Llama(model_path=...)` from the Python example above, generate a few sentences, and note the process RAM use versus the original FP16 file size — it should be roughly a quarter. If the load fails, check the file path points to the quantized `.gguf` and that `llama-cpp-python` is installed.
 
 ## Summary
 
@@ -349,7 +364,7 @@ mindmap
       Q4_K_M recommended
     AWQ
       GPU optimized
-      Activation-aware
+      Watches real prompts
       Better quality
     GPTQ
       GPU focused
@@ -367,7 +382,7 @@ mindmap
 
 ```bash
 # Ollama with quantization
-ollama pull llama3.3:7b-q4_K_M
+ollama pull llama3.1:8b-instruct-q4_K_M
 
 # GGUF quantization levels
 Q4_K_M  # Balanced (recommended)
@@ -456,7 +471,7 @@ client = OpenAI(
 
 # The rest of your code stays the same!
 response = client.chat.completions.create(
-    model="llama3.3",
+    model="llama3.1:8b",
     messages=[{"role": "user", "content": "Hello!"}]
 )
 ```
@@ -527,9 +542,9 @@ CONFIGS = {
         provider="openai",
         model="gpt-4o-mini"
     ),
-    "ollama-llama3.3": LLMConfig(
+    "ollama-llama3.1": LLMConfig(
         provider="ollama",
-        model="llama3.3",
+        model="llama3.1:8b",
         base_url="http://localhost:11434/v1",
         api_key="ollama"
     ),
@@ -573,7 +588,7 @@ class LLMClient:
 
 # Usage
 # Easy to switch!
-client = LLMClient("ollama-llama3.3")
+client = LLMClient("ollama-llama3.1")
 response = client.chat([{"role": "user", "content": "Hello!"}])
 ```
 
@@ -616,15 +631,15 @@ class UniversalLLM:
         return {
             "openai": {
                 "gpt-4o-mini": "gpt-4o-mini",
-                "gpt-4": "gpt-4",
+                "gpt-4o": "gpt-4o",
             },
             "ollama": {
-                "gpt-4o-mini": "llama3.3",
-                "gpt-4": "mixtral",
+                "gpt-4o-mini": "llama3.1:8b",
+                "gpt-4o": "mixtral",
             },
             "vllm": {
-                "gpt-4o-mini": "meta-llama/Llama-2-7b-chat-hf",
-                "gpt-4": "meta-llama/Llama-2-70b-chat-hf",
+                "gpt-4o-mini": "meta-llama/Llama-3.1-8B-Instruct",
+                "gpt-4o": "meta-llama/Llama-2-70b-chat-hf",
             }
         }
 
@@ -649,7 +664,7 @@ llm = UniversalLLM("ollama")
 
 # This works regardless of provider
 response = llm.chat_completion(
-    model="gpt-4o-mini",  # Automatically mapped to llama3.3
+    model="gpt-4o-mini",  # Automatically mapped to llama3.1:8b
     messages=[{"role": "user", "content": "Hello!"}]
 )
 ```
@@ -667,7 +682,7 @@ def get_langchain_llm(provider: str = "openai"):
     """Get LangChain LLM based on provider."""
 
     if provider == "ollama":
-        return ChatOllama(model="llama3.3")
+        return ChatOllama(model="llama3.1:8b")
     elif provider == "local":
         return ChatOpenAI(
             base_url="http://localhost:8000/v1",
@@ -693,26 +708,21 @@ Choose appropriate local models:
 MODEL_QUALITY_MAP = {
     # OpenAI -> Local equivalents by capability
     "gpt-4o-mini": {
-        "ollama": "llama3.3:7b",
+        "ollama": "llama3.1:8b",
         "alternatives": ["mistral:7b", "neural-chat"],
         "notes": "Good general purpose"
     },
-    "gpt-4": {
+    "gpt-4o": {
         "ollama": "mixtral:8x7b",
-        "alternatives": ["llama3.3:70b", "deepseek-coder:33b"],
+        "alternatives": ["llama3:70b", "deepseek-coder:33b"],
         "notes": "Requires more resources"
-    },
-    "gpt-4-turbo": {
-        "ollama": "mixtral:8x7b",
-        "alternatives": ["llama3:70b"],
-        "notes": "Best local option"
     }
 }
 
 def suggest_local_model(openai_model: str) -> dict:
     """Suggest local model equivalent."""
     return MODEL_QUALITY_MAP.get(openai_model, {
-        "ollama": "llama3.3:7b",
+        "ollama": "llama3.1:8b",
         "notes": "Default fallback"
     })
 
@@ -811,6 +821,10 @@ def test_provider_swap():
 test_provider_swap()
 ```
 
+## Checkpoint
+
+Start `ollama serve`, pull the model, and run `test_provider_swap()`. Confirm the ollama path returns a response containing `4`. If it errors, check Ollama is running on :11434 and the model is pulled.
+
 ---
 
 ## Summary
@@ -847,8 +861,8 @@ client = OpenAI(
 
 # Model mapping
 openai_to_local = {
-    "gpt-4o-mini": "llama3.3",
-    "gpt-4": "mixtral"
+    "gpt-4o-mini": "llama3.1:8b",
+    "gpt-4o": "mixtral"
 }
 
 # Environment-based
@@ -868,7 +882,7 @@ export LLM_PROVIDER=ollama
 
 1. `OpenAI(base_url="http://localhost:11434/v1", api_key="ollama")` — the request body stays identical.
 2. Read `os.getenv("LLM_PROVIDER", "openai")`; branch the client constructor and look the model up in a per-provider table.
-3. `{"gpt-4o-mini": "llama3.3", "gpt-4": "mixtral"}`; `resolve(name, provider)` returns the mapped value when provider is local, else `name`.
+3. `{"gpt-4o-mini": "llama3.1:8b", "gpt-4o": "mixtral"}`; `resolve(name, provider)` returns the mapped value when provider is local, else `name`.
 4. `try:` local call; `except (ConnectionError, APIError):` fall back to the OpenAI client and `logging.warning("fell back to openai")`.
 </details>
 

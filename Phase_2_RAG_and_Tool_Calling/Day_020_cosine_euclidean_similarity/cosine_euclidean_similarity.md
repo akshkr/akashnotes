@@ -2,7 +2,7 @@
 
 You've learned that embeddings are lists of numbers representing meaning. But how do we actually measure "similarity" between two embeddings? In this guide, you'll master the two most important similarity metrics: **Cosine Similarity** and **Euclidean Distance**.
 
-> **Coming from Software Engineering?** Similarity metrics for embeddings are like distance functions in spatial indexes (R-trees, k-d trees). If you've used PostGIS for geospatial queries ('find restaurants near me'), vector similarity is the same concept — just in 1536 dimensions instead of 2. Cosine similarity is the 'angular distance' equivalent.
+> **Coming from Software Engineering?** Comparing two embeddings is like writing a custom comparator or distance function — instead of ==, you return a score for how close two records are. Euclidean is ruler-distance (think find-restaurants-near-me); cosine compares direction, ignoring how far out a point sits. (If you've used PostGIS geo queries, it's the same idea in many more dimensions.)
 
 ---
 
@@ -29,6 +29,8 @@ You need a way to measure "how similar" two embeddings are.
 ## Cosine Similarity: The Angle Approach
 
 Cosine similarity measures the **angle** between two vectors, ignoring their length.
+
+A vector here is just the embedding list from Day 19. We draw examples in 2D so you can see the angle, but the exact same math runs on the full 1536-number list — you just can't draw it. Don't worry that you can't picture 1536 dimensions; the formula works the same no matter how many entries the list has.
 
 ### The Intuition
 
@@ -62,6 +64,10 @@ Where:
 - ||A|| = magnitude (length) of A
 - ||B|| = magnitude (length) of B
 ```
+
+The dot product is just: multiply the two lists position-by-position, then add up the results. For [1,2,3] and [4,5,6] that is 1*4 + 2*5 + 3*6 = 32. np.dot does this for you.
+
+The magnitude (or norm) of a vector is how long the arrow is — the square root of the sum of its squared values. For [3,4] that is sqrt(3*3 + 4*4) = 5. np.linalg.norm computes this. (Note: this is a different kind of length than Python's len(), which just counts entries.)
 
 ### Python Implementation
 
@@ -142,7 +148,7 @@ for key in ["similar", "related", "different"]:
     sim = cosine_similarity(base_emb, embeddings[key])
     print(f"  vs '{texts[key]}': {sim:.4f}")
 
-# Expected output:
+# Approximate — your exact values will differ, but the ordering should hold:
 # Base: 'I love programming'
 #   vs 'I enjoy coding': 0.8923 (high - similar meaning)
 #   vs 'Software development is fun': 0.7845 (medium - related topic)
@@ -239,7 +245,7 @@ for i, text in enumerate(texts[1:], 1):
     dist = euclidean_distance(embeddings[0], embeddings[i])
     print(f"  '{text}': {dist:.4f}")
 
-# Expected:
+# Approximate — your exact values will differ, but the ordering should hold:
 # 'kitten': 0.45 (small - very similar)
 # 'dog': 0.62 (medium - related animal)
 # 'pizza': 1.23 (large - unrelated)
@@ -270,8 +276,10 @@ flowchart TB
 | Range | -1 to 1 | 0 to ∞ |
 | Best similarity | 1 (same direction) | 0 (same point) |
 | Affected by magnitude? | No | Yes |
-| Common use | Text similarity | Clustering |
+| Common use | Text similarity | Clustering (grouping nearby points) |
 | Interpretation | Direction match | Spatial closeness |
+
+For text search and RAG you will almost always use cosine.
 
 ### Visual Comparison
 
@@ -328,6 +336,8 @@ Notice how cosine sees `a` and `b` as identical (same direction), while euclidea
 
 When embeddings are **normalized** (length = 1), cosine and euclidean become mathematically related:
 
+Normalizing means shrinking or stretching the arrow to exactly length 1 while keeping its direction — like keeping a compass heading but ignoring how far you walked. Only direction is left, which is exactly what cosine cares about (and it can make search faster).
+
 ```python
 # script_id: day_020_cosine_euclidean_similarity/normalized_embeddings
 import numpy as np
@@ -367,6 +377,8 @@ print(f"        2(1 - cosine) = {2*(1-cosine):.4f}")
 ```
 
 Many embedding models return **already normalized** vectors, making either metric work well.
+
+You do not need to derive this. The takeaway: once vectors are normalized, ranking by highest cosine and ranking by smallest euclidean distance give the SAME order — so pick whichever your vector database supports.
 
 ---
 
@@ -412,9 +424,13 @@ class EfficientSearch:
         query_norm = query_emb / np.linalg.norm(query_emb)
 
         # Compute all similarities at once (matrix multiplication!)
+        # self.normalized has one row per document. np.dot against the query
+        # computes the cosine for every document in a single call instead of a
+        # Python loop — same math as before, just batched.
         similarities = np.dot(self.normalized, query_norm)
 
         # Get top k
+        # argsort sorts ascending; [::-1] flips to highest-first, [:top_k] keeps the best k
         top_indices = np.argsort(similarities)[::-1][:top_k]
 
         return [(self.documents[i], similarities[i]) for i in top_indices]
@@ -443,6 +459,8 @@ for doc, score in results:
 ---
 
 ## Converting Between Metrics
+
+Some vector DBs only expose euclidean distance; this lets you map a cosine threshold onto it.
 
 Sometimes you need to convert or use both:
 
@@ -539,7 +557,7 @@ mindmap
       Measures distance
       Range 0 to ∞
       Considers magnitude
-      Best for clustering
+      Best for grouping nearby points
     When to Use
       Normalized → Either
       Direction matters → Cosine
@@ -581,8 +599,18 @@ def normalize(v):
 
 3. **Speed Test**: Benchmark naive pairwise comparison vs matrix multiplication for 1000 documents
 
+<details><summary>Solutions (approaches)</summary>
+
+1. **Threshold Finder**: Sweep candidate thresholds against a few labeled pairs (some you know are similar, some you know are not), and pick the cutoff that cleanly separates them.
+
+2. **Metric Comparison**: Take same-direction vectors of different magnitude (e.g. `[1,1]` and `[2,2]`) — cosine is identical while euclidean differs. They diverge whenever magnitudes differ and you have not normalized. Reuse `compare_metrics` to see it.
+
+3. **Speed Test**: Wrap `time.perf_counter()` around a Python loop of dot products versus a single `np.dot(matrix, query)`. The matrix form is typically 10-100x faster.
+
+</details>
+
 ---
 
 ## What's Next?
 
-You now understand the math of similarity! Next, let's learn how to **generate embeddings via API** efficiently — batching, async, caching, and choosing a provider — before we store them in a vector database.
+You now understand the math of similarity! Next, let's learn how to **generate embeddings via API** — calling real embedding endpoints, with batching, caching, and cost management — before we store and search them in a vector database.

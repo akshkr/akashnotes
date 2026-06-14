@@ -43,6 +43,8 @@ Common causes of infinite loops:
 
 ## Basic Max Iterations
 
+One iteration = one round-trip to the model. In a real agent the model may ask to call a tool each round; you run it, append the result to messages, and loop again — so without a ceiling it can keep asking forever.
+
 The simplest safeguard:
 
 ```python
@@ -68,6 +70,7 @@ def agent_loop(task: str, max_iterations: int = 10) -> str:
         {"role": "user", "content": task}
     ]
 
+    message = None
     for i in range(max_iterations):
         print(f"Iteration {i + 1}/{max_iterations}")
 
@@ -86,10 +89,11 @@ def agent_loop(task: str, max_iterations: int = 10) -> str:
         # Add any tool results, continue loop...
 
     # Reached max iterations
-    return f"Task incomplete after {max_iterations} iterations. Last response: {message.content}"
+    last = message.content if message else "(no iterations run)"
+    return f"Task incomplete after {max_iterations} iterations. Last response: {last}"
 
 def is_task_complete(response: str) -> bool:
-    """Check if the agent has completed its task."""
+    """Placeholder stand-in for 'the model signalled it is finished'."""
     completion_markers = ["DONE", "COMPLETE", "FINISHED", "Here is your answer"]
     return any(marker in response for marker in completion_markers)
 ```
@@ -164,12 +168,13 @@ while True:
 
 ## Multiple Stop Conditions
 
-Combine different stopping criteria:
+Combine different stopping criteria. Tokens are the chunks of text the model bills you for (Day 7); the API returns a usage count on every response, so you can cap total spend per run.
 
 ```python
 # script_id: day_037_max_iterations/stop_condition_checker
 from enum import Enum
 from typing import Callable, List
+from datetime import datetime
 
 class StopReason(Enum):
     NONE = "none"
@@ -234,6 +239,8 @@ class StopConditionChecker:
         self.interrupted = True
 
 # Usage
+def do_agent_step(): return 0  # placeholder: your agent step, returns tokens used this iteration
+
 checker = StopConditionChecker()
 checker.max_iterations = 10
 checker.max_seconds = 60
@@ -419,6 +426,8 @@ except TimeoutError as e:
     print(f"Operation timed out: {e}")
 ```
 
+`signal.alarm(seconds)` asks the OS to send SIGALRM after N seconds, which our handler turns into a `TimeoutError` that unwinds the running call. This is Unix-only — on Windows use a thread or asyncio instead.
+
 ---
 
 ## Async Agent with Cancellation
@@ -497,6 +506,8 @@ asyncio.run(main())
 ---
 
 ## Progress Monitoring
+
+Note: this percent is steps-used vs the ceiling, not true task progress — an agent can finish early or never. Treat it as a budget gauge, not a completion estimate.
 
 Track and report progress:
 

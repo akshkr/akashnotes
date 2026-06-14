@@ -6,6 +6,8 @@ This is Day 1 of a 100-day journey designed specifically for software engineers 
 
 Let's start by mapping the territory.
 
+> **Coming from Software Engineering?** AI Engineering is backend engineering with a new kind of dependency. You already know how to call an API, design a pipeline, write tests, and ship a service — this course swaps the deterministic library you call for a probabilistic model, and teaches the handful of new patterns (prompting, retrieval, agents, eval) that go around it.
+
 ---
 
 ## The Roles: Clearing Up the Confusion
@@ -43,7 +45,7 @@ Needs: DevOps + ML ops"]
 
 **MLOps Engineer** — The DevOps of ML. They build the infrastructure for training, versioning, serving, and monitoring models. Think Kubernetes, MLflow, Seldon, and SageMaker pipelines.
 
-**AI Engineer** — This is where you're headed. AI Engineers build *applications* on top of foundation models. You're not training GPT-4 — you're using it (and models like it) to build systems that do something useful: a customer support bot, a document analysis pipeline, a research agent. The primary skills are software engineering, prompt engineering, RAG systems, agent design, evaluation, and deployment.
+**AI Engineer** — This is where you're headed. AI Engineers build *applications* on top of foundation models. You're not training GPT-4o — you're using it (and models like it) to build systems that do something useful: a customer support bot, a document analysis pipeline, a research agent. The primary skills are software engineering, prompt engineering, RAG systems, agent design, evaluation, and deployment.
 
 The key insight: **AI Engineering is software engineering applied to LLMs.** Your existing skills are a massive head start.
 
@@ -57,7 +59,7 @@ This is the question that separates reality from hype. Here's what a typical wee
 
 **Monday afternoon:** Meeting with product to scope a new feature: the support agent needs to handle multi-step workflows — checking order status, issuing refunds, and escalating to humans. You sketch the agentic architecture.
 
-**Tuesday:** Implementing the workflow agent. You define tool schemas, wire up the ReAct loop, and add guardrails so the agent can't take destructive actions without confirmation.
+**Tuesday:** Implementing the workflow agent. You define tool schemas (the structured descriptions that tell the model which actions it may take), wire up the ReAct loop (a simple think-then-act-then-observe cycle the agent repeats), and add guardrails (checks that stop the agent before risky actions) so the agent can't take destructive actions without confirmation.
 
 **Wednesday:** Running evals. You have a test set of 50 questions with expected answers. You're measuring whether your latest prompt change improved accuracy or hurt it. You write a script to automate this.
 
@@ -113,22 +115,22 @@ The technique of augmenting LLM responses with retrieved context from a knowledg
 Companies are realizing that "it works in my demo" isn't good enough. Building robust eval pipelines, measuring model quality, and detecting regressions is a critical and underserved skill.
 
 **4. SLMs & Model Selection — Growing Fast**
-Not every task needs GPT-4 or Claude Opus. Small Language Models (SLMs) like Phi, Gemma, and quantized Llama variants can handle classification, extraction, and routing tasks at a fraction of the cost and latency. Knowing when to use a frontier model vs. an SLM is a key engineering skill.
+Not every task needs GPT-4o or Claude Opus. Small Language Models (SLMs) like Phi, Gemma, and smaller, compressed open-source Llama variants (we cover the compression technique — quantization — in Phase 6) can handle classification, extraction, and routing tasks at a fraction of the cost and latency. Knowing when to use a frontier model vs. an SLM is a key engineering skill.
 
 **5. LLM API Integration — Table Stakes**
 OpenAI, Anthropic, Google Gemini, open-source models via Ollama or Together.ai. You need to know how to call these APIs efficiently, handle errors, manage rate limits, and understand token economics.
 
 **6. Prompt Engineering — Foundational**
-Not just writing prompts — understanding *why* certain prompts work, how to structure few-shot examples, how to use chain-of-thought, and how to make prompts robust to adversarial inputs.
+Not just writing prompts — understanding *why* certain prompts work, how to structure few-shot examples (showing the model a couple of worked examples so it copies the pattern), how to use chain-of-thought (asking the model to reason step by step before answering), and how to make prompts robust to adversarial inputs.
 
 ---
 
 ## Your SWE Skills Transfer More Than You Think
 
-Here's the thing that surprises most engineers making this transition: **you already know about 60% of what you need.**
+Here's the thing that surprises most engineers making this transition: **you already have most of the foundation you need.**
 
 ```mermaid
-pie title "SWE Skills That Transfer to AI Engineering"
+pie title "Illustrative — where your existing SWE skills land"
     "API Design & Integration" : 12
     "Python & Data Structures" : 10
     "System Design" : 10
@@ -147,7 +149,7 @@ pie title "SWE Skills That Transfer to AI Engineering"
 - **Python** — The entire AI engineering ecosystem runs on Python. If you've been writing backend code, you're already there.
 - **System design** — Designing an agentic pipeline requires the same thinking as designing any data pipeline. You understand queues, caches, databases, services.
 - **Testing discipline** — Writing evals for LLM systems is just a different flavor of writing tests. The habit of "how do I know this works?" is the same.
-- **Debugging** — Tracking down why an agent is hallucinating is debugging. The tools are different but the mindset is identical.
+- **Debugging** — Tracking down why an agent is hallucinating (confidently producing wrong or made-up information) is debugging. The tools are different but the mindset is identical.
 - **Code quality** — AI systems go to production too. They need error handling, logging, retry logic, graceful degradation. All skills you have.
 - **Database knowledge** — Vector databases are a new flavor of a concept you already understand.
 - **Deployment** — Docker, environment variables, health checks, logging — you know this. AI services are services.
@@ -284,7 +286,7 @@ You already have this skill. It's the same skill that lets you learn a new progr
 
 1. Complete the skills audit above. Save it somewhere you can find it later.
 2. Set up your environment (we'll cover this in detail in Day 2, but if you're eager: Python 3.11+, an OpenAI API key, and a code editor).
-3. Read the OpenAI pricing page. Understand what tokens are and roughly what API calls cost. This will inform every decision you make.
+3. Read the [OpenAI pricing page](https://openai.com/api/pricing/). Understand what tokens are and roughly what API calls cost. This will inform every decision you make.
 4. Optional but recommended: Browse LinkedIn and look at 10-15 "AI Engineer" job postings. Read the requirements. Notice what comes up repeatedly. Notice what you already know.
 
 See you on Day 2.
@@ -331,7 +333,7 @@ mindmap
 
 1. **Score yourself.** Complete the skills audit above and save it to a file you'll keep. Note your top 3 strengths and top 3 gaps.
 2. **Read 10–15 "AI Engineer" job postings** on LinkedIn. Tally how often each core skill (RAG, agents, eval, prompting) appears. Which already match your background?
-3. **Estimate one API call's cost.** Open the [OpenAI pricing page](https://openai.com/pricing), pick `gpt-4o-mini`, and roughly compute the cost of a 1,000-token input + 500-token output call. (See REFERENCE.md for current per-1M figures.)
+3. **Estimate one API call's cost.** Open the [OpenAI pricing page](https://openai.com/api/pricing/), pick `gpt-4o-mini`, and roughly compute the cost of a 1,000-token input + 500-token output call. (See REFERENCE.md for current per-1M figures.)
 4. **Write your "why."** In two sentences, describe the kind of AI product you'd most want to build. You'll revisit this at the Day 49 career checkpoint.
 
 <details><summary>Solutions (approaches)</summary>
@@ -344,4 +346,4 @@ mindmap
 
 ## What's Next?
 
-Tomorrow (Day 2) we go under the hood with **Understanding Transformers** — self-attention, multi-head attention, and context windows. You'll see *why* LLMs can relate words across a sentence in parallel, which is the foundation for everything from tokenization to prompting that follows in Phase 1.
+Tomorrow (Day 2) we build intuition for how LLMs actually work under the hood — what a Transformer is and why it can relate every word in a sentence to every other word at once. We keep the math minimal; the goal is a working mental model you can build on, not theory. It is the foundation for everything in Phase 1.

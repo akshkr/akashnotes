@@ -36,6 +36,8 @@ flowchart TB
 | Default temp | 1.0 | 1.0 |
 | Max tokens | Optional | **Required** |
 
+Anthropic requires `max_tokens` (an upper bound on reply length, in tokens) — the call errors without it. OpenAI defaults it for you.
+
 ### Unified Wrapper
 
 ```python
@@ -67,7 +69,7 @@ class UnifiedLLM:
             provider: "openai" or "anthropic"
             model: Model name (defaults based on provider)
             system: System prompt
-            temperature: Sampling temperature
+            temperature: 0 = focused/deterministic, higher = more varied (see Day 4)
             max_tokens: Maximum response tokens
         """
         if provider == "openai":
@@ -102,7 +104,7 @@ class UnifiedLLM:
         }
 
     def _anthropic_chat(self, messages, model, system, temperature, max_tokens):
-        model = model or "claude-sonnet-4-5"
+        model = model or "claude-sonnet-4-6"
 
         kwargs = {
             "model": model,
@@ -112,6 +114,7 @@ class UnifiedLLM:
 
         if system:
             kwargs["system"] = system
+        # Anthropic's default temperature is already 1.0, so only send it when the caller wants something different.
         if temperature != 1.0:
             kwargs["temperature"] = temperature
 
@@ -149,12 +152,13 @@ print("Anthropic:", result2["content"])
 
 ## Error Handling
 
+> **Coming from Software Engineering?** Exponential-backoff retry is the same resilience pattern you already use for any flaky downstream service — a database, a payment gateway, a third-party API.
+
 Both SDKs can throw various errors. Handle them gracefully!
 
 ```python
 # script_id: day_011_openai_anthropic_sdks_part2/error_handling_retry
 from openai import OpenAI, APIError, RateLimitError, APIConnectionError
-from anthropic import Anthropic, APIError as AnthropicAPIError
 import time
 
 client = OpenAI()
@@ -184,7 +188,7 @@ def robust_openai_call(messages: list, max_retries: int = 3) -> str:
         except APIError as e:
             # Other API error
             print(f"API error: {e}")
-            if e.status_code >= 500:
+            if getattr(e, 'status_code', 0) >= 500:
                 # Server error - might be temporary
                 time.sleep(2)
             else:
@@ -272,11 +276,13 @@ print(response.text)
 | Package | `openai` | `anthropic` | `google-genai` |
 | Auth env var | `OPENAI_API_KEY` | `ANTHROPIC_API_KEY` | `GOOGLE_API_KEY` |
 | Chat method | `chat.completions.create()` | `messages.create()` | `models.generate_content()` |
-| Streaming | `stream=True` | `.stream()` context manager | `stream=True` |
-| Context window | 128K (GPT-4o) | 200K (Claude Sonnet) | 1M (Gemini 2.0) |
+| Streaming | `stream=True` | `.stream()` context manager | `generate_content_stream()` |
+| Context window | 128K (GPT-4o) | 1M (Claude Sonnet) | 1M (Gemini 2.0) |
 | Vision | Built-in | Built-in | Built-in |
 
-> **Why this blog focuses on OpenAI and Anthropic**: They're the most common in production AI engineering. But the patterns transfer -- once you know one SDK well, picking up another takes hours, not days.
+*Context window = how much text (in tokens) the model can hold in one call — bigger fits more document/history.*
+
+> **Why this course focuses on OpenAI and Anthropic**: They're the most common in production AI engineering. But the patterns transfer -- once you know one SDK well, picking up another takes hours, not days.
 
 ---
 
@@ -328,7 +334,7 @@ print(response.choices[0].message.content)
 from anthropic import Anthropic
 client = Anthropic()
 response = client.messages.create(
-    model="claude-sonnet-4-5",
+    model="claude-sonnet-4-6",
     max_tokens=1024,
     messages=[{"role": "user", "content": "Hello"}]
 )
@@ -341,9 +347,81 @@ print(response.content[0].text)
 
 1. **Cost Tracker**: Build a class that tracks cumulative token usage and estimated costs across multiple calls
 
+<details><summary>Solution</summary>
+
+```python
+# script_id: day_011_openai_anthropic_sdks_part2/exercise_cost_tracker
+# Prices are illustrative ($ per 1M tokens) — verify current rates at each provider.
+PRICES = {"gpt-4o-mini": {"in": 0.15, "out": 0.60}}
+
+class CostTracker:
+    def __init__(self):
+        self.input_tokens = 0
+        self.output_tokens = 0
+        self.cost = 0.0
+
+    def record(self, result):
+        # result is the dict returned by UnifiedLLM.chat(...)
+        p = PRICES.get(result["model"], {"in": 0, "out": 0})
+        self.input_tokens += result["input_tokens"]
+        self.output_tokens += result["output_tokens"]
+        self.cost += (result["input_tokens"] / 1_000_000) * p["in"]
+        self.cost += (result["output_tokens"] / 1_000_000) * p["out"]
+
+    def report(self):
+        return f"{self.input_tokens} in / {self.output_tokens} out -> ${self.cost:.6f}"
+
+tracker = CostTracker()
+llm = UnifiedLLM()
+tracker.record(llm.chat(messages=[{"role": "user", "content": "Hi"}]))
+print(tracker.report())
+```
+
+</details>
+
 2. **Model Comparison**: Create a script that sends the same prompt to both providers and compares responses
 
+<details><summary>Solution</summary>
+
+```python
+# script_id: day_011_openai_anthropic_sdks_part2/exercise_model_comparison
+llm = UnifiedLLM()
+prompt = [{"role": "user", "content": "Explain a hash map in one sentence."}]
+
+for provider in ("openai", "anthropic"):
+    result = llm.chat(messages=prompt, provider=provider, system="Be brief.")
+    print(f"[{provider}] {result['content']}")
+    print(f"  tokens: {result['input_tokens']} in / {result['output_tokens']} out")
+```
+
+</details>
+
 3. **Error Simulator**: Write tests that simulate various API errors and verify your retry logic works
+
+<details><summary>Solution</summary>
+
+```python
+# script_id: day_011_openai_anthropic_sdks_part2/exercise_error_simulator
+# Force the client to raise on the first two calls, then succeed, and confirm we retry.
+from unittest.mock import MagicMock
+from openai import RateLimitError
+
+calls = {"n": 0}
+
+def flaky_create(**kwargs):
+    calls["n"] += 1
+    if calls["n"] < 3:
+        raise RateLimitError("slow down", response=MagicMock(status_code=429), body=None)
+    resp = MagicMock()
+    resp.choices[0].message.content = "ok"
+    return resp
+
+client.chat.completions.create = flaky_create  # monkeypatch the module-level client
+print(robust_openai_call([{"role": "user", "content": "Hello!"}]))  # -> "ok" after 2 retries
+print("total attempts:", calls["n"])
+```
+
+</details>
 
 ---
 

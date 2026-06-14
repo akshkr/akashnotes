@@ -111,23 +111,29 @@ result = agent_with_approval("Send an email to john@example.com saying the meeti
 
 ## LangGraph Breakpoints
 
-LangGraph has built-in support for breakpoints - points where execution pauses for human input.
+LangGraph has built-in support for breakpoints - points where execution pauses for human input. A checkpointer + `thread_id` is the durable equivalent of a paused workflow run you can resume later — like a suspended CI job that picks up where it left off, not a fresh start.
 
 ```python
 # script_id: day_069_hitl_patterns_part1/langgraph_breakpoints
 from langgraph.graph import StateGraph, END
-from langgraph.checkpoint.sqlite import SqliteSaver
+from langgraph.checkpoint.memory import InMemorySaver
 from typing import TypedDict, Annotated, Literal
 from operator import add
 
 # Define state
 class AgentState(TypedDict):
+    # Annotated[list, add] tells LangGraph: when a node returns messages, APPEND to
+    # the existing list instead of replacing it (like a Redux reducer, or += on a
+    # list). Plain fields without this are overwritten.
     messages: Annotated[list, add]
     pending_action: str
     human_feedback: str
 
-# Create checkpointer for persistence
-checkpointer = SqliteSaver.from_conn_string("breakpoints.db")
+# Create checkpointer for persistence.
+# The checkpointer saves run state at each step — like serializing a workflow to a
+# job queue/DB so a paused run can resume later (even in another process), keyed by
+# thread_id. (Exercise 2 swaps this for a file-backed SqliteSaver for cross-process resume.)
+checkpointer = InMemorySaver()
 
 def plan_action(state: AgentState) -> dict:
     """Agent plans an action."""
@@ -139,18 +145,16 @@ def plan_action(state: AgentState) -> dict:
 
 def execute_action(state: AgentState) -> dict:
     """Execute the approved action."""
+    # The breakpoint pauses BEFORE this node; we only get here after a human resumes.
+    # Gate the side-effect on the human's decision so a rejected action never runs.
+    if state.get("human_feedback") != "approved":
+        return {"messages": ["Action not approved — skipped."], "pending_action": ""}
     action = state["pending_action"]
     # Execute the action
     return {
         "messages": [f"Executed: {action}"],
         "pending_action": ""
     }
-
-def should_continue(state: AgentState) -> Literal["execute", "end"]:
-    """Check if we should continue after human review."""
-    if state.get("human_feedback") == "approved":
-        return "execute"
-    return "end"
 
 # Build graph
 workflow = StateGraph(AgentState)
@@ -160,18 +164,14 @@ workflow.add_node("execute", execute_action)
 
 workflow.set_entry_point("plan")
 
-# Add edge with interrupt_before - this creates a breakpoint!
-workflow.add_conditional_edges(
-    "plan",
-    should_continue,
-    {"execute": "execute", "end": END}
-)
+# plan -> execute is unconditional; the breakpoint (below) is what gates execution.
+workflow.add_edge("plan", "execute")
 workflow.add_edge("execute", END)
 
 # Compile with checkpointer and interrupt points
 app = workflow.compile(
     checkpointer=checkpointer,
-    interrupt_before=["execute"]  # Pause before execute!
+    interrupt_before=["execute"]  # THIS creates the breakpoint — pause before entering execute
 )
 ```
 
@@ -196,14 +196,15 @@ human_decision = input("Approve this action? (yes/no): ")
 
 # Resume with human feedback
 if human_decision.lower() == "yes":
-    final_result = app.invoke(
-        {"human_feedback": "approved"},
-        config=config
-    )
+    # Write the human's decision into the saved state, then resume by passing None.
+    app.update_state(config, {"human_feedback": "approved"})
+    final_result = app.invoke(None, config=config)
     print("Action executed!")
 else:
     print("Action cancelled by human.")
 ```
+
+The second `invoke` does NOT restart the graph. Because we reuse the same `thread_id`, LangGraph loads the state it saved at the breakpoint (the checkpointer's job), we write the human's decision into that saved state, and execution resumes from the node right after the pause — not from the entry point. It's like clicking Approve to resume a paused CI job: the job keeps its earlier state and you only supply the approval.
 
 ```mermaid
 sequenceDiagram
@@ -314,6 +315,8 @@ result = agent.run_with_feedback(
 
 Only ask for human input when the agent is uncertain:
 
+Important: this "confidence" is NOT a real probability the model measures about itself — it's just the model writing a number that sounds plausible, the same way it picks words. Treat it as a rough, gameable hint. Pick the threshold by running real tasks and watching where it over- or under-asks; don't trust the number itself.
+
 ```python
 # script_id: day_069_hitl_patterns_part1/confidence_based_hitl
 from openai import OpenAI
@@ -346,7 +349,7 @@ def agent_with_confidence(task: str, confidence_threshold: float = 0.7):
             Be honest about uncertainty!"""},
             {"role": "user", "content": task}
         ],
-        response_format={"type": "json_object"}
+        response_format={"type": "json_object"}  # forces a valid-JSON reply so json.loads() below won't choke on prose/backticks
     )
 
     result = json.loads(response.choices[0].message.content)
@@ -395,6 +398,8 @@ flowchart TB
     style D fill:#90EE90
     style E fill:#FFD700
 ```
+
+---
 
 ## Checkpoint
 

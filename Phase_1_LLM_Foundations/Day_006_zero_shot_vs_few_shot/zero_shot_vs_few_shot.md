@@ -4,11 +4,13 @@ Welcome to the world of prompt engineering! In this guide, you'll learn two fund
 
 Think of it like teaching someone a new task - sometimes you just explain it, and sometimes you show examples first.
 
-> **Coming from Software Engineering?** Zero-shot is like calling a function with just a docstring. Few-shot is like adding unit test examples in the docstring — the more examples you provide, the better the function 'understands' the expected behavior. If you've written clear API documentation with request/response examples, you already think in few-shot patterns. Choosing between them is a cost-performance tradeoff, just like choosing between an in-memory cache hit vs a database query. Few-shot costs more tokens (like more compute) but gives better results. Dynamic few-shot selection is essentially building a retrieval cache for your best examples.
+> **Coming from Software Engineering?** Zero-shot is like calling a function with just a docstring. Few-shot is like adding unit test examples in the docstring — the more examples you provide, the better the function 'understands' the expected behavior. If you've written clear API documentation with request/response examples, you already think in few-shot patterns. Choosing between them is a cost-performance tradeoff, just like choosing between an in-memory cache hit vs a database query. Few-shot costs more tokens (like more compute) but gives better results. Later you can even auto-pick the most relevant examples per request (we build this at the end of the lesson).
 
 ---
 
 ## What's the Difference?
+
+A "shot" just means an example you give the model. Zero-shot = zero examples; few-shot = a few examples. That's the whole vocabulary.
 
 ```mermaid
 flowchart TB
@@ -21,7 +23,7 @@ flowchart TB
     subgraph "Few-Shot"
         F1["Show examples of\ndesired output"]
         F2["1-10 examples typical"]
-        F3["Model learns the\npattern in-context"]
+        F3["Model copies the\npattern from\nyour examples"]
     end
 
     style Z1 fill:#87CEEB
@@ -59,6 +61,7 @@ def zero_shot_classify(text: str) -> str:
                 "content": f"Classify the sentiment of this text as positive, negative, or neutral:\n\n{text}"
             }
         ],
+        # temperature=0 = most deterministic, repeatable output, so we can compare runs fairly (sampling is covered on Days 4-5).
         temperature=0
     )
     return response.choices[0].message.content
@@ -126,6 +129,8 @@ Provide your analysis in a structured format."""
 
 Few-shot prompting means **showing the model examples** of the input-output pattern you want, then asking it to follow that pattern.
 
+The model isn't being retrained or permanently updated — it just follows the examples in this one request, then forgets them. SWE analogy: it's like passing config to a function call, not editing the function.
+
 ### The Power of Examples
 
 ```mermaid
@@ -188,7 +193,8 @@ Sentiment:""".format(text=text)
 tricky_text = "Well, I guess it didn't completely ruin my day."
 
 print("Few-shot result:", few_shot_classify(tricky_text))
-# Output: negative (correctly identifies sarcasm/negativity)
+# Few-shot anchors on the labels/format you demonstrated. The exact label here can vary
+# — the point is consistency with your examples, not that this sentence has one true answer.
 ```
 
 ### Structured Few-Shot Template
@@ -358,7 +364,7 @@ import tiktoken
 def calculate_few_shot_cost(
     examples: list,
     task_description: str,
-    model: str = "gpt-4o"
+    model: str = "gpt-4o-mini"
 ):
     """Calculate token cost of few-shot prompt."""
     encoder = tiktoken.encoding_for_model(model)
@@ -370,11 +376,11 @@ def calculate_few_shot_cost(
 
     tokens = len(encoder.encode(prompt))
 
-    # Input-token cost per 1K tokens (~$2.50/1M input for GPT-4o; verify current pricing).
+    # Input-token cost per 1K tokens (~$0.15/1M input for gpt-4o-mini; verify current pricing).
     # NOTE: this counts INPUT tokens only. Output tokens are billed separately and
     # are typically several times more expensive, so output-heavy calls cost more
     # than this estimate suggests.
-    cost_per_1k = 0.0025
+    cost_per_1k = 0.00015
 
     return {
         "example_count": len(examples),
@@ -383,17 +389,17 @@ def calculate_few_shot_cost(
         "cost_per_1000_requests": f"${(tokens/1000) * cost_per_1k * 1000:.2f}"
     }
 
-# Compare different example counts
+# Compare different example counts (realistic examples, so the token deltas are believable)
 examples = [
-    {"input": "text1", "output": "output1"},
-    {"input": "text2", "output": "output2"},
-    {"input": "text3", "output": "output3"},
-    {"input": "text4", "output": "output4"},
-    {"input": "text5", "output": "output5"},
+    {"input": "Dr. Sarah Johnson from MIT", "output": '{"name": "Sarah Johnson", "title": "Dr.", "affiliation": "MIT"}'},
+    {"input": "Prof. Michael Chen, Stanford University", "output": '{"name": "Michael Chen", "title": "Prof.", "affiliation": "Stanford University"}'},
+    {"input": "Jane Smith, PhD - Harvard Medical School", "output": '{"name": "Jane Smith", "title": "PhD", "affiliation": "Harvard Medical School"}'},
+    {"input": "Associate Prof. David Kim from Berkeley", "output": '{"name": "David Kim", "title": "Associate Prof.", "affiliation": "Berkeley"}'},
+    {"input": "Dr. Maria Garcia, Yale University", "output": '{"name": "Maria Garcia", "title": "Dr.", "affiliation": "Yale University"}'},
 ]
 
 for n in [1, 3, 5]:
-    cost = calculate_few_shot_cost(examples[:n], "Classify the following text:")
+    cost = calculate_few_shot_cost(examples[:n], "Extract structured information from academic affiliations as JSON:")
     print(f"{n} examples: {cost['total_tokens']} tokens, {cost['cost_per_1000_requests']} per 1K requests")
 ```
 
@@ -467,6 +473,8 @@ def compare_approaches():
 compare_approaches()
 ```
 
+Exact output varies by model and version; the point is the *shape* difference (clean types and format vs loose strings).
+
 **Expected Results:**
 
 ```
@@ -484,7 +492,7 @@ compare_approaches()
 === Few-Shot Result ===
 {
   "brand": "Nike",
-  "product_name": "Air Max 90",
+  "product_name": "Air Max 90s",
   "size": "10.5 mens",
   "condition": "barely worn",
   "price": 85,                 # Clean integer
@@ -566,7 +574,12 @@ def get_embedding(text: str) -> list:
     return response.data[0].embedding
 
 def cosine_similarity(a: list, b: list) -> float:
-    """Calculate cosine similarity between two vectors."""
+    """Calculate cosine similarity between two vectors.
+
+    Cosine similarity = a 0-to-1 score for how alike two of these vectors are
+    (1 = nearly identical meaning, 0 = unrelated). You don't need the math here —
+    treat it as a black-box "how similar?" function. We cover it properly on Day 19.
+    """
     a = np.array(a)
     b = np.array(b)
     return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
@@ -671,6 +684,13 @@ mindmap
 2. **Category Creator**: Build a custom classifier for your own categories (e.g., email types, bug priorities)
 
 3. **Dynamic Selection**: Implement dynamic example selection based on input similarity
+
+<details><summary>Solutions (approaches)</summary>
+
+1. Give 3 examples mapping varied date formats (e.g. "March 3, 2024", "03/03/24", "3rd of March") to YYYY-MM-DD. The examples teach the output format, not the parsing logic.
+2. Define 3-4 of your own labels with one example each; prioritize covering edge cases over volume.
+3. Reuse the `select_similar_examples` function from this lesson — swap the static example list for it so the picked examples match each input.
+</details>
 
 ---
 

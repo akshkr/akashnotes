@@ -46,7 +46,7 @@ You built these. Now make them findable and understandable.
 |---|---|---|
 | Data Extraction Pipeline | Day 18 | Structured output, Pydantic, retry logic, testing |
 | RAG Chatbot | Day 34 | Embeddings, vector DB, retrieval, cost management |
-| Autonomous Research Agent | Day 48 | ReAct loop, tool use, agent debugging, tracing |
+| Autonomous Research Agent | Day 48 | ReAct loop (reason-then-act), tool use, agent debugging, tracing |
 | Multi-Agent Pipeline | Day 73 | Orchestration, handoffs, production hardening |
 | Production Deployment | Day 97 | FastAPI, Docker, monitoring, prompt management |
 
@@ -99,10 +99,10 @@ Try it live: [your-demo-url.com]  ← even a Hugging Face Space works
 [Mermaid diagram or image]
 
 ## Technical highlights
-- Hybrid search (BM25 + semantic) for 23% better retrieval recall
+- Hybrid search (keyword + semantic/meaning-based) returns the right document ~23% more often (recall)
 - Semantic caching reduces API costs by ~40% in testing
 - Pydantic schemas enforce structured output with automatic retry
-- Full eval suite with RAGAS metrics: faithfulness 0.87, answer relevance 0.91
+- Eval suite (RAGAS): faithfulness 0.87 and answer relevance 0.91 (both 0–1, higher = better; faithfulness = answer sticks to the sources, relevance = it answers the question)
 
 ## Running locally
 ```bash
@@ -117,6 +117,8 @@ docker-compose up
 - Add user feedback loop to improve retrieval over time
 - Implement streaming responses for better perceived latency
 ```
+
+> Every number in the "Technical highlights" block above is a placeholder. Replace each with results you actually measured in your own project — never quote a figure you cannot reproduce in an interview.
 
 The "what I'd do with more time" section is underrated. It shows you understand limitations and think about next steps — which is exactly what senior engineers do.
 
@@ -391,6 +393,12 @@ Interview ready:
 4. **Open source PRs are visible proof of skill** — one merged PR beats a dozen tutorials
 5. **Hiring managers look at code quality, not just functionality** — clean, tested code signals a professional
 6. **Your 100-day journey is a story** — tell it specifically, with numbers and trade-offs
+
+---
+
+## Checkpoint
+
+Open your single best capstone repo right now and treat it like a PR a senior reviewer opens cold. Time yourself: can a stranger (1) understand what it does from the README, (2) see it work via a GIF or live URL, and (3) run it from a clean clone in under 3 minutes? If any of the three fail, that repo is not portfolio-ready — fix the weakest one before moving on.
 
 ---
 

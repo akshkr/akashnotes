@@ -53,10 +53,12 @@ ollama serve
 
 ### Pulling Models
 
+The number after a model (3B, 70B) is its size in billions of parameters — the learned weights, roughly like a compiled binary's size telling you how much it takes to load. Bigger = smarter but more RAM and slower. Rule of thumb at the common 4-bit setting: ~1GB of RAM per billion parameters.
+
 ```bash
 # Pull popular models
-ollama pull llama3.2         # Meta's Llama 3.2 (8B)
-ollama pull llama3.2:70b     # Larger version
+ollama pull llama3.2         # Meta's Llama 3.2 (3B, the default tag)
+ollama pull llama3.1:70b     # Larger 70B model
 ollama pull mistral          # Mistral 7B
 ollama pull qwen2.5-coder   # Code-specialized (modern alternative to codellama)
 ollama pull phi4             # Microsoft's small model
@@ -173,72 +175,32 @@ response = client.chat.completions.create(
 print(response.choices[0].message.content)
 ```
 
-### Swap Between Local and Cloud
-
-```python
-# script_id: day_074_ollama_local_models/swap_local_cloud
-from openai import OpenAI
-import os
-
-def get_llm_client(use_local: bool = False):
-    """Get LLM client - local or cloud."""
-    if use_local:
-        return OpenAI(
-            base_url="http://localhost:11434/v1",
-            api_key="ollama"
-        ), "llama3.2"
-    else:
-        return OpenAI(), "gpt-4o-mini"
-
-# Usage - easy to switch!
-client, model = get_llm_client(use_local=True)
-
-response = client.chat.completions.create(
-    model=model,
-    messages=[{"role": "user", "content": "Hello!"}]
-)
-```
+Day 075 covers env-var/config-driven provider switching between local and cloud.
 
 ---
 
 ## Understanding Quantization
 
-Local models use **quantization** to fit in memory:
-
-```mermaid
-flowchart LR
-    A["Original Model\n70B parameters\n140GB"] --> B["Quantization"]
-    B --> C["Quantized Model\n70B params\n35-70GB"]
-
-    style C fill:#90EE90
-```
-
-### Quantization Levels
-
-| Format | Bits | Size Reduction | Quality |
-|--------|------|----------------|---------|
-| F16 | 16-bit | 50% | Best |
-| Q8 | 8-bit | 75% | Excellent |
-| Q4_K_M | 4-bit | 87% | Good |
-| Q4_0 | 4-bit | 87% | Acceptable |
-| Q2_K | 2-bit | 94% | Degraded |
+Local models use **quantization** to fit in memory. Quantization is lossy compression for model weights — like saving a photo as a smaller JPEG: fewer bits per number, smaller file, slightly lower fidelity. Q4 is aggressive but still good; Q2 is visibly degraded. Day 075 covers quantization formats and bit-level tradeoffs in depth.
 
 ### Choosing Model Size
+
+The practical takeaway you need now is matching a model to your available RAM:
 
 ```python
 # script_id: day_074_ollama_local_models/recommend_model
 def recommend_model(available_ram_gb: int) -> str:
     """Recommend model based on available RAM."""
     if available_ram_gb >= 64:
-        return "llama3.2:70b"    # Best quality
+        return "llama3.3:70b"               # Best quality
     elif available_ram_gb >= 32:
-        return "llama3.2:70b-q4" # Good quality, fits in RAM
+        return "llama3.1:70b-instruct-q4_K_M" # Good quality, fits in RAM
     elif available_ram_gb >= 16:
-        return "llama3.2"        # 8B model
+        return "llama3.1:8b"                # 8B model
     elif available_ram_gb >= 8:
-        return "phi4"            # Small but capable
+        return "phi4-mini"                  # Small but capable
     else:
-        return "tinyllama"       # Minimal requirements
+        return "tinyllama"                  # Minimal requirements
 ```
 
 ---
@@ -277,8 +239,13 @@ models = ["llama3.2", "mistral", "phi4"]
 results = benchmark_models(prompt, models)
 for model, data in results.items():
     print(f"\n{model}:")
-    print(f"  Time: {data.get('time_seconds', 'N/A'):.2f}s")
-    print(f"  Speed: {data.get('tokens_per_second', 'N/A'):.1f} tok/s")
+    if "error" in data:
+        print(f"  Error: {data['error']}")
+    else:
+        print(f"  Time: {data['time_seconds']:.2f}s")
+        # tokens/second — roughly how many word-pieces it generates per second;
+        # the practical measure of speed (a comfortable reading pace is ~10+ tok/s).
+        print(f"  Speed: {data['tokens_per_second']:.1f} tok/s")
 ```
 
 ---
@@ -339,6 +306,8 @@ response = llm.chat([{"role": "user", "content": "Hello!"}])
 
 ### Local Embeddings
 
+Recall from Day 019: embeddings turn text into a fixed-length list of numbers (here ~768 — that is the "dimension") so you can compare meaning by distance. Chat models do not produce these, so you pull a dedicated embedding model like nomic-embed-text.
+
 ```python
 # script_id: day_074_ollama_local_models/local_embeddings
 import ollama
@@ -377,14 +346,13 @@ ollama run llama3.2 --verbose
 # Models automatically use GPU if available
 ```
 
-### Concurrent Requests
+### Batch Processing
 
 ```python
 # script_id: day_074_ollama_local_models/concurrent_requests
 import ollama
-import asyncio
 
-async def process_batch(prompts: list, model: str = "llama3.2"):
+def process_batch(prompts: list, model: str = "llama3.2"):
     """Process multiple prompts (note: Ollama processes sequentially)."""
     results = []
     for prompt in prompts:
@@ -439,6 +407,7 @@ ollama rm llama3.2        # Delete model
 
 ```python
 # script_id: day_074_ollama_local_models/quick_reference
+# fragment: illustrative cheat-sheet / not standalone-runnable
 # Python usage
 import ollama
 response = ollama.chat(model='llama3.2', messages=[...])

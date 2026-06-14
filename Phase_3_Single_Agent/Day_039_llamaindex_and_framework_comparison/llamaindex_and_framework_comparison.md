@@ -66,6 +66,8 @@ print(response)
 
 That's it! LlamaIndex handles chunking, embedding, and retrieval automatically.
 
+The three steps you wrote by hand in Phase 2 — splitting documents into chunks (Day 25), turning each chunk into an embedding vector so similar text sits near similar text (Day 19), and storing them for fast lookup — all happen inside that one `from_documents()` call.
+
 ---
 
 ## Core Components
@@ -84,7 +86,7 @@ doc = Document(
 )
 
 # Parse into nodes (chunks)
-parser = SentenceSplitter(chunk_size=256, chunk_overlap=20)
+parser = SentenceSplitter(chunk_size=256, chunk_overlap=20)  # ~256 tokens per chunk; overlap repeats ~20 tokens across boundaries so an idea split across two chunks is still retrievable (Day 25)
 nodes = parser.get_nodes_from_documents([doc])
 
 print(f"Document split into {len(nodes)} nodes")
@@ -142,31 +144,25 @@ from llama_index.embeddings.openai import OpenAIEmbedding
 
 embed_model = OpenAIEmbedding()
 
-# Vector Index - semantic search (recommended primary path)
+# Vector Index - finds chunks by meaning, not exact keywords (semantic search) - recommended primary path
 vector_index = VectorStoreIndex.from_documents(documents, embed_model=embed_model)
 ```
 
-> **Note (LlamaIndex 0.13+):** `SummaryIndex`, `TreeIndex`, and `KeywordTableIndex` have been
-> deprecated. Use `VectorStoreIndex` as the primary index type. If you need summarization
-> behaviour, use a query engine with `response_mode="tree_summarize"` on a vector index instead.
+> **Note:** `VectorStoreIndex` is the most common primary index for semantic Q&A, and the one to learn first. `SummaryIndex`, `TreeIndex`, and `KeywordTableIndex` still exist for specialized needs (e.g. `SummaryIndex` for whole-corpus summarization); we focus on `VectorStoreIndex` here.
 
 ```mermaid
 flowchart TB
-    subgraph "Index Types (0.13+)"
+    subgraph "Index Types"
         A["VectorStoreIndex\n(primary)"]
     end
 
     A -->|"Best for"| A1["Semantic search\nQ&A\nSummarization"]
 
-    subgraph "Deprecated"
+    subgraph "Specialized (less common)"
         B["SummaryIndex"]
         C["TreeIndex"]
         D["KeywordTableIndex"]
     end
-
-    style B fill:#FFB6C1
-    style C fill:#FFB6C1
-    style D fill:#FFB6C1
 ```
 
 ---
@@ -186,7 +182,7 @@ index = VectorStoreIndex.from_documents(documents)
 # Create query engine
 query_engine = index.as_query_engine(
     similarity_top_k=3,  # Retrieve top 3 chunks
-    response_mode="compact"  # Compact response synthesis
+    response_mode="compact"  # combine retrieved chunks into one answer
 )
 
 response = query_engine.query("Explain the main concepts")
@@ -196,23 +192,25 @@ print(f"\nSources: {len(response.source_nodes)}")
 
 ### Response Modes
 
+After retrieving the top chunks, how should they be combined into one answer?
+
 ```python
 # script_id: day_039_llamaindex_and_framework_comparison/basic_query_engine
-# Different ways to synthesize responses
+# Different ways to combine the retrieved chunks into one answer
 query_engine = index.as_query_engine(
-    response_mode="refine"  # Iteratively refine answer
+    response_mode="refine"  # answer from chunk 1, then revise with each later chunk (more LLM calls; good when chunks conflict)
 )
 
 query_engine = index.as_query_engine(
-    response_mode="compact"  # Compact all chunks, answer once
+    response_mode="compact"  # stuff as many chunks as fit into one call, answer once (cheapest, default)
 )
 
 query_engine = index.as_query_engine(
-    response_mode="tree_summarize"  # Build summary tree
+    response_mode="tree_summarize"  # summarize in a tree; best for summarize-everything questions
 )
 
 query_engine = index.as_query_engine(
-    response_mode="simple_summarize"  # Simple concatenation
+    response_mode="simple_summarize"  # naively concatenate chunks
 )
 ```
 
@@ -232,7 +230,7 @@ retriever = VectorIndexRetriever(
 )
 
 # Add post-processing
-postprocessor = SimilarityPostprocessor(similarity_cutoff=0.7)
+postprocessor = SimilarityPostprocessor(similarity_cutoff=0.7)  # keep only chunks scoring >= 0.7 out of 1.0 (higher = more related); raise to be stricter, lower if you get too few results
 
 # Build custom query engine
 query_engine = RetrieverQueryEngine(
@@ -277,6 +275,8 @@ chat_engine.reset()
 ```
 
 ### Chat Modes
+
+A follow-up like "tell me more about that" is meaningless to a retriever on its own. `condense_question` first rewrites it into a standalone question using the chat history before searching; `context` always pastes recent history into the prompt; `condense_plus_context` does both.
 
 ```python
 # script_id: day_039_llamaindex_and_framework_comparison/chat_engine
@@ -532,6 +532,8 @@ chat.chat("Follow-up")
 
 You've learned LangChain, LlamaIndex, and built agents from scratch. Now the important question: **when should you use each approach?**
 
+This is the same call you make picking Django vs Flask vs raw WSGI: more batteries means a faster start but less control and harder debugging.
+
 ---
 
 ## The Trade-offs
@@ -628,8 +630,8 @@ from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage
 
 llm = ChatOpenAI()
-response = llm.invoke([HumanMessage(content="Hello!")])
-print(response.content)
+lc_response = llm.invoke([HumanMessage(content="Hello!")])
+print(lc_response.content)
 
 # Verdict: Vanilla wins for simplicity
 ```
@@ -638,6 +640,7 @@ print(response.content)
 
 ```python
 # script_id: day_039_llamaindex_and_framework_comparison/rag_comparison
+# fragment
 # Vanilla Python - Lots of code
 from openai import OpenAI
 import chromadb
@@ -689,7 +692,7 @@ class Agent:
         self.tools[name] = func
 
     def run(self, task):
-        # Implement ReAct loop
+        # Implement the reason-then-act loop yourself: ask the LLM what to do, parse its chosen tool, run it, feed the result back, repeat (the ReAct pattern from Day 35)
         # Parse responses
         # Execute tools
         # Manage state
@@ -760,28 +763,6 @@ def custom_rag(question: str) -> str:
 
 ---
 
-## Framework Overhead
-
-```mermaid
-graph LR
-    subgraph "Lines of Code (Simple Chat)"
-        A["Vanilla: 5 lines"]
-        B["LangChain: 8 lines"]
-        C["LlamaIndex: 6 lines"]
-    end
-
-    subgraph "Lines of Code (RAG)"
-        D["Vanilla: 80+ lines"]
-        E["LangChain: 20 lines"]
-        F["LlamaIndex: 5 lines"]
-    end
-
-    style A fill:#90EE90
-    style F fill:#90EE90
-```
-
----
-
 ## Production Considerations
 
 | Consideration | Vanilla | Frameworks |
@@ -824,10 +805,6 @@ graph LR
 
 ---
 
-## Checkpoint
-
-Run the LlamaIndex Quick Start: drop a couple of `.txt` files in `./data`, build a `VectorStoreIndex.from_documents(...)`, and `query_engine.query("What is this document about?")`. You should get a coherent answer grounded in your files in well under ten lines of code — LlamaIndex chunked, embedded, and retrieved for you. If you get an empty or "I don't know" answer, check that `./data` actually contains readable text files and that `OPENAI_API_KEY` is set for the embedding call.
-
 ## Summary
 
 ```mermaid
@@ -856,17 +833,6 @@ mindmap
 
 ---
 
-## Quick Decision Guide
-
-```
-Simple chat? → Vanilla
-RAG app? → LlamaIndex
-Agent with tools? → LangChain
-Need control? → Vanilla
-Quick prototype? → Framework
-Production + maintenance? → Consider vanilla or hybrid
-```
-
 The best developers know when to use frameworks and when to write custom code. **Master all approaches, then choose wisely!**
 
 ---
@@ -875,7 +841,7 @@ The best developers know when to use frameworks and when to write custom code. *
 
 1. Build a minimal RAG query engine in LlamaIndex: load a folder of `.txt` files, build a `VectorStoreIndex`, and answer one question with `index.as_query_engine().query(...)`.
 2. Persist that index to disk and reload it in a fresh script with `StorageContext` + `load_index_from_storage`, proving you don't have to re-embed every run.
-3. Take the same documents and answer the *same* question with plain vanilla Python (embed chunks, cosine-similarity retrieve top-k, stuff into a prompt). Compare lines of code and control.
+3. Take the same documents and answer the *same* question with plain vanilla Python (embed chunks, retrieve the most similar chunks (rank by cosine similarity as in Day 20 and take the top few — "top-k"), stuff into a prompt). Compare lines of code and control.
 4. Fill in the decision table for three of your own past/side projects: would you pick Vanilla, LangChain, LlamaIndex, or Hybrid — and why?
 
 <details><summary>Solutions (approaches)</summary>
@@ -890,6 +856,12 @@ The best developers know when to use frameworks and when to write custom code. *
 3. Vanilla is more code (manual chunking, an embedding call, a similarity loop) but every step is visible and tweakable — that's the trade-off the decision guide captures.
 4. Rule of thumb from the guide: RAG-heavy → LlamaIndex; tool-using agent → LangChain; simple/maximum-control or long-lived production → Vanilla or Hybrid.
 </details>
+
+---
+
+## Checkpoint
+
+Drop two `.txt` files in `./data`, build a `VectorStoreIndex.from_documents(...)` and query it — you should get a coherent grounded answer in under ten lines. Empty or "I don't know"? Check `./data` has readable text and `OPENAI_API_KEY` is set.
 
 ---
 

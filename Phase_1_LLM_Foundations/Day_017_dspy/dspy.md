@@ -2,7 +2,7 @@
 
 Manual prompt engineering is fragile, tedious, and doesn't scale. Every time you tweak a prompt, you're guessing. **DSPy** replaces this guesswork with a programmatic framework: you declare *what* you want (signatures), compose *how* it flows (modules), and let a **compiler** optimize the actual prompts automatically.
 
-> **Coming from Software Engineering?** DSPy is like a compiler for prompts -- you write the spec, it generates the optimized implementation. Think of it as the difference between writing assembly by hand vs. writing C and letting GCC optimize. You declare intent with type signatures, compose modules like functions, and the compiler (optimizer) searches for the best few-shot examples and instructions. If you've used SQLAlchemy (declare schema, engine generates SQL) or TensorFlow (define graph, compiler optimizes execution), DSPy follows the same philosophy.
+> **Coming from Software Engineering?** DSPy is like a compiler for prompts -- you write the spec, it generates the optimized implementation. Think of it as the difference between writing assembly by hand vs. writing C and letting GCC optimize. You declare intent with type signatures, compose modules like functions, and the compiler (optimizer) searches for the best few-shot examples and instructions. If you've used SQLAlchemy (declare schema, engine generates SQL), DSPy follows the same philosophy.
 
 ---
 
@@ -51,8 +51,12 @@ A **signature** is a concise declaration of what a module should do -- its input
 # script_id: day_017_dspy/inline_signature
 import dspy
 
+# DSPy uses litellm-style "provider/model" IDs (e.g. openai/...), distinct from the bare IDs used when calling SDKs directly.
+lm = dspy.LM("openai/gpt-4o-mini")
+dspy.configure(lm=lm)
+
 # Simple inline signature: "input_field -> output_field"
-# This tells DSPy: take a question, produce an answer
+# This tells DSPy: take a sentence, produce a sentiment label.
 classify = dspy.Predict("sentence -> sentiment")
 
 result = classify(sentence="DSPy makes prompt engineering obsolete!")
@@ -126,6 +130,7 @@ class MultiHopQA(dspy.Module):
     """Answer questions that require multiple reasoning steps."""
 
     def __init__(self):
+        super().__init__()  # good practice: initialize the dspy.Module base
         # Each sub-module handles one step
         self.generate_query = dspy.ChainOfThought(
             "question -> search_query"
@@ -184,7 +189,6 @@ Optimizers search for the best prompts, few-shot examples, and instructions:
 ```python
 # script_id: day_017_dspy/optimizer_and_evaluator
 import dspy
-from dspy.evaluate import Evaluate
 
 # 1. Define your program
 qa = dspy.ChainOfThought("question -> answer")
@@ -194,6 +198,7 @@ trainset = [
     dspy.Example(
         question="What is the capital of France?",
         answer="Paris"
+    # .with_inputs marks which fields the model sees; the rest (answer) are the expected output used only for scoring
     ).with_inputs("question"),
     dspy.Example(
         question="Who wrote Romeo and Juliet?",
@@ -203,6 +208,7 @@ trainset = [
 ]
 
 # 3. Define a metric: how to score predictions
+# trace=None is passed by optimizers; keep the param even if you don't use it
 def exact_match(example, prediction, trace=None):
     return example.answer.lower() == prediction.answer.lower()
 
@@ -222,14 +228,16 @@ result = compiled_qa(question="What is the capital of Japan?")
 print(result.answer)  # "Tokyo"
 ```
 
+BootstrapFewShot runs your program on the training questions, checks each output against the known answer using your metric, and keeps the runs that passed. Those successful runs — the model's own correct reasoning traces — become the worked examples it pastes into the prompt. So you supply the answers; DSPy figures out which fully-worked demonstrations teach the model best.
+
 ### Optimizer Comparison
 
 | Optimizer | Strategy | Best For | Cost |
 |-----------|----------|----------|------|
 | `BootstrapFewShot` | Selects best few-shot demos | Quick optimization, small datasets | Low |
 | `BootstrapFewShotWithRandomSearch` | Random search over demo sets | Better quality, more exploration | Medium |
-| `MIPRO` | Optimizes instructions + demos jointly | Maximum quality, larger datasets | High |
-| `BootstrapFinetune` | Generates data, then finetunes model | When you need a smaller/cheaper model | Very High |
+| `MIPROv2` | Optimizes instructions + demos jointly | Maximum quality, larger datasets | High |
+| `BootstrapFinetune` | Generates data, then finetunes the model (= retrains the model itself on your data; covered in Phase 6, Day 74) — use only when you need a smaller/cheaper model | When you need a smaller/cheaper model | Very High |
 
 ```mermaid
 flowchart TB
@@ -286,7 +294,8 @@ evaluator = Evaluate(
 )
 
 score = evaluator(compiled_qa)
-print(f"Accuracy: {score}%")
+# Evaluate returns an EvaluationResult; .score is the float percentage
+print(f"Accuracy: {score.score}%")
 ```
 
 ---
@@ -295,6 +304,7 @@ print(f"Accuracy: {score}%")
 
 ```python
 # script_id: day_017_dspy/manual_vs_dspy_comparison
+# fragment: illustrative side-by-side using externally-defined client/exact_match/train_data
 # ---- MANUAL APPROACH ----
 # Fragile, model-specific, hard to maintain
 
@@ -320,6 +330,7 @@ Return ONLY the sentiment label."""},
 
 class SentimentClassifier(dspy.Module):
     def __init__(self):
+        super().__init__()  # good practice: initialize the dspy.Module base
         self.classify = dspy.Predict(
             "text -> sentiment: str"  # That's it. No prompt needed.
         )
@@ -360,7 +371,7 @@ mindmap
       ProgramOfThought
     Optimizers
       BootstrapFewShot
-      MIPRO
+      MIPROv2
       BootstrapFinetune
     Evaluation
       Metric functions
@@ -404,12 +415,73 @@ score = Evaluate(devset=testset, metric=my_metric)(compiled)
 
 1. **Signature Explorer**: Define three different DSPy signatures (summarization, translation, entity extraction) and compare `Predict` vs `ChainOfThought` outputs for each
 
+<details>
+<summary>Solution</summary>
+
+```python
+import dspy
+dspy.configure(lm=dspy.LM("openai/gpt-4o-mini"))
+
+summarize = "document -> summary"
+translate = "english_text -> french_text"
+extract   = "text -> entities: list[str]"
+
+for sig in (summarize, translate, extract):
+    fast = dspy.Predict(sig)        # answer only
+    slow = dspy.ChainOfThought(sig) # adds a reasoning field first
+    # Predict is cheaper/faster; ChainOfThought tends to be more accurate
+    # on multi-step tasks because it reasons before answering.
+```
+
+</details>
+
 2. **Optimizer Showdown**: Take a classification task with 20+ examples, compile with `BootstrapFewShot` and `BootstrapFewShotWithRandomSearch`, and compare accuracy on a held-out test set
 
+<details>
+<summary>Solution</summary>
+
+```python
+import dspy
+from dspy.evaluate import Evaluate
+
+program = dspy.Predict("text -> label")
+
+def acc(example, prediction, trace=None):
+    return example.label.lower() == prediction.label.lower()
+
+evaluator = Evaluate(devset=testset, metric=acc, num_threads=4)
+
+for OptCls in (dspy.BootstrapFewShot, dspy.BootstrapFewShotWithRandomSearch):
+    compiled = OptCls(metric=acc).compile(program, trainset=trainset)
+    score = evaluator(compiled)
+    print(f"{OptCls.__name__}: {score.score}%")  # .score is the float percentage
+```
+
+</details>
+
 3. **Model Portability**: Build a DSPy program, compile it for GPT-4o-mini, then recompile for Claude Sonnet -- measure how accuracy changes without touching any prompt text
+
+<details>
+<summary>Solution</summary>
+
+```python
+import dspy
+from dspy.evaluate import Evaluate
+
+program = dspy.ChainOfThought("question -> answer")
+optimizer = dspy.BootstrapFewShot(metric=exact_match)
+evaluator = Evaluate(devset=testset, metric=exact_match, num_threads=4)
+
+for model in ("openai/gpt-4o-mini", "anthropic/claude-sonnet-4-6"):
+    dspy.configure(lm=dspy.LM(model))   # switch models, no prompt edits
+    compiled = optimizer.compile(program, trainset=trainset)
+    print(f"{model}: {evaluator(compiled).score}%")
+```
+
+</details>
 
 ---
 
 ## What's Next?
 
-You've mastered LLM foundations! Next, we build a **Capstone Data Extraction Pipeline** — putting everything from Phase 1 into a complete project. Then on to Phase 2: **Embeddings** — learning how to represent text as vectors that capture meaning!
+You've covered the core LLM foundations toolkit! Next, we build a **Capstone Data Extraction Pipeline** — putting everything from Phase 1 into a complete project. Then on to Phase 2: **Embeddings** — learning how to represent text as vectors that capture meaning!

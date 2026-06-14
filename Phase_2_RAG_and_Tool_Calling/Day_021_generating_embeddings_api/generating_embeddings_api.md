@@ -40,12 +40,14 @@ flowchart TB
         C["text-embedding-ada-002"]
     end
 
-    A -->|"1536 dims\n$0.02/1M tokens"| D["Best value"]
-    B -->|"3072 dims\n$0.13/1M tokens"| E["Highest quality"]
-    C -->|"1536 dims\n$0.10/1M tokens"| F["Legacy"]
+    A -->|"1536 dims<br/>$0.02/1M tokens"| D["Best value"]
+    B -->|"3072 dims<br/>$0.13/1M tokens"| E["Highest quality"]
+    C -->|"1536 dims<br/>$0.10/1M tokens"| F["Legacy"]
 
     style D fill:#90EE90
 ```
+
+Prices as of 2026-06 — verify current pricing at the provider; dimensions are stable.
 
 ### Batch Processing
 
@@ -96,6 +98,8 @@ print(f"Generated {len(embeddings)} embeddings")
 
 The new embedding models support dimension reduction:
 
+These models are trained so the most important meaning is packed into the earliest numbers, so you can keep the first N and drop the rest. Fewer dimensions means less storage and faster search in exchange for slightly less accuracy — 512 is usually a good balance.
+
 ```python
 # script_id: day_021_generating_embeddings_api/dimension_reduction
 from openai import OpenAI
@@ -130,6 +134,8 @@ for dims in [256, 512, 1024, 1536]:
 ## Async Embedding Generation
 
 For high throughput applications:
+
+We cap how many requests run at once with a semaphore — like a connection pool — because the provider will rate-limit you if you fire hundreds of requests simultaneously (see the RateLimitError handling below).
 
 ```python
 # script_id: day_021_generating_embeddings_api/async_embedding_generation
@@ -183,6 +189,8 @@ asyncio.run(main())
 ## Alternative Embedding Providers
 
 ### Cohere
+
+Some providers want to know whether the text is a stored document or a user search query and embed each slightly differently so queries land near the documents they should match — like the difference between indexing and querying in a search engine. Use the document type when building your index and the query type at search time. OpenAI does not expose this distinction.
 
 ```python
 # script_id: day_021_generating_embeddings_api/cohere_embeddings
@@ -403,7 +411,7 @@ def calculate_embedding_cost(
     """Estimate embedding cost before making API calls."""
     import tiktoken
 
-    # Pricing per 1M tokens (as of 2024)
+    # Approximate pricing per 1M tokens — as of 2026-06; verify at platform.openai.com/pricing
     pricing = {
         "text-embedding-3-small": 0.02,
         "text-embedding-3-large": 0.13,
@@ -412,7 +420,7 @@ def calculate_embedding_cost(
 
     # Count tokens
     try:
-        encoder = tiktoken.encoding_for_model("text-embedding-3-small")
+        encoder = tiktoken.encoding_for_model(model)
     except:
         encoder = tiktoken.get_encoding("cl100k_base")
 
@@ -437,6 +445,8 @@ print(cost_info)
 ---
 
 ## Error Handling
+
+This is the same exponential-backoff-on-429 pattern you would write for any third-party REST API — nothing embedding-specific.
 
 ```python
 # script_id: day_021_generating_embeddings_api/error_handling
@@ -466,7 +476,8 @@ def get_embedding_robust(
             time.sleep(wait_time)
 
         except APIError as e:
-            if e.status_code >= 500:
+            status = getattr(e, 'status_code', None)
+            if status is not None and status >= 500:
                 print(f"Server error, retrying...")
                 time.sleep(1)
             else:
@@ -541,11 +552,98 @@ embeddings = model.encode(["text1", "text2"]).tolist()
 
 ## Exercises
 
-1. **Provider Comparison**: Compare embedding quality from OpenAI, Cohere, and local models on the same text set
+1. **Provider Comparison**: Compare embedding quality from OpenAI, Cohere, and local models on the same text set. (Note: each model produces vectors in its own space and often a different number of dimensions, so you cannot cosine-compare one model's vector against another's directly. Compare each model only against itself — e.g. which model ranks the right document highest for the same query.)
+
+<details>
+<summary>Solution</summary>
+
+```python
+# script_id: day_021_generating_embeddings_api/exercise_provider_comparison
+from sentence_transformers.util import cos_sim
+
+query = "How do I reset my password?"
+docs = [
+    "To reset your password, click 'Forgot password' on the login page.",
+    "Our office is open Monday to Friday, 9am to 5pm.",
+    "Refunds are processed within 5 business days.",
+]
+
+# Compare each model only against itself: does it rank the right doc (index 0) first?
+for provider in [EmbeddingProvider.OPENAI, EmbeddingProvider.LOCAL]:
+    client = get_embedding_client(provider)
+    q_emb = client.embed([query])[0]
+    doc_embs = client.embed(docs)
+    scores = [float(cos_sim(q_emb, d)) for d in doc_embs]
+    best = max(range(len(scores)), key=lambda i: scores[i])
+    print(f"{provider.value}: best match = doc {best} (correct={best == 0})")
+```
+
+</details>
 
 2. **Cost Optimizer**: Build a system that automatically chooses between cached, local, and API embeddings based on cost/quality tradeoffs
 
+<details>
+<summary>Solution</summary>
+
+```python
+# script_id: day_021_generating_embeddings_api/exercise_cost_optimizer
+def embed_smart(text: str, quality: str = "low") -> list[float]:
+    """Reuse the cache first, then pick local (free) or API (higher quality)."""
+    model = "text-embedding-3-small"
+    cached = cache.get(text, model)
+    if cached:
+        return cached
+
+    if quality == "low":
+        # Free local model — no API cost
+        emb = get_embedding_client(EmbeddingProvider.LOCAL).embed([text])[0]
+    else:
+        # Paid API for higher quality
+        emb = get_embedding_cached(text, model)
+
+    cache.set(text, model, emb)
+    return emb
+
+print(len(embed_smart("Cheap path", quality="low")))
+print(len(embed_smart("Quality path", quality="high")))
+```
+
+</details>
+
 3. **Async Benchmarker**: Measure speedup from async vs sequential embedding generation for 100, 500, and 1000 texts
+
+<details>
+<summary>Solution</summary>
+
+```python
+# script_id: day_021_generating_embeddings_api/exercise_async_benchmarker
+import asyncio
+import time
+
+async def benchmark(n: int):
+    texts = [f"Benchmark text {i}" for i in range(n)]
+
+    # Sequential
+    start = time.perf_counter()
+    for t in texts:
+        await get_embedding_async(t)
+    seq = time.perf_counter() - start
+
+    # Parallel (reuses get_embeddings_parallel from the async section)
+    start = time.perf_counter()
+    await get_embeddings_parallel(texts)
+    par = time.perf_counter() - start
+
+    print(f"n={n}: sequential={seq:.2f}s, parallel={par:.2f}s, speedup={seq/par:.1f}x")
+
+async def main():
+    for n in [100, 500, 1000]:
+        await benchmark(n)
+
+asyncio.run(main())
+```
+
+</details>
 
 ---
 

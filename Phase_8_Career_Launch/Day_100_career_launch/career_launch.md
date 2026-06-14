@@ -37,16 +37,16 @@ This is not a beginner skill set.
 
 ```mermaid
 graph TD
-    P1[Project 1: Data Extraction Pipeline]
-    P2[Project 2: RAG Chatbot]
-    P3[Project 3: Research Agent]
-    P4[Project 4: Multi-Agent Content Pipeline]
-    P5[Project 5: Production Deployment]
+    P1[Project 1: Data Extraction Pipeline - D18]
+    P2[Project 2: RAG Chatbot - D34]
+    P3[Project 3: Research Agent - D48]
+    P4[Project 4: Multi-Agent Content Pipeline - D73]
+    P5[Project 5: Production Deployment - D97]
 
     P1 --> |"Demonstrates"| S1["Structured output, Pydantic, retry logic, batch processing"]
     P2 --> |"Demonstrates"| S2["Embeddings, vector DB, RAG, tool calling, evaluation"]
     P3 --> |"Demonstrates"| S3["LangGraph, ReAct loop, tool use, persistence, streaming"]
-    P4 --> |"Demonstrates"| S4["Multi-agent, HITL, LLM-as-judge, security, orchestration"]
+    P4 --> |"Demonstrates"| S4["Multi-agent, human-in-the-loop (HITL), LLM-as-judge, security, orchestration"]
     P5 --> |"Demonstrates"| S5["FastAPI, Docker, cloud deploy, monitoring, rate limiting"]
 ```
 
@@ -66,8 +66,8 @@ Practice these answers out loud. Not just in your head — out loud. The differe
 
 Here's everything you've learned across 100 days:
 
-### Phase 1: LLM Foundations
-- How LLMs work (tokens, context windows, temperature, sampling)
+### LLM Foundations
+- How LLMs work (tokens, context windows, temperature)
 - OpenAI and Anthropic API integration
 - Prompt engineering: zero-shot, few-shot, chain-of-thought, system prompts
 - Structured output with Pydantic and JSON mode
@@ -75,7 +75,7 @@ Here's everything you've learned across 100 days:
 - Retry logic and error handling
 - Token cost estimation
 
-### Phase 2: External Knowledge
+### External Knowledge
 - Embedding models and vector similarity
 - Text chunking strategies and trade-offs
 - ChromaDB for vector storage and retrieval
@@ -84,7 +84,7 @@ Here's everything you've learned across 100 days:
 - Source attribution and citation
 - LLM-as-judge evaluation
 
-### Phase 3: Single Agents
+### Single Agents
 - Tool/function calling with OpenAI
 - ReAct (Reason + Act) agent pattern
 - LangGraph state machines and conditional routing
@@ -93,7 +93,7 @@ Here's everything you've learned across 100 days:
 - Iteration limits and graceful termination
 - Streaming agent execution
 
-### Phase 4: Multi-Agent, Eval, and Security
+### Multi-Agent, Eval & Security
 - Multi-agent patterns: supervisor, collaboration, specialization
 - Agent-to-agent communication
 - LLM evaluation frameworks
@@ -102,7 +102,13 @@ Here's everything you've learned across 100 days:
 - Prompt injection detection and defense
 - Input sanitization
 
-### Phase 5: Production
+### Fine-tuning & Optimization
+- When to fine-tune vs. when to use RAG (and when neither is needed)
+- LoRA/QLoRA: adapting a model by training small add-on weights instead of the whole thing
+- Quantization: shrinking a model so it runs cheaper and faster
+- Serving optimized models in production
+
+### Production
 - FastAPI for AI service APIs
 - Server-Sent Events for streaming
 - Rate limiting
@@ -123,12 +129,12 @@ Finishing this course is not the end — it's the beginning of the real work. He
 The field is broad. The engineers who advance fastest pick a specialization and go deep. Here are the four main paths:
 
 **Path 1: Agent Systems & Orchestration**
-If you loved building the research agent and content pipeline, go deeper here. Study AutoGen, CrewAI, and the latest LangGraph patterns. Follow the research coming out of Microsoft, Google, and Anthropic on agent capabilities. Learn about agent memory architectures, planning algorithms, and multi-agent coordination theory.
+If you loved building the research agent and content pipeline, go deeper here. Study AutoGen, CrewAI, and the latest LangGraph patterns. Follow the research coming out of Microsoft, Google, and Anthropic on agent capabilities. Learn how agents remember things across long tasks, how they break a big goal into steps (planning), and how multiple agents coordinate without stepping on each other.
 
 Key resources: LangGraph docs, AutoGen research papers, Lilian Weng's blog, Simon Willison's blog.
 
 **Path 2: RAG and Knowledge Systems**
-If the RAG chatbot felt like home, specialize here. Study advanced chunking strategies (semantic chunking, parent-document retrieval), reranking models (Cohere Rerank, cross-encoders), hybrid search (BM25 + vector), and multi-vector retrieval. This is the foundation of most enterprise AI products.
+If the RAG chatbot felt like home, specialize here. Study advanced chunking strategies (semantic chunking, parent-document retrieval), reranking models (a second pass that re-sorts your search hits by relevance — Cohere Rerank, cross-encoders), hybrid search — combining keyword search (BM25, the classic full-text ranking algorithm) with vector search — and multi-vector retrieval. This is the foundation of most enterprise AI products.
 
 Key resources: LlamaIndex docs, Weaviate blog, Qdrant documentation, RAGatouille library.
 
@@ -242,9 +248,9 @@ Pick the one that pulls at you — and name the first thing you'll learn next.
 | **Agents** | Multi-agent orchestration, tool reliability, long-horizon tasks | Rebuild your D48 agent with a richer tool surface + eval |
 | **RAG / Retrieval** | Reranking, hybrid search, retrieval eval, GraphRAG | Add reranking + a retrieval-quality harness to your D34 bot |
 | **Evaluation** | LLM-as-judge, RAGAS, regression suites, observability | Stand up an eval CI gate for one capstone |
-| **Infrastructure** | Serving, scaling, cost/latency, fine-tuning, MCP | Containerize + load-test a capstone; add caching/fallbacks |
+| **Infrastructure** | Serving, scaling, cost/latency, fine-tuning, MCP (Model Context Protocol — a standard for connecting tools/data to LLMs) | Containerize + load-test a capstone; add caching/fallbacks |
 
-(The "Final Action Items" below are your exercises for today.)
+(The final action items below are your exercises for today.)
 
 ---
 
@@ -268,7 +274,9 @@ Go build something real.
 
 ---
 
-## Final Action Items
+## Practice Exercises
+
+*Your final action items:*
 
 1. **Celebrate.** Tell someone what you just accomplished. It matters.
 

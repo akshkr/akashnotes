@@ -2,7 +2,7 @@
 
 Agents need memory to maintain context. This guide shows you how to manage conversation history using simple Python data structures.
 
-> **Coming from Software Engineering?** Conversation history management is just session state. If you've built web apps with server-side sessions, JWT tokens, or Redis-backed session stores, you already know how to manage conversational state. The 'messages' array is your session object.
+> **Coming from Software Engineering?** Conversation history management is just session state. If you've built web apps with server-side sessions or a Redis-backed session store, you already know how to manage conversational state. The `messages` array is your session object, and each LLM call resends the whole thing — the model keeps nothing between calls.
 
 ---
 
@@ -150,11 +150,15 @@ messages = history.get_messages_for_api()
 # Ready to send to LLM!
 ```
 
+The rest of this lesson uses a generic `add(role, content)` for brevity; the interface is interchangeable — only the eviction/persistence behavior changes between sections.
+
 ---
 
 ## Sliding Window History
 
-Prevent token overflow by keeping only recent messages:
+The model can only read a fixed amount of text per request — its *context window*. That text is measured in *tokens*, which are just chunks of characters (roughly 4 characters, or about 3/4 of a word, each). Because every message you resend counts against that limit, a long conversation eventually won't fit — that's what "token overflow" means. The fix is the same as any bounded cache: drop the oldest entries.
+
+This is an LRU-style bounded cache for your session — `deque(maxlen=N)` evicts the oldest turn exactly like a capped session ring buffer. Prevent token overflow by keeping only recent messages:
 
 ```python
 # script_id: day_036_conversation_history/sliding_window_history
@@ -181,7 +185,9 @@ class SlidingWindowHistory:
     def get_token_estimate(self) -> int:
         """Rough estimate of token count."""
         total_chars = sum(len(m["content"]) for m in self.messages)
-        return total_chars // 4  # Rough estimate: 4 chars per token
+        # Rough rule of thumb: ~4 characters per token for English text.
+        # Only an estimate — use tiktoken (shown next) for the exact count.
+        return total_chars // 4
 
 # Usage
 history = SlidingWindowHistory(max_messages=10)
@@ -193,7 +199,7 @@ for i in range(15):
 print(f"Messages kept: {len(history.messages)}")  # 10, not 30
 ```
 
-> **Modern Alternative:** LangGraph 0.4+ handles conversation history automatically with the `add_messages` reducer in state definitions. The manual approaches shown here are educational — in production, prefer LangGraph's built-in message management.
+> **Heads-up:** frameworks like LangGraph (covered later in this phase) can manage the message list for you automatically. The hand-rolled versions here teach you what those frameworks do under the hood — worth understanding before you hand it off.
 
 ```mermaid
 flowchart LR
@@ -216,7 +222,7 @@ flowchart LR
 
 ## Token-Aware History
 
-Keep messages within a token budget:
+Keep messages within a token budget. `tiktoken` is OpenAI's tokenizer — it counts tokens exactly the way the model does instead of guessing with chars/4. (`pip install tiktoken`. Token counts are model-specific; an Anthropic model would count differently.)
 
 ```python
 # script_id: day_036_conversation_history/token_aware_history
@@ -251,7 +257,7 @@ class TokenAwareHistory:
         # Remove old messages until we have room
         while self.messages and (self.total_tokens() + new_tokens > self.max_tokens):
             removed = self.messages.pop(0)
-            print(f"Removed old message to stay within budget")
+            print("Removed old message to stay within budget")
 
         self.messages.append({"role": role, "content": content})
 
@@ -271,11 +277,13 @@ history.add("user", "What about JavaScript?")  # Might trigger cleanup
 print(f"Current tokens: {history.total_tokens()}")
 ```
 
+The `print` on each eviction is just so you can see the trimming happen — production code would log this at debug level rather than print to stdout.
+
 ---
 
 ## History with Tool Calls
 
-Include tool calls in your history:
+Include tool calls in your history. When the model decides to call a tool (the ReAct pattern from Day 35), three things must land in history in order: the assistant's tool *request*, the *result* you fed back (as a `role: "tool"` message whose `tool_call_id` matches the request's `id`), and the assistant's final answer. The class below records that exact sequence so the model can see what it asked for and what came back.
 
 ```python
 # script_id: day_036_conversation_history/tool_aware_history
@@ -361,23 +369,27 @@ class BranchableHistory:
         })
 
     def create_branch(self, name: str):
-        """Create a new branch from current state."""
-        self.branches[name] = copy.deepcopy(self.messages)
+        """Fork the current state into a new, independent branch."""
+        # Persist the branch we're leaving so it isn't lost...
+        self.branches[self.current_branch] = self.messages
+        # ...then start the new branch as a fork (independent copy).
         self.current_branch = name
+        self.messages = copy.deepcopy(self.branches[name] if name in self.branches
+                                      else self.messages)
 
     def switch_branch(self, name: str):
         """Switch to a different branch."""
-        if name == "main":
-            # Switching to main - keep current messages
-            pass
-        elif name in self.branches:
-            self.messages = copy.deepcopy(self.branches[name])
-            self.current_branch = name
-        else:
+        if name not in self.branches and name != self.current_branch:
             raise ValueError(f"Branch {name} not found")
+        # Save current branch before swapping, so edits don't leak across branches.
+        self.branches[self.current_branch] = self.messages
+        self.messages = copy.deepcopy(self.branches[name])
+        self.current_branch = name
 
     def rollback(self, n: int = 1):
         """Remove the last n messages."""
+        if n <= 0:
+            return
         self.messages = self.messages[:-n]
 
     def get_messages(self) -> list:
@@ -394,16 +406,17 @@ history.add("user", "Help me write a function")
 history.add("assistant", "Sure! What should it do?")
 history.add("user", "Calculate factorial")
 
-# Create a branch to try a different approach
+# Fork off to try a recursive approach (this branch is independent)
 history.create_branch("recursive")
 history.add("assistant", "Here's a recursive approach...")
 
-# Go back and try iterative
+# Go back to the shared starting point and fork a separate iterative branch
 history.switch_branch("main")
 history.create_branch("iterative")
 history.add("assistant", "Here's an iterative approach...")
 
-# Can switch between branches!
+# Branches are independent: "iterative" never sees the "recursive" turn.
+history.switch_branch("recursive")  # back to the recursive line of thought
 ```
 
 ```mermaid
@@ -426,7 +439,7 @@ flowchart TB
 
 ## Persisting History
 
-Save and load conversation history:
+This is just serializing your session store — `json.dump`/`load` is the conversational equivalent of writing a Redis session to disk and rehydrating it. Save and load conversation history:
 
 ```python
 # script_id: day_036_conversation_history/persistent_history
@@ -503,10 +516,6 @@ print(loaded_history.messages)  # Previous conversation loaded!
 
 ---
 
-## Checkpoint
-
-Run the `SlidingWindowHistory` example: add 15 user/assistant pairs to a window of `max_messages=10` and print `len(history.messages)`. You should see exactly `10`, not `30` — the oldest messages were silently evicted by `deque(maxlen=...)`, just like the system session stores you've capped before. If you see `30`, you're appending to a plain list somewhere instead of the bounded `deque`.
-
 ## Summary
 
 ```mermaid
@@ -570,6 +579,12 @@ history = json.load(open("history.json"))
 3. `json.dump(self.messages, open(path, "w"))` and `self.messages = json.load(open(path))`; assert equality after reload.
 4. Filter with `[m for m in history if m["role"] in ("user", "assistant") and not m.get("tool_calls")]`.
 </details>
+
+---
+
+## Checkpoint
+
+Run the `SlidingWindowHistory` example: add 15 user/assistant pairs to a window of `max_messages=10` and print `len(history.messages)`. You should see exactly `10`, not `30` — the oldest messages were silently evicted by `deque(maxlen=...)`, just like the system session stores you've capped before. If you see `30`, you're appending to a plain list somewhere instead of the bounded `deque`.
 
 ---
 

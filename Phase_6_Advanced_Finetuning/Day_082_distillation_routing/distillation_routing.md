@@ -25,7 +25,9 @@ Distillation is a form of knowledge transfer:
 2. **Student learns**: Fine-tune a smaller model on the teacher's outputs
 3. **Student serves**: Deploy the smaller model for production inference
 
-The student doesn't just learn the right answers -- it learns the teacher's **reasoning style**, **formatting patterns**, and **decision boundaries**.
+The student doesn't just learn the right answers -- it learns the teacher's **reasoning style**, **formatting patterns**, and **where it draws the line between one answer and another**.
+
+It's called distillation because you boil the big model down to its essence -- keeping the useful behavior in a far smaller package.
 
 ---
 
@@ -108,7 +110,7 @@ def generate_teacher_outputs(
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": prompt}
                 ],
-                temperature=0.7,  # Some diversity in outputs
+                temperature=0.7,  # varied phrasings so the student sees diverse examples, not one canned answer (see Day 5)
             )
 
             outputs.append({
@@ -191,6 +193,9 @@ Three approaches to routing, from simple to sophisticated:
 # script_id: day_082_distillation_routing/router_implementations
 import re
 from typing import Callable
+from openai import OpenAI
+
+client = OpenAI()
 
 # Approach 1: Rule-based router (simple, fast, no ML needed)
 def rule_based_router(prompt: str) -> str:
@@ -215,6 +220,12 @@ def rule_based_router(prompt: str) -> str:
 
 
 # Approach 2: Classifier-based router (trained on labeled difficulty data)
+# A classifier here is just a small function that scores text 0-1 -- like a spam
+# filter, but scoring difficulty instead of spamminess. You'd train it once on a
+# few hundred prompts you've hand-labeled easy/hard.
+def simple_difficulty(prompt: str) -> float:  # toy stand-in; real version is data-driven
+    return min(1.0, len(prompt.split()) / 80)
+
 class ClassifierRouter:
     """Route using a lightweight text classifier."""
 
@@ -271,6 +282,8 @@ def calculate_routing_savings(
     """Calculate cost savings from routing vs sending everything to frontier."""
 
     # Cost per 1K tokens (input + output combined estimate)
+    # Illustrative round numbers to keep the math readable -- NOT real prices.
+    # Check current per-1M pricing at the provider (see REFERENCE.md).
     costs = {
         "small":    0.10,   # e.g., GPT-4o-mini or fine-tuned 7B
         "medium":   0.50,   # e.g., Claude Haiku or GPT-4o-mini
@@ -304,9 +317,9 @@ def calculate_routing_savings(
 # Run the analysis
 # calculate_routing_savings()
 # All-frontier cost:  $  250,000.00
-# Routed cost:        $   31,500.00
-# Savings:            $  218,500.00 (87%)
-# Cost reduction:     7.9x cheaper
+# Routed cost:        $   33,500.00
+# Savings:            $  216,500.00 (87%)
+# Cost reduction:     7.5x cheaper
 ```
 
 ---
@@ -336,7 +349,7 @@ class ProductionRouter:
     def __init__(self):
         self.models = {
             "small": "gpt-4o-mini",
-            "medium": "gpt-4o-mini",  # Could be a fine-tuned model
+            "medium": "claude-haiku-4-5",
             "frontier": "gpt-4o",
         }
         self.confidence_threshold = 0.8
@@ -358,10 +371,13 @@ class ProductionRouter:
         content = response.choices[0].message.content
 
         # Step 3: Check confidence (using log probabilities)
+        # A logprob is just the model's own confidence for each word it picked:
+        # 0 = totally sure, more negative = less sure. We average them into one
+        # number for the whole answer.
         logprobs = response.choices[0].logprobs
         if logprobs and logprobs.content:
             avg_logprob = sum(t.logprob for t in logprobs.content) / len(logprobs.content)
-            confidence = min(1.0, max(0.0, 1.0 + avg_logprob))  # Normalize
+            confidence = min(1.0, max(0.0, 1.0 + avg_logprob))  # rough 0-1 rescale, a heuristic signal for whether to escalate -- not a calibrated probability
         else:
             confidence = 0.5  # Unknown confidence
 
@@ -478,7 +494,7 @@ mindmap
 # 1. Generate teacher outputs:  teacher_model(prompts) -> responses
 # 2. Filter quality:            remove short, refused, low-quality
 # 3. Create JSONL:              {"messages": [user, assistant]}
-# 4. Fine-tune student:         openai.fine_tuning.jobs.create(...)
+# 4. Fine-tune student:         client.fine_tuning.jobs.create(...)
 
 # Router decision
 # Easy (70%)   -> small model   ($0.10/1K)
@@ -506,4 +522,4 @@ mindmap
 
 ## What's Next?
 
-Fine-tuning block complete! Let's build the **API layer** for serving our models with FastAPI!
+Fine-tuning block complete! Phase 7 (Production Deployment) opens on **Day 83**, where we build the **API layer** for serving our models with FastAPI!

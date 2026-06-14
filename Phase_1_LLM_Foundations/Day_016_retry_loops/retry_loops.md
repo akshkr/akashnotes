@@ -2,7 +2,7 @@
 
 Even with the best prompts and JSON modes, LLMs sometimes produce invalid output. A production-ready system needs **intelligent retry logic** that can recover from errors, provide feedback to the LLM, and eventually succeed.
 
-> **Coming from Software Engineering?** Retry loops for LLMs are identical to retry patterns for any flaky external service — the same exponential backoff, jitter, and max-retries patterns from your HTTP client libraries (requests, axios) apply. The twist: you can send the error message back to the LLM so it learns from its mistake. Production retry systems follow the exact same patterns as circuit breakers in microservices (Hystrix, resilience4j, Polly). If you've implemented retry policies for database connections or API calls, this code will feel like home — just with token costs as an additional concern.
+> **Coming from Software Engineering?** Retry loops for LLMs are identical to retry patterns for any flaky external service — the same exponential backoff, jitter, and max-retries patterns from your HTTP client libraries (requests, axios) apply. The one new thing vs. a normal HTTP 500: an LLM can be *told what it got wrong* and corrected on the next turn. Production retry systems follow the exact same patterns as circuit breakers in microservices (Hystrix, resilience4j, Polly). If you've implemented retry policies for database connections or API calls, this will feel like home — just with token costs as an additional concern.
 
 ---
 
@@ -71,8 +71,8 @@ Text: {text}
 Return only JSON."""
                     }
                 ],
-                temperature=0,
-                response_format={"type": "json_object"}
+                temperature=0,  # most predictable, least-random output (Day 9) — note a blind retry can re-emit the SAME wrong answer, which is why feedback retry below changes the prompt instead of just re-rolling
+                response_format={"type": "json_object"}  # JSON mode — forces a parseable JSON reply (Day 14)
             )
 
             data = json.loads(response.choices[0].message.content)
@@ -103,6 +103,8 @@ if result:
 
 The real power comes from telling the LLM what went wrong:
 
+(See the round-trip in the diagram below: the model first returns `{"rating": "five stars"}`, we feed the error back, and it returns `{"rating": 5.0}`.)
+
 ```python
 # script_id: day_016_retry_loops/feedback_retry
 from openai import OpenAI
@@ -124,6 +126,7 @@ def extract_with_feedback(
     """Extract with error feedback to LLM."""
 
     schema = ProductReview.model_json_schema()
+    content = None
 
     messages = [
         {
@@ -179,7 +182,7 @@ Please fix these issues and return corrected JSON."""
         # Add the failed response and error to conversation
         messages.append({
             "role": "assistant",
-            "content": content if 'content' in dir() else "Invalid response"
+            "content": content if content is not None else "Invalid response"
         })
         messages.append({
             "role": "user",
@@ -221,7 +224,7 @@ sequenceDiagram
 
 ```python
 # script_id: day_016_retry_loops/exponential_backoff
-from openai import OpenAI, RateLimitError, APIError
+from openai import OpenAI, RateLimitError, APIStatusError, APIConnectionError
 import time
 import random
 
@@ -251,13 +254,19 @@ def call_with_backoff(
             print(f"Rate limited. Waiting {delay:.2f}s... (Attempt {attempt + 1})")
             time.sleep(delay)
 
-        except APIError as e:
+        except APIStatusError as e:
             if e.status_code >= 500:  # Server error, might be temporary
                 delay = base_delay * (2 ** attempt)
                 print(f"Server error. Waiting {delay:.2f}s...")
                 time.sleep(delay)
             else:
                 raise  # Client error, don't retry
+
+        except APIConnectionError as e:
+            # Connection/timeout errors carry no status and are inherently retryable
+            delay = base_delay * (2 ** attempt)
+            print(f"Connection error. Waiting {delay:.2f}s...")
+            time.sleep(delay)
 
     raise Exception("Max retries exceeded")
 
@@ -286,6 +295,8 @@ flowchart TB
 ## Complete Production Retry System
 
 Here's a fully-featured retry system:
+
+Note the two tiers of retry here: the inner loop in `_call_api` handles transient rate-limit/transport hiccups on a single call, while the outer loop in `extract()` re-prompts with feedback when the *content* itself is wrong. The retry logic lives in that `extract()` for-loop; the `_handle_*` and `_add_*_feedback` helpers are familiar SWE plumbing (backoff math, building the feedback message) — skim them.
 
 ```python
 # script_id: day_016_retry_loops/production_retry_system
@@ -573,6 +584,7 @@ async def extract_with_async_retry(
             return schema_class(**data)
 
         except (json.JSONDecodeError, ValidationError) as e:
+            print(f"Async attempt {attempt + 1} failed: {e}")
             if attempt < max_retries - 1:
                 messages.append({
                     "role": "assistant",
@@ -684,17 +696,28 @@ messages.append({"role": "user", "content": f"Error: {e}. Please fix."})
 
 3. **Circuit Breaker**: Implement a circuit breaker that stops retrying after too many failures
 
+<details>
+<summary>Solutions (approaches)</summary>
+
+1. **Retry Dashboard**: Wrap each call in a counter that records attempts, final outcome, and error type, then aggregate across runs into a success rate and mean attempts-per-success. A simple dict keyed by error type plus a running total is enough.
+
+2. **Adaptive Retry**: Key the backoff/feedback strategy off the error type you're seeing — e.g. lengthen the backoff after repeated `RateLimitError`s, and send stronger, more explicit feedback after repeated `ValidationError`s. Track the last few error types and branch on them.
+
+3. **Circuit Breaker**: Track consecutive failures; once they exceed N, "open" the circuit and reject calls fast (raise immediately) instead of hitting the API. After a cooldown, go "half-open" and let one call through to test recovery — close the circuit on success, re-open on failure.
+
+</details>
+
 ---
 
-## How Far You've Come
+## Phase 1 is almost done
 
-You're almost through the Phase 1 foundations. You now understand:
-- How LLMs work (Transformers, tokenization, sampling)
-- Advanced prompting (few-shot, CoT, system prompts)
-- API mastery (SDKs, async, streaming)
-- Structured output (Pydantic, JSON modes, retries)
+You can now:
+- Turn text into tokens and reason about cost
+- Prompt effectively (few-shot, chain-of-thought, system prompts)
+- Use the SDKs (sync, async, streaming)
+- Get reliable structured output (Pydantic, JSON mode, retries)
 
-But first, one more foundations topic: **DSPy** — replacing manual prompt engineering with programmatic optimization!
+Two foundations days remain: **DSPy** (Day 17) and the Phase 1 capstone (Day 18).
 
 ---
 

@@ -41,7 +41,7 @@ researcher = Agent(
 
 # Create a task for this agent
 research_task = Task(
-    description="""Research the current state of electric vehicles in 2024.
+    description="""Research the current state of electric vehicles.
     Focus on:
     - Market leaders and their market share
     - Latest technological advancements
@@ -96,7 +96,7 @@ task = Task(
     # Output file - save result to file
     output_file="output/research_report.md",
 
-    # Async execution - run in parallel
+    # Run this task in parallel with others (covered in Day 55)
     async_execution=True,
 
     # Human input - require human approval
@@ -113,6 +113,8 @@ task = Task(
 
 Chain tasks together using context:
 
+This is the blocked-by/depends-on link from your Jira ticket — but context does more than order tasks: CrewAI automatically injects the upstream task's output text into this task's prompt, so you never paste the previous result yourself.
+
 ```python
 # script_id: day_054_tasks_definition/task_dependencies_context
 from crewai import Agent, Task, Crew, Process
@@ -124,7 +126,7 @@ editor = Agent(role="Editor", goal="Edit content", backstory="Expert editor")
 
 # Task 1: Research (no dependencies)
 research_task = Task(
-    description="Research artificial intelligence trends in 2024",
+    description="Research recent artificial intelligence trends",
     expected_output="Detailed research notes with key findings",
     agent=researcher
 )
@@ -171,6 +173,7 @@ A task can receive context from multiple previous tasks:
 
 ```python
 # script_id: day_054_tasks_definition/multiple_context_sources
+# fragment: illustrative / agents (market_researcher, tech_researcher, competitor_researcher, strategist) defined elsewhere
 # Research from multiple angles
 market_research = Task(
     description="Research market trends",
@@ -248,12 +251,12 @@ task = Task(
     output_pydantic=ResearchReport  # Structured output!
 )
 
-# Access result
+# After crew.kickoff() has run this task, the typed model lives on .output.pydantic:
 result = task.output
-print(result.title)  # Typed access
-print(result.key_findings)
+print(result.pydantic.title)  # Typed access
+print(result.pydantic.key_findings)
 
-# > **Note:** CrewAI 0.70+ may have changed this API. Check the [CrewAI docs](https://docs.crewai.com) for the latest syntax.
+# > **Note:** Recent CrewAI versions may have changed this API — check the CrewAI docs (https://docs.crewai.com) for the latest syntax.
 ```
 
 ---
@@ -287,7 +290,7 @@ task = Task(
     - Success stories and case studies
     - Challenges and limitations
 
-    Use recent sources (2023-2024) and cite them.""",
+    Use recent sources (last 12-24 months) and cite them.""",
 
     expected_output="""A structured research report with:
     - Executive summary (100 words)
@@ -351,15 +354,10 @@ Run custom code when a task completes:
 # script_id: day_054_tasks_definition/callback_functions
 def on_task_complete(output):
     """Called when task finishes."""
-    print(f"Task completed!")
-    print(f"Output length: {len(output)} characters")
+    # CrewAI passes a TaskOutput object; its text is on .raw
+    print("Task completed!")
+    print(f"Output length: {len(output.raw)} characters")
     # Log to database, send notification, etc.
-
-def validate_output(output):
-    """Validate and potentially modify output."""
-    if len(output) < 100:
-        raise ValueError("Output too short!")
-    return output
 
 task = Task(
     description="Generate a detailed report",
@@ -466,10 +464,6 @@ coding_task = Task(description="Write Python code", agent=researcher)
 
 ---
 
-## Checkpoint
-
-Run the Task Dependencies with Context example: a research -> write -> edit chain where the writing task has `context=[research_task]` and the editing task has `context=[writing_task]`. In a `Process.sequential` crew, confirm the editor's output actually reflects the writer's draft (not a from-scratch rewrite) — that's the upstream output being injected automatically. If a downstream task seems to ignore its predecessor, you almost certainly left the `context=[...]` list off that task.
-
 ## Summary
 
 ```mermaid
@@ -545,7 +539,7 @@ task = Task(
 
 1. Follow the "Be Specific" example: numbered focus areas in `description`, a bulleted `expected_output`, and a "Success criteria" block.
 2. Set `context=[research_task]` on the writer and `context=[writing_task]` on the editor; CrewAI feeds upstream outputs in automatically.
-3. Subclass `BaseModel`, pass `output_pydantic=ResearchReport`, then read `task.output.title`. (CrewAI 0.70+ may rename this — check the docs.)
+3. Subclass `BaseModel`, pass `output_pydantic=ResearchReport`, then read `task.output.pydantic.title`. (CrewAI 0.70+ may rename this — check the docs.)
 4. Return a `Task(...)` from a function that interpolates `topic`:
 
 ```text
@@ -554,6 +548,12 @@ def create_research_task(topic, agent):
                 expected_output=f"Report on {topic}", agent=agent)
 ```
 </details>
+
+---
+
+## Checkpoint
+
+Run the Task Dependencies with Context example: a research -> write -> edit chain where the writing task has `context=[research_task]` and the editing task has `context=[writing_task]`. In a `Process.sequential` crew, confirm the editor's output actually reflects the writer's draft (not a from-scratch rewrite) — that's the upstream output being injected automatically. If a downstream task seems to ignore its predecessor, you almost certainly left the `context=[...]` list off that task.
 
 ---
 

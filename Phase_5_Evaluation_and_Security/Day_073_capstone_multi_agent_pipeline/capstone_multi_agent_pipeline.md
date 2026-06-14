@@ -1,6 +1,6 @@
 # Capstone — Multi-Agent Content Pipeline with Human Review
 
-You've spent Phase 4 learning about multi-agent patterns, evaluation techniques, prompt injection defenses, and human-in-the-loop design. Today you combine all of it into the most complex system you've built so far: a content creation pipeline where multiple specialized agents collaborate, an LLM judges the quality, and a human approves the output before it goes anywhere.
+Across Phases 4 and 5 you've learned multi-agent patterns, evaluation techniques, prompt-injection defenses, and human-in-the-loop design. Today you combine all of it into the most complex system you've built so far: a content creation pipeline where multiple specialized agents collaborate, an LLM judges the quality, and a human approves the output before it goes anywhere.
 
 > **Coming from Software Engineering?** This capstone is a microservices system with an approval workflow. You have three specialized services (researcher, writer, reviewer), an orchestrator, a quality gate (LLM judge), and a manual approval step — exactly like a content management system with editorial workflow. If you've built anything with service orchestration + human approval (like an order fulfillment pipeline with fraud review), this is the same pattern with LLM-powered services.
 
@@ -438,6 +438,8 @@ Score each dimension 1-10 with brief justification:
     return evaluation
 ```
 
+In production, guard the `json.loads` calls in the reviewer and evaluator against an empty or non-JSON completion (wrap them in `try/except json.JSONDecodeError` and fall back to a default dict), since a model refusal can otherwise raise.
+
 ---
 
 ## Step 5: Human-in-the-Loop
@@ -576,6 +578,8 @@ class ContentPipeline:
             )
 
             log_step("Stage 3: Reviewing with LLM...")
+            # Reviewer critique is logged and surfaced to the human reviewer; the
+            # judge's normalized_score below is what gates the revision loop.
             reviewer_feedback = reviewer_agent(draft, sanitized_topic, content_type, target_audience)
 
             log_step("Stage 4: Evaluating quality...")
@@ -700,26 +704,28 @@ HUMAN REVIEW REQUIRED
 
 ```python
 # script_id: day_073_capstone_multi_agent_pipeline/cost_analysis
-# Multi-agent pipeline cost breakdown per content piece (GPT-4o, 2025 pricing)
-# 
-# Agent          | Input tokens | Output tokens | Cost
-# Researcher     | ~1,000       | ~800          | ~$0.0105
-# Writer         | ~2,000       | ~1,500        | ~$0.020
-# Reviewer       | ~2,500       | ~500          | ~$0.0113
-# LLM Judge      | ~2,000       | ~300          | ~$0.008
-# Revision (50%) | ~2,500       | ~1,500        | ~$0.021  (happens ~50% of time)
-# Human feedback | ~1,000       | ~500          | ~$0.0075 (happens ~30% of time)
+# Per-run cost (mixed gpt-4o-mini + gpt-4o; verify current pricing at the provider, as of 2026-06)
 #
-# Average total per content piece: ~$0.06 - $0.08
+# Rates used: gpt-4o-mini $0.15/1M in, $0.60/1M out; gpt-4o $2.50/1M in, $10.00/1M out
 #
-# At scale:
-#   10 pieces/day   → ~$0.70/day   → ~$21/month
-#   100 pieces/day  → ~$7.00/day   → ~$210/month
-#   1000 pieces/day → ~$70/day     → ~$2,100/month
+# Agent          | Model       | Input tokens | Output tokens | Cost
+# Researcher     | gpt-4o-mini | ~1,000       | ~800          | ~$0.00063
+# Writer         | gpt-4o-mini | ~2,000       | ~1,500        | ~$0.0012
+# Reviewer       | gpt-4o-mini | ~2,500       | ~500          | ~$0.00068
+# LLM Judge      | gpt-4o      | ~2,000       | ~300          | ~$0.008
+# Revision (50%) | gpt-4o-mini | ~2,500       | ~1,500        | ~$0.0013 (happens ~50% of time)
+# Human feedback | gpt-4o-mini | ~1,000       | ~500          | ~$0.00045 (happens ~30% of time)
+#
+# Average total per content piece: ~$0.011 - $0.013 (the gpt-4o judge dominates)
+#
+# At scale (rough, at the rates above):
+#   10 pieces/day   → ~$0.12/day   → ~$3.6/month
+#   100 pieces/day  → ~$1.20/day   → ~$36/month
+#   1000 pieces/day → ~$12/day     → ~$360/month
 #
 # Optimization levers:
-# 1. Use GPT-4o-mini for researcher + reviewer (~10x cheaper for those steps)
-# 2. Keep GPT-4o only for the writer (quality matters most there)
+# 1. Researcher/writer/reviewer already use gpt-4o-mini — the judge (gpt-4o) is the main cost driver
+# 2. Spend the stronger model only where quality is gated (the judge)
 # 3. Cache research results for similar topics
 # 4. Batch multiple content pieces to amortize system prompt tokens
 ```
@@ -747,10 +753,6 @@ A production-pattern multi-agent content pipeline with:
 **For your portfolio:**
 
 *"I built a multi-agent content pipeline with a researcher, writer, and reviewer agent orchestrated by a supervisor. It includes LLM-as-judge quality evaluation with automated revision loops, prompt injection defenses on user input, and a human approval checkpoint before publishing. This pattern is used in production AI content and document generation systems."*
-
-## Checkpoint
-
-Run the full `ContentPipeline` (the `if __name__ == "__main__"` block) and confirm three things happen in order: the researcher/writer/reviewer steps log their progress, the LLM judge produces a `normalized_score`, and — because `require_human_review=True` — execution pauses at the "HUMAN REVIEW REQUIRED" prompt before anything is "published". Approve it and you should see the "FINAL PUBLISHED CONTENT" banner with a final score at or above your 0.72 threshold. If it publishes without ever pausing, `require_human_review` isn't being threaded into the orchestrator; if it loops forever, your `max_revisions` cap isn't stopping the revise-then-re-judge cycle.
 
 ---
 
@@ -814,6 +816,12 @@ Tips:
 3. Add a `models: dict[str, str]` arg to `ContentPipeline.__init__`; pass `models["researcher"]` etc. into each agent call; compare summed token cost.
 4. Call `evaluate_content` twice (or with two different judge prompts), then `normalized_score = (e1 + e2) / 2`; keep both in the result for auditing.
 </details>
+
+---
+
+## Checkpoint
+
+Run the full `ContentPipeline` (the `if __name__ == "__main__"` block) and confirm three things happen in order: the researcher/writer/reviewer steps log their progress, the LLM judge produces a `normalized_score`, and — because `require_human_review=True` — execution pauses at the "HUMAN REVIEW REQUIRED" prompt before anything is "published". Approve it and you should see the "FINAL PUBLISHED CONTENT" banner with a final score at or above your 0.72 threshold. If it publishes without ever pausing, `require_human_review` isn't being threaded into the orchestrator; if it loops forever, your `max_revisions` cap isn't stopping the revise-then-re-judge cycle.
 
 ---
 

@@ -1,6 +1,6 @@
 # Tool Execution — Part 2: Parallel Calls & Error Recovery
 
-> **Coming from Software Engineering?** Handling multiple tool calls and errors is like building a job queue with retry logic. If you've worked with Celery, Sidekiq, or AWS SQS, the patterns — parallel execution, error isolation, result aggregation — are directly transferable. The LLM is just another task orchestrator.
+> **Coming from Software Engineering?** Handling multiple tool calls and errors is like building a job queue with retry logic. If you've worked with Celery, Sidekiq, or AWS SQS, the patterns — parallel execution, error isolation, result aggregation — are directly transferable. The LLM just drops the tasks on your queue — your code is the worker pool that executes them, isolates failures, and retries. Deciding which failures to retry vs. drop is the same call you make with a dead-letter queue.
 
 ## Handling Multiple Tool Calls
 
@@ -8,6 +8,8 @@ The LLM might want to call multiple tools at once:
 
 ```python
 # script_id: day_031_tool_execution_handling_part2/parallel_tool_calls
+import json
+
 def handle_parallel_tool_calls(message, functions: dict) -> list:
     """
     Handle multiple tool calls from a single LLM response.
@@ -44,7 +46,7 @@ def handle_parallel_tool_calls(message, functions: dict) -> list:
 ```mermaid
 flowchart TB
     A["LLM Response"] --> B{{"Multiple tool_calls?"}}
-    B -->|Yes| C["Process in parallel"]
+    B -->|Yes| C["Process each call"]
     B -->|No| D["Process single call"]
 
     C --> E["Tool 1 Result"]
@@ -60,6 +62,8 @@ flowchart TB
     H --> J["Send back to LLM"]
     I --> J
 ```
+
+The LLM emits the calls together in one response (that's the "parallel" part); here we run them one-by-one in a loop. If a tool is slow, swap the loop for a `ThreadPoolExecutor`.
 
 ---
 
@@ -121,6 +125,7 @@ def safe_execute_tool(name: str, args: dict, functions: dict) -> dict:
         }
 
 # Usage
+TOOLS = {"get_weather": lambda city: {"city": city, "temp_c": 18}}
 result = safe_execute_tool("get_weather", {"city": "Tokyo"}, TOOLS)
 
 if result["success"]:
@@ -135,12 +140,18 @@ else:
 
 Anthropic uses `input_schema` instead of `parameters`. Generate it from Pydantic:
 
+Heads up — the message shape differs by provider. OpenAI returns a tool result as `role="tool"` with `tool_call_id`; Anthropic returns it as a `role="user"` message containing a `tool_result` block with `tool_use_id`. Same idea, different envelope.
+
 ```python
 # script_id: day_031_tool_execution_handling_part2/anthropic_tool_calling
+import json
 from anthropic import Anthropic
 from pydantic import BaseModel, Field
 
 client = Anthropic()
+
+def get_weather(city: str):
+    return {"city": city, "temp_c": 18, "conditions": "clear"}
 
 class GetWeather(BaseModel):
     """Get current weather for a city."""
@@ -157,7 +168,7 @@ tools = [
 
 # Make request
 response = client.messages.create(
-    model="claude-sonnet-4-5",
+    model="claude-sonnet-4-6",
     max_tokens=1024,
     tools=tools,
     messages=[{"role": "user", "content": "What's the weather in Tokyo?"}]
@@ -175,7 +186,7 @@ for block in response.content:
 
         # Continue conversation with tool result
         follow_up = client.messages.create(
-            model="claude-sonnet-4-5",
+            model="claude-sonnet-4-6",
             max_tokens=1024,
             tools=tools,
             messages=[
@@ -195,64 +206,6 @@ for block in response.content:
         )
 
         print(follow_up.content[0].text)
-```
-
----
-
-## Checkpoint
-
-Call `safe_execute_tool` with arguments that make the tool throw and confirm: you get back a structured error dict (with `error_type`) instead of an unhandled exception that kills the agent loop. Then trip `execute_tool_with_timeout` on a slow function and confirm it returns a timeout result rather than hanging. If a bad tool call still crashes the whole run, check that the try/except wraps the *execution*, not just the dispatch lookup.
-
----
-
-## Summary
-
-```mermaid
-mindmap
-  root((Tool Execution))
-    Parse
-      Extract function name
-      Parse JSON arguments
-      Get tool_call ID
-    Execute
-      Function registry
-      Safe execution
-      Error handling
-    Return
-      Format as tool message
-      Include tool_call_id
-      JSON serialize result
-    Loop
-      Check for more tool calls
-      Continue until text response
-```
-
----
-
-## Quick Reference
-
-```python
-# script_id: day_031_tool_execution_handling_part2/quick_reference
-# Parse tool call
-name = tool_call.function.name
-args = json.loads(tool_call.function.arguments)
-
-# Execute function
-result = FUNCTIONS[name](**args)
-
-# Return to LLM
-messages.append({
-    "role": "tool",
-    "tool_call_id": tool_call.id,
-    "content": json.dumps(result)
-})
-
-# Get final response
-response = client.chat.completions.create(
-    model="gpt-4o",
-    messages=messages,
-    tools=tools
-)
 ```
 
 ---
@@ -367,14 +320,66 @@ def execute_with_smart_retry(
 
 ---
 
-## Quick Recap
+## Checkpoint
+
+Call `safe_execute_tool` with arguments that make the tool throw and confirm: you get back a structured error dict (with `error_type`) instead of an unhandled exception that kills the agent loop. Then trip `execute_tool_with_timeout` on a slow function and confirm it returns a timeout result rather than hanging. If a bad tool call still crashes the whole run, check that the try/except wraps the *execution*, not just the dispatch lookup.
+
+---
+
+## Summary
+
+```mermaid
+mindmap
+  root((Tool Execution Part 2))
+    Multiple calls
+      One response, many calls
+      Run each in a loop
+    Timeouts
+      Never let a tool hang
+      Cancel at the limit
+    Error categorization
+      Transient vs permanent
+      Retry vs fail fast
+    Smart retry
+      Exponential backoff
+      Stop on permanent errors
+```
+
+---
+
+## Quick Reference
 
 | Pattern | When to Use | Key Takeaway |
 |---------|-------------|--------------|
-| Parallel tool calls | LLM requests multiple tools at once | Process all, return all results together |
+| Multiple tool calls | LLM requests multiple tools at once | Process all, return all results together |
 | Timeout handling | Any tool that makes external calls | Always set a timeout — never let tools hang |
 | Error categorization | Deciding whether to retry | Retry transient, fail fast on permanent |
 | Smart retry | Production tool execution | Exponential backoff + error classification |
+
+```python
+# script_id: day_031_tool_execution_handling_part2/quick_reference
+# fragment
+# Parse tool call
+name = tool_call.function.name
+args = json.loads(tool_call.function.arguments)
+
+# Execute function
+result = FUNCTIONS[name](**args)
+
+# Return to LLM
+messages.append({
+    "role": "tool",
+    "tool_call_id": tool_call.id,
+    "content": json.dumps(result)
+})
+
+# Get final response
+response = client.chat.completions.create(
+    model="gpt-4o",
+    messages=messages,
+    tools=tools
+)
+```
 
 ---
 

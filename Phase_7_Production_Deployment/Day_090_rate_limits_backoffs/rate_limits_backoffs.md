@@ -2,7 +2,7 @@
 
 Production systems must handle failures gracefully. This guide shows you how to implement resilient API calls.
 
-> **Coming from Software Engineering?** This is resilience engineering — you've implemented all of these patterns before. Exponential backoff with jitter for retries, circuit breakers (Hystrix/Resilience4j pattern) to prevent cascade failures, rate limiting to stay within quotas. The only new concept is *token-based* rate limiting, where APIs limit you by tokens-per-minute rather than requests-per-minute. Your existing retry logic, backoff strategies, and circuit breaker implementations transfer directly.
+> **Coming from Software Engineering?** This is resilience engineering — you've implemented all of these patterns before. Exponential backoff with jitter for retries, circuit breakers (Hystrix/Resilience4j pattern) to prevent cascade failures, rate limiting to stay within quotas. The only new concept is *token-based* rate limiting, where APIs limit you by tokens-per-minute (a token is roughly a chunk of a word — the unit LLMs meter and bill by, about 3/4 of a word on average) rather than requests-per-minute. Your existing retry logic, backoff strategies, and circuit breaker implementations transfer directly.
 
 ---
 
@@ -58,7 +58,7 @@ def retry_with_backoff(
         base_delay: Initial delay in seconds
         max_delay: Maximum delay between retries
         exponential_base: Multiplier for each retry
-        jitter: Add randomness to prevent thundering herd
+        jitter: Add randomness so clients that all failed at the same instant don't all retry at the same instant (a thundering herd) and re-overload the API.
     """
 
     last_exception = None
@@ -95,7 +95,8 @@ def call_api():
         messages=[{"role": "user", "content": "Hello!"}],
     )
 
-result = retry_with_backoff(call_api)
+if __name__ == "__main__":
+    result = retry_with_backoff(call_api)
 ```
 
 ---
@@ -151,7 +152,8 @@ def call_openai(prompt: str) -> str:
     )
     return response.choices[0].message.content
 
-result = call_openai("Hello!")
+if __name__ == "__main__":
+    result = call_openai("Hello!")
 ```
 
 ---
@@ -208,7 +210,7 @@ limiter = RateLimiter(requests_per_minute=20)
 
 @limiter
 def call_api():
-    return client.chat.completions.create(...)
+    return "ok"  # stand-in for a real client.chat.completions.create(...) call
 
 # Or manual
 limiter.acquire()
@@ -305,9 +307,12 @@ class CircuitBreakerOpen(Exception):
 # Usage
 circuit = CircuitBreaker(failure_threshold=3, recovery_timeout=60)
 
+def fallback_response():
+    return {"ok": False, "cached": True}
+
 @circuit
 def call_external_api():
-    return requests.get("https://api.example.com")
+    return {"ok": True}  # stand-in for a real API call
 
 # Manual usage
 try:
@@ -393,7 +398,7 @@ client = ResilientClient(ResilienceConfig(
 ))
 
 def make_api_call():
-    return openai_client.chat.completions.create(...)
+    return "ok"  # stand-in for a real client.chat.completions.create(...) call
 
 result = client.call(make_api_call)
 ```
@@ -402,7 +407,7 @@ result = client.call(make_api_call)
 
 ## Using Tenacity Library
 
-For production, use the `tenacity` library:
+You have now implemented backoff three ways by hand to understand the mechanics; in production, reach for the `tenacity` library instead:
 
 ```bash
 pip install tenacity
@@ -422,6 +427,10 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+from openai import OpenAI, RateLimitError, APIError
+
+client = OpenAI()
+
 @retry(
     stop=stop_after_attempt(3),
     wait=wait_exponential(multiplier=1, min=1, max=60),
@@ -438,6 +447,9 @@ def call_openai(prompt: str) -> str:
 
 # More complex configuration
 from tenacity import retry, RetryError
+from openai import AsyncOpenAI
+
+aclient = AsyncOpenAI()
 
 @retry(
     stop=stop_after_attempt(5),
@@ -447,61 +459,11 @@ from tenacity import retry, RetryError
 )
 async def async_api_call():
     """Async API call with retry."""
-    async with aiohttp.ClientSession() as session:
-        async with session.get(url) as response:
-            return await response.json()
-```
-
----
-
-## Checkpoint
-
-Run the `basic_retry_with_backoff` (or `tenacity_retry`) example against a function that raises a simulated 429 and confirm the logs show the wait time roughly doubling between attempts before it finally succeeds. If it retries instantly with no delay, check that you're actually `sleep`-ing the computed backoff and that jitter isn't collapsing the interval to near-zero.
-
-## Summary
-
-```mermaid
-mindmap
-  root((Resilience))
-    Rate Limiting
-      Token bucket
-      Sliding window
-      Proactive control
-    Retry
-      Exponential backoff
-      Jitter
-      Max attempts
-    Circuit Breaker
-      Failure threshold
-      Recovery timeout
-      Half-open testing
-```
-
----
-
-## Quick Reference
-
-```python
-# script_id: day_090_rate_limits_backoffs/resilience_toolkit
-# Simple retry
-@retry(max_retries=3, base_delay=1.0)
-def api_call():
-    ...
-
-# Rate limiter
-limiter = RateLimiter(requests_per_minute=60)
-limiter.acquire()
-
-# Circuit breaker
-circuit = CircuitBreaker(failure_threshold=5)
-result = circuit.call(api_call)
-
-# Tenacity
-from tenacity import retry, stop_after_attempt, wait_exponential
-
-@retry(stop=stop_after_attempt(3), wait=wait_exponential())
-def resilient_call():
-    ...
+    response = await aclient.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[{"role": "user", "content": "Hello!"}]
+    )
+    return response.choices[0].message.content
 ```
 
 ---
@@ -558,10 +520,18 @@ def get_user_budget(user_id: str) -> TokenBudget:
         )
     return user_budgets[user_id]
 
+class _Resp:
+    class usage:
+        total_tokens = 0
+
+def call_llm(prompt: str):
+    # stand-in for a real client.chat.completions.create(...) call
+    return _Resp()
+
 # Usage in your API handler
 def handle_request(user_id: str, prompt: str):
     budget = get_user_budget(user_id)
-    estimated = len(prompt.split()) * 2  # Rough estimate
+    estimated = int(len(prompt.split()) * 1.3)  # Rough input-only estimate (~1.3 tokens/word); the reply is unknown until the call returns, so add headroom and reconcile via record_usage() below.
 
     if not budget.check_budget(estimated):
         raise Exception(f"Token budget exceeded. Remaining: {budget.remaining_budget}")
@@ -571,7 +541,61 @@ def handle_request(user_id: str, prompt: str):
     return response
 ```
 
-> **Coming from Software Engineering?** Token budgets are API rate limiting measured in tokens instead of requests. The same patterns — sliding window, per-user quotas, tiered plans — apply. The key difference: a single LLM request can vary from 100 to 100,000 tokens, so request-count limits alone are insufficient.
+> **Coming from Software Engineering?** Token budgets are API rate limiting measured in tokens instead of requests. The same patterns — sliding window, per-user quotas, tiered plans — apply. The key difference: a single LLM request can vary from 100 to 100,000 tokens — the same endpoint handles a one-line question and a request to summarize a 50-page document, and you pay for the size of the text in and out, not the number of calls — so request-count limits alone are insufficient.
+
+---
+
+## Checkpoint
+
+Run the `basic_retry_with_backoff` (or `tenacity_retry`) example against a function that raises a simulated 429 and confirm the base wait roughly doubles each attempt (1s, 2s, 4s…) before jitter is applied — the printed values will scatter between about half and one-and-a-half times that base, which is expected. To see the clean doubling, run with jitter=False. If it retries instantly with no delay, check that you're actually `sleep`-ing the computed backoff and that jitter isn't collapsing the interval to near-zero.
+
+## Summary
+
+```mermaid
+mindmap
+  root((Resilience))
+    Rate Limiting
+      Token bucket
+      Sliding window
+      Proactive control
+      Token budget
+    Retry
+      Exponential backoff
+      Jitter
+      Max attempts
+    Circuit Breaker
+      Failure threshold
+      Recovery timeout
+      Half-open testing
+```
+
+---
+
+## Quick Reference
+
+```python
+# script_id: day_090_rate_limits_backoffs/quick_reference
+# fragment
+# Simple retry
+@retry(max_retries=3, base_delay=1.0)
+def api_call():
+    ...
+
+# Rate limiter
+limiter = RateLimiter(requests_per_minute=60)
+limiter.acquire()
+
+# Circuit breaker
+circuit = CircuitBreaker(failure_threshold=5)
+result = circuit.call(api_call)
+
+# Tenacity
+from tenacity import retry, stop_after_attempt, wait_exponential
+
+@retry(stop=stop_after_attempt(3), wait=wait_exponential())
+def resilient_call():
+    ...
+```
 
 ---
 

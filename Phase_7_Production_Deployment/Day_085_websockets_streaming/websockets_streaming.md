@@ -2,7 +2,7 @@
 
 Watch your agent think in real-time! WebSockets enable bidirectional communication for streaming agent responses and thoughts.
 
-> **Coming from Software Engineering?** If you've built real-time features — chat apps, live dashboards, collaborative editing, or notification systems — you already know WebSockets. The pattern here is identical: open a persistent connection, stream data as it becomes available, handle disconnections gracefully. Server-Sent Events (SSE) also works well for one-way streaming. The AI-specific part is streaming token-by-token output, which is just pushing small chunks of text over the socket as the LLM generates them.
+> **Coming from Software Engineering?** If you've built real-time features — chat apps, live dashboards, collaborative editing, or notification systems — you already know WebSockets. The pattern here is identical: open a persistent connection, stream data as it becomes available, handle disconnections gracefully. Server-Sent Events (SSE) also works well for one-way streaming. The AI-specific part is streaming token-by-token output, which is just pushing small chunks of text over the socket as the LLM generates them. A token is just a small chunk of text the model emits as it generates — often a few characters or a word-piece, not always a whole word; streaming means forwarding each chunk the instant it arrives instead of waiting for the whole answer.
 
 ---
 
@@ -87,10 +87,11 @@ Stream actual LLM output:
 ```python
 # script_id: day_085_websockets_streaming/streaming_llm_responses
 from fastapi import FastAPI, WebSocket
-from openai import OpenAI
+from openai import AsyncOpenAI
 
 app = FastAPI()
-client = OpenAI()
+# async client so one slow generation doesn't block other connections
+client = AsyncOpenAI()
 
 @app.websocket("/ws/chat")
 async def chat_websocket(websocket: WebSocket):
@@ -104,13 +105,13 @@ async def chat_websocket(websocket: WebSocket):
             user_message = await websocket.receive_text()
 
             # Stream response
-            stream = client.chat.completions.create(
+            stream = await client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=[{"role": "user", "content": user_message}],
                 stream=True
             )
 
-            for chunk in stream:
+            async for chunk in stream:
                 if chunk.choices[0].delta.content:
                     await websocket.send_text(chunk.choices[0].delta.content)
 
@@ -128,9 +129,10 @@ Stream the agent's reasoning process:
 
 ```python
 # script_id: day_085_websockets_streaming/streaming_agent_thoughts
-from fastapi import FastAPI, WebSocket
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from dataclasses import dataclass
 from typing import AsyncGenerator
+import asyncio
 import json
 
 app = FastAPI()
@@ -234,6 +236,7 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
             data = await websocket.receive_text()
 
             # Process and stream back
+            # process_message: your streaming response generator (e.g. stream_agent_response from earlier)
             async for chunk in process_message(data):
                 await manager.send_personal(chunk, client_id)
 
@@ -257,7 +260,7 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
     <button onclick="send()">Send</button>
 
     <script>
-        const ws = new WebSocket("ws://localhost:8000/ws/agent");
+        const ws = new WebSocket("ws://localhost:8000/ws/agent-thoughts");
         const chat = document.getElementById("chat");
         let currentMessage = "";
 
@@ -343,8 +346,12 @@ asyncio.run(chat_with_agent())
 
 ```python
 # script_id: day_085_websockets_streaming/error_handling
-from fastapi import WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+import asyncio
+import json
 import traceback
+
+app = FastAPI()
 
 @app.websocket("/ws/robust")
 async def robust_websocket(websocket: WebSocket):
@@ -360,6 +367,7 @@ async def robust_websocket(websocket: WebSocket):
                     timeout=60.0  # 60 second timeout
                 )
 
+                # process: your streaming response generator
                 async for chunk in process(data):
                     await websocket.send_text(chunk)
 
@@ -424,7 +432,7 @@ async def secure_websocket(
 
 ## Checkpoint
 
-Run the `basic_websocket_server`, connect with the `python_websocket_client`, and confirm tokens stream in one chunk at a time rather than arriving as one big block at the end. If you only get the full response at the end, check that you're `await`-ing and forwarding each chunk inside the stream loop instead of accumulating before sending.
+Run the `streaming_agent_thoughts` server, connect with the `python_websocket_client`, and confirm the agent's thoughts stream in one message at a time rather than arriving as one big block at the end. If you only get the full response at the end, check that you're `await`-ing and forwarding each chunk inside the stream loop instead of accumulating before sending.
 
 ## Summary
 
@@ -461,7 +469,7 @@ async def ws(websocket: WebSocket):
 
 # Stream LLM
 for chunk in stream:
-    await websocket.send_text(chunk.choices[0].delta.content)
+    await websocket.send_text(chunk.choices[0].delta.content or "")
 
 # Client (JavaScript)
 const ws = new WebSocket("ws://localhost:8000/ws");
@@ -481,7 +489,7 @@ async with websockets.connect(uri) as ws:
 1. **Echo socket.** Build a `/ws` endpoint that accepts a connection, receives one text message, and sends it back uppercased.
 2. **Stream an LLM.** On message, stream the model's reply chunk-by-chunk over the socket instead of waiting for the full response.
 3. **Two clients.** Connect once from browser JavaScript (`new WebSocket(...)`) and once from Python (`websockets.connect`). Confirm both receive the same stream.
-4. **Survive a drop.** Handle `WebSocketDisconnect` cleanly so a client closing mid-stream doesn't crash the server, and stop generating tokens when they leave.
+4. **Survive a drop.** Handle `WebSocketDisconnect` cleanly so a client closing mid-stream doesn't crash the server. (Hint: a send to a closed socket also raises `WebSocketDisconnect`, so wrapping your async-for send loop in `try`/`except` naturally stops the generation when the client leaves.)
 
 <details><summary>Solutions (approaches)</summary>
 

@@ -2,7 +2,7 @@
 
 Made a mistake? Go back in time! Time-travel debugging lets you rewind your agent to any previous state and try a different path.
 
-> **Coming from Software Engineering?** Time-travel debugging for agents is Redux DevTools for AI. If you've used browser DevTools to step through state changes, replay actions, or inspect snapshots, this is the same power applied to agent execution. Each checkpoint is a commit you can checkout.
+> **Coming from Software Engineering?** Time-travel debugging for agents is Redux DevTools for AI. If you've used browser DevTools to step through state changes, replay actions, or inspect snapshots, this is the same power applied to agent execution. Each checkpoint is a commit you can checkout — and rewinding then replaying with a different input is like `git checkout` to an old commit and committing down a new branch.
 
 ---
 
@@ -38,6 +38,8 @@ Time-travel debugging allows you to:
 ## Setting Up Checkpointing
 
 First, enable checkpointing to record states:
+
+A checkpointer is just storage that auto-saves a full snapshot of your state after every node runs — like an auto-commit after each step. `MemorySaver` keeps snapshots in RAM (fine for experiments); `SqliteSaver`/`PostgresSaver` persist them to disk for production.
 
 ```python
 # script_id: day_045_time_travel_debugging/checkpointing_setup
@@ -80,11 +82,15 @@ workflow.add_edge("step3", END)
 app = workflow.compile(checkpointer=checkpointer)
 ```
 
+The `Annotated[list, add]` tells LangGraph how to combine updates: each node returns a partial dict, and for `messages` the `add` reducer appends to the list instead of overwriting it (other fields like `step` are overwritten). This is why each step accumulates messages.
+
 ---
 
 ## Recording Checkpoints
 
 Run your agent with a thread ID to record checkpoints:
+
+Think of `thread_id` as a save-game slot or session key: every checkpoint for a run is filed under it, so re-using the same id lets you list and rewind that run's history, while a new id starts a clean timeline.
 
 ```python
 # script_id: day_045_time_travel_debugging/checkpointing_setup
@@ -130,25 +136,31 @@ checkpoints = list_checkpoints(checkpointer, "debug-session-1")
 
 Output:
 ```
-Found 4 checkpoints:
+Found 5 checkpoints:
 ============================================================
 
 Checkpoint 0:
-  ID: 1ef5a8b2-...
-  State: {'messages': ['Start'], 'step': 0, 'decision': ''}
+  ID: 1ef5a8b5-...
+  State: {'messages': ['Start', 'Step 1 complete', 'Step 2 complete', 'Step 3 complete'], 'step': 3, ...}
 
 Checkpoint 1:
-  ID: 1ef5a8b3-...
-  State: {'messages': ['Start', 'Step 1 complete'], 'step': 1, ...}
-
-Checkpoint 2:
   ID: 1ef5a8b4-...
   State: {'messages': [..., 'Step 2 complete'], 'step': 2, ...}
 
+Checkpoint 2:
+  ID: 1ef5a8b3-...
+  State: {'messages': ['Start', 'Step 1 complete'], 'step': 1, ...}
+
 Checkpoint 3:
-  ID: 1ef5a8b5-...
-  State: {'messages': [..., 'Step 3 complete'], 'step': 3, ...}
+  ID: 1ef5a8b2-...
+  State: {'messages': ['Start'], 'step': 0, 'decision': ''}
+
+Checkpoint 4:
+  ID: 1ef5a8b1-...
+  State: {'messages': [], ...}
 ```
+
+Note: `get_state_history` returns checkpoints newest-first, so index 0 is the most recent state and higher indices go further back in time (the last entry is the empty pre-input snapshot).
 
 ---
 
@@ -197,6 +209,8 @@ resume_config, old_state = rewind_to_checkpoint(
 
 Resume execution from a previous state:
 
+Two ways to replay from a checkpoint: pass `None` as the input to resume exactly where it left off (like hitting Continue in a debugger), or pass a state dict to override values before continuing (like editing a variable in the debugger watch window, then stepping). The `None` is intentional, not a placeholder.
+
 ```python
 # script_id: day_045_time_travel_debugging/checkpointing_setup
 def replay_from_checkpoint(app, resume_config, new_input: dict = None):
@@ -220,6 +234,19 @@ new_result = replay_from_checkpoint(
 
 print(f"New result: {new_result}")
 ```
+
+---
+
+## Editing State to Fork a Timeline
+
+```python
+# script_id: day_045_time_travel_debugging/checkpointing_setup
+# Edit the stored checkpoint in place, then continue from it
+app.update_state(resume_config, {"choice": "B"})
+result = app.invoke(None, config=resume_config)
+```
+
+Unlike replaying a fresh input (which overwrites), `update_state` edits the stored checkpoint in place to create a fork — like amending a commit, then continuing down that branch.
 
 ---
 
@@ -327,7 +354,7 @@ Build an interactive debugging session:
 
 ```python
 # script_id: day_045_time_travel_debugging/checkpointing_setup
-class TimeTraceDebugger:
+class TimeTravelDebugger:
     """Interactive time-travel debugger."""
 
     def __init__(self, app, checkpointer, thread_id: str):
@@ -336,12 +363,13 @@ class TimeTraceDebugger:
         self.thread_id = thread_id
         self.checkpoints = []
         self.current_index = 0
+        self.refresh_checkpoints()
 
     def refresh_checkpoints(self):
         """Reload checkpoints from storage."""
         config = {"configurable": {"thread_id": self.thread_id}}
         self.checkpoints = list(self.app.get_state_history(config))
-        self.current_index = len(self.checkpoints) - 1
+        self.current_index = max(0, len(self.checkpoints) - 1)
 
     def show_checkpoints(self):
         """Display all checkpoints."""
@@ -393,7 +421,7 @@ class TimeTraceDebugger:
             print(f"Stepped forward to checkpoint {self.current_index}")
 
 # Usage
-debugger = TimeTraceDebugger(app, checkpointer, "experiment-1")
+debugger = TimeTravelDebugger(app, checkpointer, "debug-session-1")
 
 # Show all checkpoints
 debugger.show_checkpoints()
@@ -428,20 +456,20 @@ config = {"configurable": {"thread_id": "abc123"}}
 def count_old_checkpoints(thread_id: str, keep_last: int = 10):
     """Inspect how many checkpoints exceed the retention window.
 
-    NOTE: `MemorySaver` keeps everything in memory and does NOT expose a public
-    `delete()` method — `checkpointer.delete(...)` would raise AttributeError.
-    Checkpoint pruning is only available on persistent savers (SqliteSaver /
-    PostgresSaver), and the exact method name varies by LangGraph version
-    (e.g. `delete_thread(thread_id)`), so check your saver's API before relying
-    on it. For in-memory runs, simply start a new thread_id to drop old state.
+    NOTE: `MemorySaver` has no per-checkpoint `delete()` method
+    (`checkpointer.delete(...)` raises AttributeError). But in current LangGraph
+    (1.x) every checkpointer — including MemorySaver — exposes
+    `delete_thread(thread_id)` (and async `adelete_thread`) to drop a whole
+    thread's checkpoints; there is still no public API to prune individual
+    checkpoints by checkpoint_id. APIs vary by version, so verify against your saver.
     """
     config = {"configurable": {"thread_id": thread_id}}
     checkpoints = list(app.get_state_history(config))
 
     excess = max(0, len(checkpoints) - keep_last)
     print(f"{excess} checkpoints exceed the keep_last={keep_last} window")
-    # On a persistent saver you'd prune here, e.g.:
-    #   checkpointer.delete_thread(thread_id)   # API varies; MemorySaver has none
+    # To drop old state you'd prune here, e.g.:
+    #   checkpointer.delete_thread(thread_id)   # drops the whole thread; works on MemorySaver too
     return excess
 ```
 

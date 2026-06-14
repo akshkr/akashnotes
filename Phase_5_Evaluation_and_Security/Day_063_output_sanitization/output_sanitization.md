@@ -2,7 +2,7 @@
 
 Agents can produce harmful or inappropriate content. Output sanitization catches and cleans problematic responses before they reach users.
 
-> **Coming from Software Engineering?** Output sanitization is exactly like escaping HTML output to prevent XSS, or validating API responses before passing them to the frontend. You never trust output from an external system — and an LLM is an external system whose output you can't fully predict. The pattern is the same: validate, sanitize, and escape before delivering to the user. If you've implemented Content Security Policies or output encoding, you have the right mindset.
+> **Coming from Software Engineering?** Output sanitization is exactly like escaping HTML output to prevent XSS, or validating API responses before passing them to the frontend. You never trust output from an external system — and an LLM is an external system whose output you can't fully predict. The pattern is the same: validate, sanitize, and escape before delivering to the user. If you've implemented Content Security Policies or output encoding, you have the right mindset. The moderation layers here are like a WAF or content-filtering proxy between your service and the client — rule-based checks first, then a smarter judgment call.
 
 ---
 
@@ -72,7 +72,7 @@ class OutputSanitizer:
         # Check for blocked patterns
         for pattern in self.blocked_patterns:
             if re.search(pattern, text, re.IGNORECASE):
-                issues.append(f"Blocked content pattern detected")
+                issues.append(f"Blocked content pattern detected: {pattern}")
                 return "[Content blocked due to policy violation]", issues
 
         # Redact PII
@@ -101,6 +101,8 @@ clean2, issues2 = sanitizer.sanitize(text2)
 print(f"\nOriginal: {text2[:30]}...")
 print(f"Cleaned: {clean2}")
 ```
+
+These patterns are deliberately simple starting points — real PII and harm detection needs more robust rules (you harden the card regex in the exercises). Treat regex as a cheap first filter, not the whole defense.
 
 ---
 
@@ -159,6 +161,8 @@ print(f"Recommendation: {result['recommendation']}")
 
 Use OpenAI's built-in moderation:
 
+OpenAI exposes a dedicated, free moderation endpoint — think of it as a pre-trained classifier you call like any other REST API. You send text; it returns a boolean `flagged`, a set of named `categories` (hate, violence, sexual, self-harm, etc.), and a `score` from 0.0-1.0 per category you can read like a confidence level. A threshold like 0.3 is a tunable knob — lower it to catch more (more false positives), raise it to catch less, the way you would tune any alerting threshold.
+
 ```python
 # script_id: day_063_output_sanitization/sanitization_pipeline
 from openai import OpenAI
@@ -196,6 +200,8 @@ print(f"Flagged categories: {result['categories']}")
 ---
 
 ## Comprehensive Sanitization Pipeline
+
+The idea is a cheap-to-expensive funnel: run the free regex layer first, then the free moderation endpoint, and only pay for a full LLM judgment when moderation is uncertain (a category scores above 0.3 but was not auto-flagged). Note `scores` only holds categories already above the 0.1 filter from `check_moderation`.
 
 ```python
 # script_id: day_063_output_sanitization/sanitization_pipeline
@@ -326,6 +332,9 @@ print(f"Issues: {result.issues}")
 
 ```python
 # script_id: day_063_output_sanitization/code_output_sanitizer
+import re
+from typing import List, Tuple
+
 def sanitize_code_output(code: str) -> Tuple[str, List[str]]:
     """Sanitize code to remove dangerous operations."""
 
@@ -356,6 +365,8 @@ def sanitize_code_output(code: str) -> Tuple[str, List[str]]:
 
 ```python
 # script_id: day_063_output_sanitization/json_output_sanitizer
+from typing import List
+
 def sanitize_json_output(data: dict, sensitive_keys: List[str] = None) -> dict:
     """Remove sensitive data from JSON outputs."""
 
@@ -386,6 +397,8 @@ clean_data = sanitize_json_output(data)
 print(clean_data)
 # {'user': 'john', 'password': '[REDACTED]', 'api_key': '[REDACTED]', 'profile': {'email': 'john@example.com'}}
 ```
+
+The `s in k.lower()` match is intentionally loose for teaching — a broad entry like `key` would also redact `monkey` or `keyboard`. For production, prefer exact key names or word-boundary matching (see Exercise 4).
 
 ---
 
@@ -426,7 +439,7 @@ print(response)
 
 ## Checkpoint
 
-Run the `sanitize_json_output(...)` example — pure Python, no API. Confirm the printed dict shows `password` and `api_key` as `[REDACTED]` while `user` and the nested `profile.email` are left untouched. If a nested secret survives, your `redact` helper isn't recursing into sub-dicts; if `email` got redacted too, your `sensitive_keys` substring match is too loose (e.g. matching "ail" inside "email").
+Run the `sanitize_json_output(...)` example — pure Python, no API. Confirm the printed dict shows `password` and `api_key` as `[REDACTED]` while `user` and the nested `profile.email` are left untouched. If a nested secret survives, your `redact` helper isn't recursing into sub-dicts; if an innocent key got redacted, your `sensitive_keys` substring match is too loose — e.g. the entry `token` also matches a key like `tokenCount`.
 
 ---
 
@@ -435,10 +448,10 @@ Run the `sanitize_json_output(...)` example — pure Python, no API. Confirm the
 ```mermaid
 mindmap
   root((Output Sanitization))
-    Methods
-      Pattern matching
-      Moderation API
-      LLM evaluation
+    Layers (in order)
+      1 Pattern matching
+      2 Moderation API
+      3 LLM evaluation (only if score > 0.3)
     Targets
       PII removal
       Harmful content
@@ -456,6 +469,7 @@ mindmap
 
 ```python
 # script_id: day_063_output_sanitization/sanitization_pipeline
+# fragment: illustrative cheat-sheet / not standalone-runnable
 # Pattern-based
 sanitizer = OutputSanitizer()
 clean, issues = sanitizer.sanitize(text)
@@ -493,4 +507,4 @@ clean_code, issues = sanitize_code_output(code)
 
 ## What's Next?
 
-Now let's explore **NeMo Guardrails** - a framework for building comprehensive safety guardrails!
+Next, in **Day 64: LLM Guardrails**, we use a guardrails framework (Guardrails AI, with a look at alternatives like NeMo Guardrails) to validate inputs and outputs declaratively — combining the input-side defenses from Day 62 with the output sanitization you just built.

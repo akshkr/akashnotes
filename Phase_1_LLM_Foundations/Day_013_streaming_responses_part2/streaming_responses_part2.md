@@ -88,7 +88,7 @@ if __name__ == "__main__":
 
 ## Streaming with Callbacks
 
-For frameworks and UIs, use callbacks:
+Use callbacks when a framework or UI owns the render loop and you only hand it functions to call. This is the same pattern as a Node stream — you hand the streamer three functions (on each text piece, on complete, on error) and it calls them as data arrives.
 
 ```python
 # script_id: day_013_streaming_responses_part2/stream_with_callbacks
@@ -108,7 +108,7 @@ def stream_with_callbacks(
 
     Args:
         prompt: The user's prompt
-        on_token: Called for each new token
+        on_token: Called for each text piece (chunk)
         on_complete: Called when streaming finishes
         on_error: Called if an error occurs
     """
@@ -157,7 +157,7 @@ stream_with_callbacks(
 
 ## Server-Sent Events (SSE) for Web Apps
 
-When building web APIs, use SSE to stream to browsers:
+Use SSE when the client is a browser talking to your HTTP endpoint. When building web APIs, use SSE to stream to browsers:
 
 ```python
 # script_id: day_013_streaming_responses_part2/sse_fastapi_endpoint
@@ -262,6 +262,9 @@ class CancellableStream:
         async for chunk in stream:
             if self.cancelled:
                 print("\n[Stream cancelled]")
+                # Breaking out of the loop only stops US from reading more chunks —
+                # to actually stop the work (and the billing) on the provider side, close the stream.
+                await stream.close()
                 break
 
             content = chunk.choices[0].delta.content
@@ -305,7 +308,7 @@ def measure_streaming(prompt: str) -> dict:
     """Measure streaming performance metrics."""
     start_time = time.time()
     first_token_time = None
-    token_count = 0
+    chunk_count = 0  # chunks, not tokens — a chunk may carry several characters or none (see Day 012)
     char_count = 0
 
     stream = client.chat.completions.create(
@@ -319,7 +322,7 @@ def measure_streaming(prompt: str) -> dict:
         if content:
             if first_token_time is None:
                 first_token_time = time.time()
-            token_count += 1
+            chunk_count += 1
             char_count += len(content)
 
     end_time = time.time()
@@ -328,7 +331,7 @@ def measure_streaming(prompt: str) -> dict:
         "total_time": end_time - start_time,
         "time_to_first_token": first_token_time - start_time if first_token_time else None,
         "streaming_time": end_time - first_token_time if first_token_time else None,
-        "chunk_count": token_count,
+        "chunk_count": chunk_count,
         "char_count": char_count,
         "chars_per_second": char_count / (end_time - first_token_time) if first_token_time else 0
     }
@@ -346,6 +349,8 @@ for key, value in metrics.items():
 ---
 
 ## Checkpoint
+
+A model writes its answer one piece at a time, front to back — so the first words are ready almost immediately while the full answer takes much longer. Streaming forwards each piece as it is produced instead of waiting for the last. Time-to-first-token measures that head start.
 
 Run `measure_streaming` and confirm: it reports a time-to-first-token that's noticeably smaller than the total completion time — that gap is exactly the latency win streaming buys you. If first-token time equals total time, check that you're timing inside the chunk loop (stamping the first chunk's arrival) rather than after the stream has fully drained.
 
@@ -397,7 +402,7 @@ from anthropic import Anthropic
 client = Anthropic()
 
 with client.messages.stream(
-    model="claude-sonnet-4-5",
+    model="claude-sonnet-4-6",
     max_tokens=1024,
     messages=[{"role": "user", "content": "Hi"}]
 ) as stream:
@@ -415,8 +420,16 @@ with client.messages.stream(
 
 3. **Stream Merger**: Create a function that streams from multiple prompts simultaneously and merges the output
 
+<details><summary>Solutions (approaches)</summary>
+
+1. **Typing Effect**: Add `time.sleep(0.02)` inside the chunk loop, right before you print each piece — the small pause between chunks gives the natural typewriter feel.
+2. **Progress Estimator**: Track a running `char_count` and divide it by an expected output length you pass in; clamp the ratio to 100% so a longer-than-expected answer doesn't overshoot.
+3. **Stream Merger**: Run each prompt as its own `asyncio` task and interleave their output as it arrives — either with `asyncio.as_completed` or by having each task push pieces onto a shared `asyncio.Queue` that one consumer drains.
+
+</details>
+
 ---
 
 ## What's Next?
 
-You now have complete API mastery! Next, we'll learn about **Structured Output & Data Parsing** - forcing LLMs to return valid JSON using Pydantic!
+Tomorrow (Day 14) is **Structured Output & Data Parsing** — using Pydantic to force LLMs into valid, typed JSON instead of free-form text.

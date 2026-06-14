@@ -27,9 +27,9 @@ flowchart TD
 
 Common failure modes without proper evaluation:
 
-- **Overfitting**: Model memorizes training examples but fails on new inputs
+- **Overfitting**: like a test suite that only passes because it memorized the fixtures -- green locally, broken in prod.
 - **Regression**: Model improves on your task but loses general capabilities
-- **Distribution shift**: Training data doesn't match production traffic
+- **Distribution shift**: your training data looks nothing like real traffic -- like benchmarking on localhost and shipping to users on 3G.
 - **Metric gaming**: Model optimizes for your metric but not actual quality
 
 ---
@@ -38,10 +38,13 @@ Common failure modes without proper evaluation:
 
 Automated metrics give you fast, reproducible scores. They're your first line of defense.
 
+For each word the model generates, it also reports how sure it was -- a probability from 0 to 1. Perplexity rolls those per-word confidences into one number: think of it as the model's average level of surprise, where lower means it found the text more predictable. Most chat APIs return these per-word numbers as logprobs when you pass `logprobs=True`, which is what you feed `calculate_perplexity` below.
+
+ROUGE-L measures how much of the reference answer the model's answer reproduces, in order -- it's essentially the longest-common-subsequence diff you know from git, scored from 0 (no overlap) to 1 (identical). The returned `f1` just balances two things: how much of the model's answer was on-target and how much of the reference it actually covered.
+
 ```python
 # script_id: day_081_evaluating_finetuned/automated_metrics
 import math
-from collections import Counter
 
 def calculate_perplexity(log_probs: list[float]) -> float:
     """Lower perplexity = model is more confident in its predictions."""
@@ -110,6 +113,8 @@ flowchart TD
 | ROUGE | Summarization, QA | Misses semantic equivalence |
 | BLEU | Translation | Poor for single references |
 | Function Accuracy | Tool calling | Needs custom eval harness |
+
+BLEU is the translation-world cousin of ROUGE -- it checks how many runs of words in the output also appear in the reference (the known-correct answer). It works best when you have several reference answers to compare against, which is why it's weak for a single reference.
 
 ---
 
@@ -190,12 +195,13 @@ def run_eval_suite(model_fn: Callable, cases: list[EvalCase]) -> dict:
 
 ## A/B Testing Against Frontier Models
 
-The ultimate question: is your fine-tuned 7B actually better than GPT-4o for this task?
+The ultimate question: is your fine-tuned small model (a 7B -- 7-billion-parameter -- open model you host yourself) actually better than GPT-4o for this task?
 
 ```python
 # script_id: day_081_evaluating_finetuned/ab_testing
 from openai import OpenAI
 import time
+from typing import Callable
 
 client = OpenAI()
 
@@ -296,7 +302,9 @@ def create_human_eval_batch(
     return tasks
 
 def compute_inter_annotator_agreement(evaluations: list[dict]) -> float:
-    """Compute agreement between evaluators (simplified Cohen's kappa)."""
+    """How often do two human reviewers pick the same winner? Low agreement
+    means your eval criteria are too vague to trust. (This measures raw percent
+    agreement, not chance-corrected kappa.)"""
     if len(evaluations) < 2:
         return 1.0
 
@@ -336,6 +344,8 @@ sequenceDiagram
 
 ```python
 # script_id: day_081_evaluating_finetuned/regression_testing
+from typing import Callable
+
 def regression_test(
     fine_tuned_fn: Callable,
     base_model_fn: Callable,
@@ -402,6 +412,7 @@ flowchart LR
 ```python
 # script_id: day_081_evaluating_finetuned/eval_pipeline
 from datetime import datetime
+from typing import Callable
 
 class EvalPipeline:
     """End-to-end evaluation pipeline: generate -> score -> compare -> decide."""
@@ -479,7 +490,7 @@ def evaluate_go_no_go(results: dict) -> tuple[bool, list[str]]:
 
 ## Checkpoint
 
-Run the `eval_pipeline` over the base and fine-tuned models and confirm it prints side-by-side automated metrics plus a go/no-go verdict from `go_no_go_criteria`. If both models score identically, check that you're actually loading the fine-tuned adapter and not pointing both runs at the same base checkpoint.
+Run the `eval_pipeline` over the base and fine-tuned models and confirm it prints side-by-side automated metrics plus a go/no-go verdict from `go_no_go_criteria`. If both models score identically, check that the fine-tuned run is really pointing at your fine-tuned model (or its adapter weights -- the small trained layer added on top of the base model) and not accidentally calling the base model twice.
 
 ## Summary
 

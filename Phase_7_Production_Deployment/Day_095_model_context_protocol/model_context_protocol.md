@@ -36,6 +36,8 @@ Before MCP: every AI model needed a custom integration with every tool. N models
 
 After MCP: each tool exposes one MCP server. Each AI client implements one MCP client. N + M total implementations.
 
+Each AI client implements the client side once; each tool ships one server — no client needs custom code per tool (the per-tool servers are drawn separately in the architecture diagram below).
+
 ---
 
 ## MCP Architecture
@@ -47,7 +49,7 @@ flowchart LR
     end
 
     subgraph "MCP Protocol"
-        B <-->|JSON-RPC over stdio/SSE| C["MCP Server"]
+        B <-->|JSON-RPC over stdio / HTTP| C["MCP Server"]
     end
 
     subgraph "Your Tools (MCP Server)"
@@ -60,17 +62,21 @@ flowchart LR
     end
 ```
 
+The client and server talk over JSON-RPC (the same request/response style as a typical RPC API), carried either over the process's stdin/stdout (stdio, for local servers Claude Desktop launches) or over HTTP (for remote servers). For the local servers in this lesson the SDK handles the transport — you never touch it directly.
+
 ### Core Concepts
 
 **MCP Client** — the AI application side. Claude Desktop, Claude Code, Cursor, and your custom apps all act as MCP clients.
 
 **MCP Server** — a process you run that exposes tools, resources, and prompts over the MCP protocol. You write these.
 
-**Tools** — functions the AI can call. Like OpenAI function calling, but standardized.
+**Tools** — functions the AI can call. Like the function/tool calling you built on Day 28, but standardized across clients — if that's hazy, the one-line version is: the model returns a structured request naming a tool plus its arguments, your code runs it, and you feed the result back.
 
 **Resources** — data the AI can read (files, database records, API responses). Think of it as a read-only filesystem abstraction.
 
-**Prompts** — reusable prompt templates the server can provide to the client.
+Rule of thumb: a Tool is a verb the model chooses to invoke on demand (like an RPC/POST call with computed results or side effects); a Resource is a noun the client can pull into context up front without the model asking (like a static GET endpoint or a pre-loaded file). The same data can be offered both ways — expose it as a Resource when you want it available by default, as a Tool when the model should fetch it only when needed.
+
+**Prompts** — reusable prompt templates the server can provide to the client. We only build Tools and Resources in this lesson; Prompts work the same way via `@server.list_prompts()` / `@server.get_prompt()` — see the MCP spec when you need them.
 
 ---
 
@@ -82,24 +88,28 @@ Install the SDK:
 pip install mcp
 ```
 
-Here is a minimal MCP server that exposes database query capabilities:
+Here is a minimal MCP server that exposes database query capabilities.
+
+Every MCP server has the same shape: one decorated function that LISTS your tools (names + JSON schemas) and one that RUNS a tool when the client calls it by name. The `main()` block is fixed startup boilerplate — copy it as-is; it just wires your handlers to the stdio transport and announces the server's capabilities during the connection handshake.
 
 ```python
 # script_id: day_095_model_context_protocol/db_mcp_server
 # db_mcp_server.py
 import asyncio
+import os
 import sqlite3
 from typing import Any
 import mcp.server.stdio
 import mcp.types as types
 from mcp.server import NotificationOptions, Server
 from mcp.server.models import InitializationOptions
+from pydantic import AnyUrl
 
 # Initialize the MCP server
 server = Server("database-server")
 
 # Your actual database connection
-DB_PATH = "company.db"
+DB_PATH = os.environ.get("DB_PATH", "company.db")
 
 
 def get_db():
@@ -170,7 +180,10 @@ async def handle_call_tool(
             # above. `sql` itself is NOT parameterized here — we only gate it to
             # SELECT. For untrusted input, use a real SQL parser/allowlist rather
             # than a prefix check, and never f-string raw user SQL.
-            cursor = conn.execute(f"{sql} LIMIT {limit}")
+            sql = sql.rstrip(";")
+            if " LIMIT " not in sql.upper():
+                sql = f"{sql} LIMIT {limit}"
+            cursor = conn.execute(sql)
             rows = cursor.fetchall()
             columns = [desc[0] for desc in cursor.description]
             conn.close()
@@ -217,6 +230,7 @@ async def main():
         await server.run(
             read_stream,
             write_stream,
+            # Boilerplate: copy as-is
             InitializationOptions(
                 server_name="database-server",
                 server_version="0.1.0",
@@ -260,9 +274,11 @@ async def handle_list_resources() -> list[types.Resource]:
 
 
 @server.read_resource()
-async def handle_read_resource(uri: str) -> str:
+async def handle_read_resource(uri: AnyUrl) -> str:
     """Return the content of a resource by URI."""
-    if uri == "database://schema":
+    # Returning a plain str works today; a future mcp release will want
+    # Iterable[ReadResourceContents].
+    if str(uri) == "database://schema":
         conn = get_db()
         cursor = conn.execute(
             "SELECT sql FROM sqlite_master WHERE type='table' ORDER BY name"
@@ -271,7 +287,7 @@ async def handle_read_resource(uri: str) -> str:
         conn.close()
         return schema
 
-    elif uri == "database://stats":
+    elif str(uri) == "database://stats":
         conn = get_db()
         cursor = conn.execute(
             "SELECT name FROM sqlite_master WHERE type='table'"
@@ -337,7 +353,7 @@ ALLOWED_ROOT = Path(os.environ.get("ALLOWED_ROOT", "/tmp/ai_workspace")).resolve
 def safe_path(requested: str) -> Path:
     """Resolve path and verify it's within ALLOWED_ROOT."""
     resolved = (ALLOWED_ROOT / requested).resolve()
-    if not str(resolved).startswith(str(ALLOWED_ROOT)):
+    if not resolved.is_relative_to(ALLOWED_ROOT):
         raise ValueError(f"Path traversal attempt: {requested}")
     return resolved
 
@@ -504,6 +520,8 @@ Find them at: `github.com/modelcontextprotocol/servers`
 ## Checkpoint
 
 Run the `filesystem_mcp_server` and confirm an MCP client can list and call its exposed tools (e.g. read a file) over the protocol. If the client connects but sees no tools, check that each function is registered with the server's tool decorator and that the server finished its startup handshake before the client queried.
+
+Verify with the MCP Inspector — `npx @modelcontextprotocol/inspector python filesystem_mcp_server.py` — which gives you a UI to list and call tools without configuring Claude Desktop. (Or add the filesystem server to `claude_desktop_config.json` exactly like the database example above and look for the hammer icon.)
 
 ## Summary
 

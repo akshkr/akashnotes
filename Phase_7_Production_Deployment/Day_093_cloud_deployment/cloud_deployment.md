@@ -55,12 +55,13 @@ class Config:
 
 ```txt
 # requirements.txt
-fastapi==0.104.1
-uvicorn==0.24.0
-openai==1.3.0
-pydantic==2.5.0
-python-dotenv==1.0.0
-gunicorn==21.2.0
+# floors as of 2026-06 — check PyPI for latest before deploying.
+fastapi>=0.110
+uvicorn>=0.30
+openai>=1.40
+pydantic>=2.7
+python-dotenv>=1.0
+gunicorn>=22.0
 ```
 
 ### 3. Dockerfile
@@ -387,12 +388,12 @@ jobs:
 # script_id: day_093_cloud_deployment/structured_logging
 import logging
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 
 class JSONFormatter(logging.Formatter):
     def format(self, record):
         log_data = {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "level": record.levelname,
             "message": record.getMessage(),
             "module": record.module,
@@ -409,13 +410,14 @@ logger.addHandler(handler)
 logger.setLevel(logging.INFO)
 
 # Usage
-logger.info("Agent started", extra={"agent_id": "123", "model": "gpt-4o"})
+logger.info("Agent started", extra={"extra": {"agent_id": "123", "model": "gpt-4o"}})
 ```
 
 ### Health Checks
 
 ```python
 # script_id: day_093_cloud_deployment/health_checks
+# fragment
 from fastapi import FastAPI
 from datetime import datetime
 
@@ -447,6 +449,8 @@ def readiness():
 
 ## Observability & Tracing
 
+> **Coming from Software Engineering?** LangSmith / Langfuse are the Datadog APM of AI. Instead of tracing HTTP requests through microservices, you're tracing queries through retrieval → LLM → tool execution chains. Same observability mindset, different telemetry.
+
 Structured logging (above) is the minimum. For production AI systems, you need **trace-level observability** — seeing the full lifecycle of each request including LLM calls, tool executions, retrieval steps, and token costs.
 
 ### LangSmith Integration
@@ -457,13 +461,17 @@ Structured logging (above) is the minimum. For production AI systems, you need *
 import os
 
 # Set environment variables
-os.environ["LANGCHAIN_TRACING_V2"] = "true"
-os.environ["LANGCHAIN_API_KEY"] = os.getenv("LANGSMITH_API_KEY")
-os.environ["LANGCHAIN_PROJECT"] = "production-agent"
+# LANGCHAIN_* aliases still work for back-compat.
+os.environ["LANGSMITH_TRACING"] = "true"
+os.environ["LANGSMITH_API_KEY"] = os.getenv("LANGSMITH_API_KEY")
+os.environ["LANGSMITH_PROJECT"] = "production-agent"
 
 # If using LangChain/LangGraph, tracing is automatic.
 # For custom code, use the @traceable decorator:
 from langsmith import traceable
+from openai import OpenAI
+
+client = OpenAI()
 
 @traceable(name="generate_response")
 def generate_response(query: str) -> str:
@@ -480,8 +488,8 @@ def generate_response(query: str) -> str:
 ```python
 # script_id: day_093_cloud_deployment/langfuse_tracing
 # pip install langfuse
-from langfuse import Langfuse
-from langfuse.decorators import observe
+from langfuse import Langfuse, observe
+# as of 2026-06; verify the langfuse import path — this library churns.
 
 langfuse = Langfuse(
     public_key=os.getenv("LANGFUSE_PUBLIC_KEY"),
@@ -508,33 +516,29 @@ def rag_pipeline(query: str) -> str:
 | User feedback signals | Ground truth for eval dataset | Custom + Langfuse |
 | Retrieval relevance scores | RAG quality degradation alerts | Custom metrics |
 
-> **Coming from Software Engineering?** LangSmith / Langfuse are the Datadog APM of AI. Instead of tracing HTTP requests through microservices, you're tracing queries through retrieval → LLM → tool execution chains. Same observability mindset, different telemetry.
-
 ---
 
 ## Cost Optimization
 
+The dominant cost in an LLM app is per-request token (and embedding) billing, not your server. The cheapest call is the one you don't make — so cache: the same input asked twice should hit a cache, not the paid API.
+
 ```python
 # script_id: day_093_cloud_deployment/cost_optimization
-# Caching to reduce API calls. lru_cache keys on the function arguments, so
-# cache directly on the text — the earlier version cached on a hash but then
-# called generate_embedding(text) with `text` out of scope (a NameError).
+# fragment
 from functools import lru_cache
 
 @lru_cache(maxsize=1000)
 def cached_embedding(text: str):
-    # Only called on a cache miss
+    # lru_cache keys on the argument, so identical text returns the cached
+    # result for free. generate_embedding is your existing Phase 2 embedding call.
     return generate_embedding(text)
-
-def get_embedding(text: str):
-    return cached_embedding(text)
 ```
 
 ---
 
 ## Checkpoint
 
-Run the app locally with the `health_checks` endpoint wired up and confirm `GET /health` returns `200` with a status body — this is exactly what the cloud platform polls to decide your instance is alive. If it returns 200 but your traces never show up, check that `langfuse_tracing`/`langsmith_tracing` has its keys set and the client is flushing before the process exits.
+Run the app locally with the `health_checks` endpoint wired up and confirm `GET /health` returns `200` with a status body — this is exactly what the cloud platform polls to decide your instance is alive. If it returns 200 but your traces never show up, check that `langfuse_tracing`/`langsmith_tracing` has its keys set. These tracing clients batch events and send them in the background — like a buffered writer — so a process that exits quickly can die before the batch is flushed. Call the client's flush/shutdown (e.g. `langfuse.flush()`) before exit.
 
 ## Summary
 

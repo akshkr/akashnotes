@@ -1,6 +1,6 @@
 # Designing Breakpoints in Agent Systems
 
-Breakpoints let you pause agents at critical moments for human review. This guide shows you how to strategically place and design effective breakpoints.
+Breakpoints let you pause agents at critical moments for human review. In production agent systems, some actions are too costly to let an LLM take unsupervised — breakpoints are how you keep a human in the loop at exactly those moments. This guide shows you how to strategically place and design effective breakpoints.
 
 > **Coming from Software Engineering?** Agent breakpoints are analogous to debugger breakpoints and circuit breakers combined. Like a debugger breakpoint, they pause execution at a specific point so you can inspect state. Like a circuit breaker (Hystrix, Resilience4j), they prevent cascading failures by stopping execution when conditions are met. The strategic question — "where do I place breakpoints?" — is the same as choosing where to put health checks and monitoring alerts in a production system.
 
@@ -71,10 +71,12 @@ breakpoints = [
 
 ### Strategic Placement
 
+> **Coming from Software Engineering?** LangGraph models an agent as a directed graph: nodes are functions, edges are the order they run in, and a shared state dict is passed node to node — like a workflow engine or state machine where each step reads and writes a shared context. `interrupt_before=["send"]` just tells that engine: stop right before this step and hand control back to me.
+
 ```python
 # script_id: day_071_breakpoints_design/strategic_placement
 from langgraph.graph import StateGraph, END
-from langgraph.checkpoint.sqlite import SqliteSaver
+from langgraph.checkpoint.memory import MemorySaver
 from typing import TypedDict, Annotated
 from operator import add
 
@@ -82,7 +84,7 @@ class WorkflowState(TypedDict):
     task: str
     draft: str
     final: str
-    messages: Annotated[list, add]
+    messages: Annotated[list, add]  # the `add` reducer appends to this list instead of overwriting it
 
 def create_draft(state: WorkflowState) -> dict:
     """Create initial draft."""
@@ -116,11 +118,14 @@ workflow.add_edge("finalize", "send")
 workflow.add_edge("send", END)
 
 # Compile with breakpoint BEFORE send
-checkpointer = SqliteSaver.from_conn_string("breakpoints.db")
+checkpointer = MemorySaver()
 app = workflow.compile(
     checkpointer=checkpointer,
     interrupt_before=["send"]  # Pause before sending!
 )
+# MemorySaver keeps state in memory; swap in SqliteSaver
+# (pip install langgraph-checkpoint-sqlite, used via
+#  `with SqliteSaver.from_conn_string(...) as checkpointer:`) to persist across restarts.
 ```
 
 ### Using the Breakpoint
@@ -135,7 +140,7 @@ result = app.invoke(
 )
 
 print("Paused before 'send' node")
-print(f"Final draft: {result['final']}")
+print(f"Draft awaiting approval: {result['draft']}")
 print()
 
 # Human reviews and decides
@@ -156,6 +161,8 @@ else:
 ### Conditional Breakpoints
 
 Only pause when certain conditions are met:
+
+These conditions inspect whatever fields your own agent writes into state — here we assume the agent recorded a cost estimate, the action name, and a self-reported confidence (0-1, not an ML output — just a number your code sets). None of these are built in; you populate them in your nodes.
 
 ```python
 # script_id: day_071_breakpoints_design/conditional_breakpoints
@@ -201,6 +208,8 @@ def check_breakpoint(state):
 ```
 
 ### Risk-Based Breakpoints
+
+This is not a machine-learning model — it is a plain rules engine, like a fraud-check or feature-flag scoring function: assign each risk signal a weight, add them up, and trip the breakpoint past a threshold you choose.
 
 ```python
 # script_id: day_071_breakpoints_design/risk_based_breakpoints
@@ -433,12 +442,6 @@ def log_breakpoint_decision(
         f.write(json.dumps(log_entry) + "\n")
 ```
 
-## Checkpoint
-
-Run `risk_based_breakpoint(...)` (pure Python, no API) with two states: a `{"operation": "delete", "reversible": False, "external_effects": True}` op should score 0.7 and return `True` (breakpoint triggered), while a harmless read-only op scores 0.0 and returns `False`. If a destructive op slips through with a low score, check that your factor weights actually sum — the point is that several moderate-risk signals stack up past the 0.5 threshold even when no single one is alarming on its own.
-
----
-
 ## Summary
 
 ```mermaid
@@ -478,9 +481,9 @@ result = app.invoke(state, config)
 # Resume after approval
 final = app.invoke(None, config)
 
-# Conditional breakpoint
-if risk_score > threshold:
-    await human_approval()
+# Conditional / risk-based breakpoint
+if risk_based_breakpoint(state):
+    handle_breakpoint(state)
 ```
 
 ---
@@ -502,6 +505,12 @@ if risk_score > threshold:
 
 ---
 
+## Checkpoint
+
+Run `risk_based_breakpoint(...)` (pure Python, no API) with two states: a `{"operation": "delete", "reversible": False, "external_effects": True}` op should score 0.7 and return `True` (breakpoint triggered), while a harmless read-only op scores 0.0 and returns `False`. If a destructive op slips through with a low score, check that your factor weights actually sum — the point is that several moderate-risk signals stack up past the 0.5 threshold even when no single one is alarming on its own.
+
+---
+
 ## What's Next?
 
-Now let's learn how to **inject human feedback** back into agent state to influence future behavior!
+Next, in **Day 72**, we learn how to **inject human feedback** back into agent state to influence future behavior.

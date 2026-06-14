@@ -72,7 +72,7 @@ load_in_4bit = True  # QLoRA: use 4-bit quantization
 
 # Load model and tokenizer
 model, tokenizer = FastLanguageModel.from_pretrained(
-    model_name="unsloth/Llama-3.2-8B-Instruct",  # Or "unsloth/Phi-4"
+    model_name="unsloth/Llama-3.1-8B-Instruct",  # Or "unsloth/Phi-4"
     max_seq_length=max_seq_length,
     dtype=dtype,
     load_in_4bit=load_in_4bit,
@@ -83,7 +83,7 @@ print(f"Parameters: {model.num_parameters():,}")
 ```
 
 Unsloth provides pre-optimized model downloads that are faster to load:
-- `unsloth/Llama-3.2-8B-Instruct` -- Meta's Llama 3.2
+- `unsloth/Llama-3.1-8B-Instruct` -- Meta's Llama 3.1
 - `unsloth/Phi-4` -- Microsoft's Phi-4
 - `unsloth/Mistral-7B-Instruct-v0.3` -- Mistral AI
 - `unsloth/gemma-2-9b-it` -- Google's Gemma 2
@@ -97,6 +97,8 @@ Unsloth provides pre-optimized model downloads that are faster to load:
 model = FastLanguageModel.get_peft_model(
     model,
     r=16,                          # LoRA rank
+    # These are the model's internal weight matrices LoRA attaches to. This is the
+    # standard "all layers" setting -- copy as-is; you rarely change it.
     target_modules=[
         "q_proj", "k_proj", "v_proj", "o_proj",  # Attention
         "gate_proj", "up_proj", "down_proj",       # MLP
@@ -110,7 +112,7 @@ model = FastLanguageModel.get_peft_model(
 
 # Check what we're training
 model.print_trainable_parameters()
-# trainable params: 41,943,040 || all params: 8,072,204,288 || trainable%: 0.52%
+# Example: trainable params ~42M of ~8B total (LoRA r=16) -- under 1% of the model.
 ```
 
 ```mermaid
@@ -158,6 +160,26 @@ flowchart TB
 ```python
 # script_id: day_079_handson_finetuning/finetune_workflow
 from datasets import load_dataset
+import json
+
+# Tiny demo dataset so this runs end-to-end. Swap in your real Day 77 data later.
+rows = [
+    {"messages": [
+        {"role": "user", "content": "Write a Python function to reverse a string."},
+        {"role": "assistant", "content": "def reverse(s):\n    return s[::-1]"},
+    ]},
+    {"messages": [
+        {"role": "user", "content": "How do I check if a list is empty in Python?"},
+        {"role": "assistant", "content": "Use `if not my_list:` -- an empty list is falsy."},
+    ]},
+    {"messages": [
+        {"role": "user", "content": "Write a function to sum a list of numbers."},
+        {"role": "assistant", "content": "def total(nums):\n    return sum(nums)"},
+    ]},
+]
+with open("coding_assistant_train.jsonl", "w") as f:
+    for r in rows:
+        f.write(json.dumps(r) + "\n")
 
 # Load a dataset (or use your synthetic data from Day 77)
 dataset = load_dataset("json", data_files="coding_assistant_train.jsonl", split="train")
@@ -187,6 +209,8 @@ print(dataset[0]["text"][:500])
 
 ```python
 # script_id: day_079_handson_finetuning/format_alpaca
+# Alternative to Step 3: use this INSTEAD of the chat-format loader above.
+# Re-run load_dataset for your Alpaca file first.
 # Convert Alpaca format to chat format
 alpaca_prompt = """Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request.
 
@@ -215,6 +239,8 @@ dataset = dataset.map(format_alpaca)
 
 ```python
 # script_id: day_079_handson_finetuning/format_sharegpt
+# Alternative to Step 3: use this INSTEAD of the chat-format loader above.
+# Re-run load_dataset for your ShareGPT file first.
 from unsloth.chat_templates import get_chat_template
 
 # Unsloth has built-in support for ShareGPT format
@@ -243,18 +269,17 @@ dataset = dataset.map(format_sharegpt)
 
 ```python
 # script_id: day_079_handson_finetuning/finetune_workflow
-from trl import SFTTrainer
-from transformers import TrainingArguments
+from trl import SFTTrainer, SFTConfig
 
 trainer = SFTTrainer(
     model=model,
-    tokenizer=tokenizer,
+    processing_class=tokenizer,
     train_dataset=dataset,
-    dataset_text_field="text",
-    max_seq_length=max_seq_length,
-    dataset_num_proc=2,           # Parallel data processing
-    packing=False,                # True = pack short examples together (faster)
-    args=TrainingArguments(
+    args=SFTConfig(
+        dataset_text_field="text",
+        max_seq_length=max_seq_length,
+        dataset_num_proc=2,           # Parallel data processing
+        packing=False,                # packing crams several short examples into one sequence to waste less space (faster) but can blur where one ends -- leave False while learning.
         output_dir="./output",
 
         # Training duration
@@ -321,9 +346,13 @@ sequenceDiagram
     Trainer->>Model: Save checkpoint
 ```
 
+In plain terms: each step runs the examples through the model (forward pass), measures how far off it was (loss), figures out how to nudge the LoRA weights closer (backward pass -- the nudges are the "gradients"), and applies the nudge.
+
 ---
 
 ## Step 5: Monitor with Weights & Biases
+
+Run this `wandb.init` block BEFORE `trainer.train()` in Step 4 -- since `report_to="wandb"` auto-starts a run, initializing here sets the project name and config for that run. Keep `wandb.log`/`wandb.finish` after training.
 
 ```python
 # script_id: day_079_handson_finetuning/finetune_workflow
@@ -332,9 +361,9 @@ import wandb
 # Initialize W&B (run before training)
 wandb.init(
     project="my-finetune",
-    name="llama-3.2-8b-coding-assistant",
+    name="llama-3.1-8b-coding-assistant",
     config={
-        "model": "Llama-3.2-8B-Instruct",
+        "model": "Llama-3.1-8B-Instruct",
         "lora_r": 16,
         "lora_alpha": 16,
         "learning_rate": 2e-4,
@@ -354,10 +383,11 @@ wandb.finish()
 ```
 
 What to watch in W&B:
+- Loss is the model's error on your training examples -- think of it like a test-failure count. Lower means it matches your data better; you want it to fall and then flatten.
 - **Loss curve**: Should decrease smoothly, flatten by end of training
 - **Learning rate**: Should follow your scheduler (cosine decay)
 - **GPU memory**: Stable, no OOM spikes
-- **Gradient norm**: Stable, no explosions
+- **Training-step size** ("gradient norm" in W&B): how big each adjustment is. A sudden huge spike usually means the learning rate is too high or a bad example slipped in -- restart with a lower learning rate.
 
 ---
 
@@ -559,15 +589,16 @@ mindmap
 # Load model
 from unsloth import FastLanguageModel
 model, tokenizer = FastLanguageModel.from_pretrained(
-    "unsloth/Llama-3.2-8B-Instruct", load_in_4bit=True
+    "unsloth/Llama-3.1-8B-Instruct", load_in_4bit=True
 )
 
 # Add LoRA
 model = FastLanguageModel.get_peft_model(model, r=16, target_modules=[...])
 
 # Train
-from trl import SFTTrainer
-trainer = SFTTrainer(model=model, train_dataset=dataset, ...)
+from trl import SFTTrainer, SFTConfig
+trainer = SFTTrainer(model=model, processing_class=tokenizer, train_dataset=dataset,
+                     args=SFTConfig(dataset_text_field="text", output_dir="./output"))
 trainer.train()
 
 # Save adapter
@@ -581,7 +612,22 @@ model.save_pretrained_gguf("./gguf", tokenizer, quantization_method="q4_k_m")
 
 ## Exercises
 
-1. **Your First Fine-tune**: Fine-tune Llama 3.2 8B (or Phi-4) on a small dataset (100-500 examples) using QLoRA. Export to GGUF and run in Ollama. Compare the fine-tuned model's responses to the base model on 10 test prompts.
+1. **Your First Fine-tune**: Fine-tune Llama 3.1 8B (or Phi-4) on a small dataset (100-500 examples) using QLoRA. Export to GGUF and run in Ollama. Compare the fine-tuned model's responses to the base model on 10 test prompts.
+
+<details>
+<summary>Solution</summary>
+
+The expected flow follows this lesson end to end:
+
+1. Load with 4-bit QLoRA: `FastLanguageModel.from_pretrained("unsloth/Llama-3.1-8B-Instruct", load_in_4bit=True)`.
+2. Attach LoRA adapters: `FastLanguageModel.get_peft_model(model, r=16, target_modules=[...])`.
+3. Train with `SFTTrainer` + `SFTConfig` on your formatted dataset (`trainer.train()`).
+4. Export to GGUF: `model.save_pretrained_gguf("./gguf", tokenizer, quantization_method="q4_k_m")`.
+5. Create and run in Ollama: `ollama create my-model -f Modelfile` then `ollama run my-model`.
+
+"Better" means the fine-tuned model follows your dataset's style and format more closely than the base model on the 10 prompts -- not necessarily smarter, but more on-pattern.
+
+</details>
 
 2. **Hyperparameter Sweep**: Train the same model 3 times with different LoRA ranks (r=8, r=16, r=32). Compare final loss, training time, adapter size, and output quality. Which rank gives the best quality-to-cost ratio?
 

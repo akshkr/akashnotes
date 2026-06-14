@@ -1,6 +1,6 @@
 # GraphRAG and Knowledge Graphs
 
-Standard vector RAG works brilliantly for single-hop questions like "What is our refund policy?" But ask it **"Who is the CEO of the company that acquired our biggest partner?"** and it falls apart. The answer requires *connecting* facts across multiple documents -- a multi-hop reasoning chain that embedding similarity alone cannot solve. **GraphRAG** fixes this by layering a knowledge graph on top of your retrieval pipeline, letting you traverse relationships instead of just matching vectors.
+Standard vector RAG works brilliantly for single-hop questions like "What is our refund policy?" But ask it **"Who is the CEO of the company that acquired our biggest partner?"** and it falls apart. The answer requires *connecting* facts across multiple documents -- a multi-hop reasoning chain (a question whose answer is a chain of facts: A links to B, B links to C, where you must follow each link in order) that embedding similarity alone cannot solve. **GraphRAG** fixes this by layering a knowledge graph on top of your retrieval pipeline, letting you traverse relationships instead of just matching vectors.
 
 > **Coming from Software Engineering?** Knowledge graphs are like foreign key relationships on steroids. Instead of `JOIN users ON orders.user_id = users.id`, you traverse semantic relationships: `(Company)-[:ACQUIRED]->(Company)-[:HAS_CEO]->(Person)`. If you've modeled entity-relationship diagrams or worked with graph databases, you already think in nodes and edges -- GraphRAG just brings that power to LLM retrieval.
 
@@ -36,7 +36,7 @@ Vector similarity retrieves chunks independently. Each chunk might be relevant, 
 
 ## Knowledge Graphs: The Core Concepts
 
-A knowledge graph stores information as **triples**: `(Subject, Predicate, Object)`.
+A knowledge graph stores information as **triples**: `(Subject, Predicate, Object)`. Think of a triple as a single row in a join table -- `(subject_id, relationship_name, object_id)` -- except the relationship name is part of the data, so `ACQUIRED` and `HAS_CEO` live in the same structure.
 
 ```mermaid
 graph LR
@@ -84,6 +84,8 @@ triples = [
 
 The first step in building a knowledge graph is extracting entities and relationships from unstructured text. LLMs are remarkably good at this.
 
+We pass a Pydantic model as `response_format` so the LLM is forced to return JSON matching that exact shape -- `.parse` then hands us typed `Entity`/`Relationship` objects instead of a string we would have to parse ourselves.
+
 ```python
 # script_id: day_027_graphrag/entity_extraction_pipeline
 from openai import OpenAI
@@ -108,7 +110,7 @@ class ExtractionResult(BaseModel):
 def extract_entities(text: str) -> ExtractionResult:
     """Extract entities and relationships from text using an LLM."""
 
-    response = client.beta.chat.completions.parse(
+    response = client.chat.completions.parse(
         model="gpt-4o-mini",
         messages=[
             {
@@ -169,6 +171,13 @@ Relationships:
 ## Neo4j Basics: Storing and Querying the Graph
 
 Neo4j is the most popular graph database. Its query language, **Cypher**, reads like ASCII art for graphs.
+
+Quick decoder if you know SQL:
+
+- `(Label {prop: val})` = a row/table
+- `-[:REL]->` = a typed foreign-key edge with a direction
+- `MATCH` = `SELECT ... WHERE`
+- `MERGE` = `INSERT`-or-get (upsert)
 
 ### Setting Up Neo4j with Python
 
@@ -240,6 +249,8 @@ results = run_query("""
 # -> [{"ceo": "Jane Smith"}]
 
 # 2. Multi-hop: CEO of the company that acquired Acme
+# <-[:ACQUIRED]- reads backwards: the arrow still points acquirer -> Acme,
+# so this finds who ACQUIRED Acme.
 results = run_query("""
     MATCH (target:Company {name: "Acme Inc"})
           <-[:ACQUIRED]-(acquirer:Company)
@@ -359,6 +370,8 @@ class GraphRAG:
         graph_context = []
         with self.driver.session() as session:
             for name in entity_names:
+                # [*1..max_hops] follows 1 to max_hops relationships in any
+                # direction -- this is how you reach entities several hops away.
                 result = session.run(f"""
                     MATCH path = (start {{name: $name}})-[*1..{max_hops}]-(connected)
                     RETURN start.name AS source,
@@ -370,6 +383,8 @@ class GraphRAG:
 
                 for record in result:
                     rel_chain = " -> ".join(record["rels"])
+                    # For multi-hop paths, rel_chain is the full ordered chain
+                    # of relationship types, e.g. ACQUIRED -> HAS_CEO.
                     graph_context.append(
                         f"{record['source']} -[{rel_chain}]-> "
                         f"{record['target']} ({record['target_type'][0]})"
@@ -456,6 +471,8 @@ flowchart TD
     style Custom fill:#FFF3E0
 ```
 
+Microsoft's approach first groups tightly-connected entities into clusters (it calls these *communities* -- the sub-graphs that mention each other a lot), then writes an LLM summary of each cluster so it can answer big-picture "what are the themes?" questions. Leiden is just the clustering algorithm it uses -- you do not need to implement it.
+
 | Aspect | Microsoft GraphRAG | Custom Implementation |
 |--------|-------------------|----------------------|
 | **Approach** | Community detection + hierarchical summaries | Direct entity extraction + graph queries |
@@ -480,9 +497,12 @@ flowchart TD
 # script_id: day_027_graphrag/entity_extraction_pipeline
 def normalize_entity(name: str) -> str:
     """Basic entity normalization."""
-    # Strip common suffixes
-    for suffix in [" Inc", " Corp", " Corporation", " LLC", " Ltd"]:
-        name = name.replace(suffix, "")
+    # Strip common suffixes (longest-first, trailing match only, so
+    # "Globex Corporation" doesn't get mangled by the " Corp" entry)
+    for suffix in [" Corporation", " Corp", " Incorporated", " Inc", " LLC", " Ltd"]:
+        if name.endswith(suffix):
+            name = name[: -len(suffix)]
+            break
     return name.strip()
 
 # Better: Use the LLM to resolve entities
@@ -496,7 +516,7 @@ Return a JSON mapping from each name to its canonical form.
 
 Entities: {json.dumps(entities)}
 """}],
-        response_format={"type": "json_object"}
+        response_format={"type": "json_object"}  # JSON mode requires the literal word "json" to appear in the prompt above.
     )
     return json.loads(response.choices[0].message.content)
 
@@ -522,7 +542,7 @@ ALLOWED_RELATIONS = [
 
 ## Checkpoint
 
-Run the entity-extraction pipeline on a couple of sentences and confirm: it returns typed `Entity` and `Relationship` objects (subject–predicate–object triples), and `resolve_entities` collapses surface variants ("Apple Inc." and "Apple") onto one canonical name. If the same real-world entity shows up as two separate nodes, check that `normalize_entity` is being applied before you write to the graph, not after.
+Run the entity-extraction pipeline on a couple of sentences and confirm: it returns typed `Entity` and `Relationship` objects (subject–predicate–object triples), and `resolve_entities` collapses surface variants ("Globex Corp" and "Globex") onto one canonical name. If the same real-world entity shows up as two separate nodes, check that `normalize_entity` is being applied before you write to the graph, not after.
 
 ---
 
@@ -598,6 +618,16 @@ context = f"Graph: {graph_facts}\nText: {vector_chunks}"
 2. **Cypher Query Challenge**: Using the Neo4j example above (or the free Neo4j Aura sandbox), create a graph of at least 10 entities and 15 relationships representing a fictional company org chart. Write Cypher queries to answer: (a) Who does person X report to? (b) What is the shortest path between two people? (c) How many people are in each department?
 
 3. **GraphRAG vs Vector RAG Comparison**: Implement both a vector-only RAG and the GraphRAG pipeline from this tutorial. Index the same set of 5+ documents about interconnected topics. Test both systems with single-hop questions and multi-hop questions. Compare answer quality and identify where GraphRAG wins.
+
+<details><summary>Solutions (approaches)</summary>
+
+1. **Entity Extraction Pipeline**: Run `extract_entities` over each paragraph and concatenate the `relationships` lists into one triple set. Resolution is needed wherever the same real-world entity appears under different surface forms ("Globex", "Globex Corp", "Globex Corporation") -- pass the entity names through `resolve_entities` (or `normalize_entity`) before writing to the graph so they collapse to one node.
+
+2. **Cypher Query Challenge**: (a) `MATCH (x {name:$name})-[:REPORTS_TO]->(m) RETURN m.name`. (b) `MATCH p = shortestPath((a {name:$a})-[*]-(b {name:$b})) RETURN [n IN nodes(p) | n.name]`. (c) `MATCH (p:Person)-[:WORKS_AT]->(d:Department) RETURN d.name, count(p)`.
+
+3. **GraphRAG vs Vector RAG Comparison**: Expected outcome -- GraphRAG wins on multi-hop and aggregation questions (it can traverse and count edges); both tie on single-hop factual lookups where vector similarity already retrieves the one relevant chunk.
+
+</details>
 
 ---
 

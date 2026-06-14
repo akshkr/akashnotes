@@ -2,6 +2,8 @@
 
 You've spent the last two weeks learning how embeddings work, how to store and query vectors in pgvector, and how to inject retrieved context into prompts. Today you assemble all of it into something you can actually demo to a hiring manager: a chatbot that answers questions from a document collection.
 
+Recap: an embedding turns text into a list of numbers (a vector) that captures its meaning, so texts about similar things end up as nearby vectors.
+
 > **Coming from Software Engineering?** A RAG chatbot is architecturally identical to a search-powered web app: query comes in, you hit a database for relevant results, format them, and return a response. The difference is the "database" is a vector store and the "response formatter" is an LLM. If you've built anything with Elasticsearch + a templating layer, you already understand 80% of this architecture. The new pieces are embedding-based retrieval and prompt construction.
 
 > **Portfolio thread (2 of 5).** This builds on the **Day 18** extraction pipeline (reuse it to ingest and structure your documents) and becomes a *tool* the **Day 48** research agent calls. It's capstone #2 of the five-project system you'll deploy on Day 97 and present on Day 99.
@@ -26,7 +28,7 @@ sequenceDiagram
     participant U as User
     participant C as Chatbot
     participant V as pgvector
-    participant L as LLM (GPT-4o)
+    participant L as LLM (gpt-4o-mini)
 
     U->>C: "What is our refund policy?"
     C->>V: embed("What is our refund policy?")
@@ -89,7 +91,7 @@ def init_db():
     cur.execute("""
         CREATE TABLE IF NOT EXISTS documents (
             id TEXT PRIMARY KEY,
-            embedding vector(1536),
+            embedding vector(1536),  -- 1536 = the fixed output size of text-embedding-3-small; must match your embed model
             content TEXT NOT NULL,
             source TEXT NOT NULL,
             chunk_index INTEGER NOT NULL,
@@ -249,8 +251,10 @@ def retrieve(
     )
     query_embedding = response.data[0].embedding
 
-    # Query pgvector using cosine distance (<=> operator)
-    # pgvector cosine distance: 0 = identical, 1 = opposite
+    # Query pgvector using cosine distance (<=> operator).
+    # Cosine distance measures how similar in meaning two embeddings are —
+    # 0 means nearly the same meaning, 1 means unrelated. We flip it to a
+    # 0-1 relevance score with `1 - distance`.
     conn = get_connection()
     cur = conn.cursor()
     cur.execute(
@@ -440,7 +444,12 @@ User question: {user_message}"""
             "content": augmented_message,
         })
 
-        # Agentic loop: keep going until no more tool calls
+        # Agentic loop: keep going until no more tool calls.
+        # This loop is a request/response handshake, like a callback: the model
+        # can reply "call search_documents for me" instead of a final answer; we
+        # run the tool, hand the result back, and ask again — repeating until it
+        # returns plain text. The max_iterations cap is just a safety bound so a
+        # misbehaving model cannot loop forever.
         max_iterations = 5
         for iteration in range(max_iterations):
             try:
@@ -496,7 +505,10 @@ User question: {user_message}"""
 
             return assistant_response
 
-        return "I was unable to generate a response after multiple attempts."
+        # Loop hit max_iterations: record the fallback so history stays well-formed
+        fallback = "I was unable to generate a response after multiple attempts."
+        self.conversation_history.append({"role": "assistant", "content": fallback})
+        return fallback
 
     def reset(self):
         """Clear conversation history."""
@@ -711,7 +723,7 @@ Small is 5x cheaper and in practice the quality difference is small for most ret
 This is a starting point, not a law. Shorter chunks (200-300 words) give more precise retrieval but lose context. Longer chunks (800-1000 words) preserve context but retrieve noisier results. The 50-word overlap prevents important information from being split across chunk boundaries. Your ideal values depend on your documents — this is something you tune with evals.
 
 **Why not just put all documents in the context window?**
-Modern LLMs have large context windows (128k+ tokens), so you could theoretically fit a lot. But it's expensive, slow, and LLMs actually perform worse with very long contexts (the "lost in the middle" problem). RAG retrieves only what's relevant, which is cheaper, faster, and often more accurate.
+Modern LLMs have large context windows (128k+ tokens), so you could theoretically fit a lot. But it's expensive, slow, and LLMs actually perform worse with very long contexts (the "lost in the middle" problem — models reliably use information at the very start and end of a long prompt but tend to overlook facts buried in the middle). RAG retrieves only what's relevant, which is cheaper, faster, and often more accurate.
 
 ---
 
@@ -721,21 +733,21 @@ Every AI project should have a cost estimate. Here's the math for this RAG chatb
 
 ```python
 # script_id: day_034_capstone_rag_chatbot/cost_analysis
-# Cost breakdown per query (GPT-4o, 2025 pricing)
+# Cost breakdown per query (gpt-4o-mini; prices as of 2026-06, verify current rates at openai.com/pricing)
 # Embedding: ~200 tokens per query → $0.000004 (negligible)
 # Retrieval: free (pgvector local)
 # LLM call: ~500 input tokens (system + context + query) + ~300 output tokens
-#   Input:  500 × $2.50 / 1M = $0.00125
-#   Output: 300 × $10.00 / 1M = $0.003
-# Total per query: ~$0.004
+#   Input:  500 × $0.15 / 1M = $0.000075
+#   Output: 300 × $0.60 / 1M = $0.00018
+# Total per query: ~$0.0003
 
 # At scale:
-#   100 queries/day  → ~$0.40/day  → ~$12/month
-#   1000 queries/day → ~$4.00/day  → ~$120/month
-#   10k queries/day  → ~$40/day    → ~$1,200/month
+#   100 queries/day  → ~$0.03/day  → ~$0.90/month
+#   1000 queries/day → ~$0.30/day  → ~$9/month
+#   10k queries/day  → ~$3.00/day  → ~$90/month
 
 # Cost optimization levers:
-# 1. Use GPT-4o-mini: drops to ~$0.0003/query (13x cheaper)
+# 1. Upgrade to GPT-4o ($2.50/$10.00 per 1M, ~$0.004/query) only if evals show a quality gap
 # 2. Cache frequent queries: can cut costs 30-50%
 # 3. Reduce retrieved context: fewer chunks = fewer input tokens
 # 4. Prompt compression: shorter system prompts save on every call
@@ -837,8 +849,8 @@ mindmap
 
 Phase 2 is complete. You now know how to give an LLM external knowledge. In Phase 3, we're going to give it the ability to take actions in the world. We're building agents.
 
-The jump from "a chatbot that retrieves information" to "an agent that takes actions" is one of the most exciting in AI engineering. See you on **Day 35: The ReAct Loop — Building Your First Agent**.
+The jump from "a chatbot that retrieves information" to "an agent that takes actions" is one of the most exciting in AI engineering. See you on **Day 35: Building the ReAct (Reason + Act) Loop**.
 
 ---
 
-*Next up: The ReAct Loop — Building Your First Agent*
+*Next up: Building the ReAct (Reason + Act) Loop*

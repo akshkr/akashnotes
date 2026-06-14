@@ -93,7 +93,7 @@ class ModelFallbackChain:
         return response.choices[0].message.content
 
     def _call_anthropic(self, messages: list, model: str, timeout: float) -> str:
-        # Convert from OpenAI format to Anthropic format
+        # OpenAI puts the system prompt inside the messages list; Anthropic takes it as a separate top-level system= arg, so we split it out here.
         system = ""
         anthropic_msgs = []
         for msg in messages:
@@ -102,13 +102,13 @@ class ModelFallbackChain:
             else:
                 anthropic_msgs.append(msg)
 
-        # The Anthropic SDK doesn't take `timeout` as a messages.create() kwarg —
-        # set it per-request via with_options() (or on the client constructor).
-        response = self.anthropic.with_options(timeout=timeout).messages.create(
+        # Set a per-request timeout (supported directly on messages.create, like the OpenAI branch).
+        response = self.anthropic.messages.create(
             model=model,
             max_tokens=4096,
             system=system,
             messages=anthropic_msgs,
+            timeout=timeout,
         )
         return response.content[0].text
 
@@ -210,12 +210,16 @@ class HealthAwareRouter:
 
 Not every query needs your most expensive model. Route by complexity:
 
+Smaller/cheaper models are like a smaller instance type — they handle routine work fine but get the hard problems wrong. The goal is the cheapest model that can still get the answer right, not just the cheapest model.
+
+The cost router picks the *initial* model by complexity; the fallback chain then handles failures within whichever tier was chosen.
+
 ```python
 # script_id: day_092_model_fallback_strategies/cost_aware_router
 class CostAwareRouter:
     """Route queries to the cheapest capable model."""
 
-    # Cost per 1K tokens (input + output estimate)
+    # Illustrative blended $/1K tokens (input+output) as of 2026-06 — verify current pricing at the provider.
     MODEL_COSTS = {
         "claude-sonnet": 0.018,   # $3 + $15 per 1M
         "gpt-4o": 0.0125,         # $2.50 + $10 per 1M
@@ -223,7 +227,7 @@ class CostAwareRouter:
     }
 
     def classify_complexity(self, query: str) -> str:
-        """Classify query complexity. In production, use an LLM or classifier."""
+        """Classify query complexity. In production, ask a cheap, fast model to label each query (simple/moderate/complex) — that label-assigning step is what ML people call a classifier."""
         query_lower = query.lower()
 
         # Simple heuristics (replace with a classifier in production)
@@ -266,7 +270,7 @@ class CostAwareRouter:
         return {
             "always_best": f"${always_best_cost:.2f}",
             "smart_routed": f"${routed_cost:.2f}",
-            "savings": f"{(1 - routed_cost/always_best_cost) * 100:.0f}%"
+            "savings": f"{(1 - routed_cost/always_best_cost) * 100:.0f}%" if always_best_cost else "0%"
         }
 
 
@@ -295,8 +299,13 @@ print(router.estimate_savings(queries))
 
 Combine with the circuit breaker pattern from the rate limits lesson:
 
+Quick recap: CLOSED = healthy, send traffic; OPEN = just failed repeatedly, stop sending for a cooldown; HALF_OPEN = cooldown elapsed, send one probe to see if it recovered.
+
+Health checking above and the circuit breaker do the same job two ways — pick one; we show the breaker here because it adds explicit recovery probing.
+
 ```python
 # script_id: day_092_model_fallback_strategies/provider_circuit_breaker
+import time
 from enum import Enum
 
 class CircuitState(Enum):
@@ -406,7 +415,7 @@ flowchart TB
 
 ## Checkpoint
 
-Run the `fallback_chain_with_health` with the primary provider forced to fail and confirm the request transparently falls through to the secondary model and still returns an answer. If the whole call errors out instead, check that the `provider_circuit_breaker` is catching the primary's exception rather than letting it propagate past the fallback loop.
+Run `fallback_chain_with_health` with the primary forced to fail (e.g. a bad model id) and confirm the request transparently falls through to the next provider and still returns an answer. A circuit breaker would slot in here to skip a known-down provider before even attempting it.
 
 ## Summary
 
@@ -424,7 +433,7 @@ mindmap
     Cost Routing
       Classify complexity
       Route to cheapest capable
-      40-60% savings
+      Savings depend on query mix
     Circuit Breaker
       Failure threshold
       Recovery timeout

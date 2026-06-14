@@ -4,7 +4,7 @@ Welcome to your AI journey! In this guide, we'll demystify the Transformer archi
 
 Don't worry - we're keeping the math minimal and focusing on building solid intuition.
 
-> **Coming from Software Engineering?** Think of Transformers like a highly optimized search algorithm — instead of querying a database, they query their own training data using attention patterns. If you've built search engines or worked with information retrieval, the attention mechanism will feel intuitive: it's essentially a weighted lookup where every word 'queries' every other word.
+> **Coming from Software Engineering?** Think of self-attention like a JOIN the model runs over the words you gave it: every word looks at every other word in the SAME input and scores how relevant they are, then pulls in info from the ones that matter most. If you have built search or written a self-join where rows score their relevance to other rows, this will feel familiar.
 
 ---
 
@@ -84,6 +84,8 @@ Imagine each word asking three questions:
 2. **Key (K)**: "What do I contain?"
 3. **Value (V)**: "What information can I give?"
 
+Think of a Python dict lookup. The Query is what a word is searching for ("I am 'it', I need my reference"). Every other word advertises a Key (what it could match on) and a Value (the info it hands back if matched). Unlike a real dict, the match is fuzzy: every word matches a little, weighted by its relevance score, and what gets pulled back is the matched word's Value (its actual info content).
+
 ```mermaid
 flowchart LR
     subgraph "Word: 'it'"
@@ -154,7 +156,7 @@ User: What was the first thing I told you?
 # Solution: Summarization or chunking strategies (we'll cover later)
 ```
 
-### The Sliding Window Problem
+### When the conversation outgrows the window
 
 ```mermaid
 flowchart LR
@@ -181,6 +183,8 @@ flowchart LR
     style B fill:#ff6b6b
     style X fill:#ff6b6b
 ```
+
+When a conversation grows past the context window, the oldest messages silently fall out of view — this is why a long chatbot "forgets" what you said early on, and why you summarize or trim old turns (covered in later days). Dropping the oldest messages is something your application does to stay under the limit — not something the model does on its own.
 
 ---
 
@@ -220,10 +224,10 @@ flowchart TB
 
 ### Key Components
 
-1. **Input Embedding**: Converts text to numbers the model can process
-2. **Positional Encoding**: Tells the model where each word is in the sentence
+1. **Input Embedding**: Converts text to numbers the model can process — a vector is just a fixed-length list of numbers (e.g. `[0.12, -0.04, ...]`) that acts like coordinates for the word's meaning, so similar words land near each other.
+2. **Positional Encoding**: because the model looks at all words at once (not left-to-right), it would otherwise have no sense of order — "dog bites man" and "man bites dog" would look identical. Positional encoding stamps each word with its position so order is preserved.
 3. **Multi-Head Attention**: Multiple attention mechanisms working in parallel (like having multiple readers analyzing the text)
-4. **Feed-Forward Network**: Processes the attention output
+4. **Feed-Forward Network**: after attention mixes in context from other words, this step processes each word's information on its own. Think of a `.map()` applied independently to every word after the join gathered its context.
 5. **Output Layer**: Predicts the next token
 
 ---
@@ -278,43 +282,9 @@ Understanding Transformers helps you:
 
 ---
 
-## Quick Recap
+## Checkpoint
 
-| Concept | What It Does | Why It Matters |
-|---------|--------------|----------------|
-| Self-Attention | Connects related words | Enables understanding of context and references |
-| Context Window | Limits visible text | Determines how much history/context model can use |
-| Multi-Head Attention | Multiple parallel attention | Captures different types of relationships |
-| Parallel Processing | Processes all at once | Makes LLMs fast and efficient |
-
----
-
-## What's Next?
-
-Now that you understand how Transformers "think," let's dive into **Tokenization** - how LLMs actually see and process your text at the character level.
-
----
-
-## Try It Yourself!
-
-Here's a simple mental exercise:
-
-```python
-# script_id: day_002_transformer_intuition/self_attention_exercise
-# Think about this sentence:
-sentence = "The bank by the river was overgrown with grass."
-
-# Questions to ponder:
-# 1. What does "bank" mean here?
-# 2. How would self-attention help disambiguate?
-# 3. Which words would have high attention scores with "bank"?
-
-# Answer: "river", "overgrown", and "grass" would all have high attention
-# with "bank" — helping the model understand it's a riverbank,
-# not a financial bank!
-```
-
-Understanding these concepts will make you a much more effective AI developer. You're building the foundation for everything that comes next!
+You should be able to (a) explain in one sentence why the model can't recall text that fell outside the context window, and (b) for a sentence with a pronoun, name which earlier word self-attention would score highest against it.
 
 ---
 
@@ -357,6 +327,7 @@ mindmap
 2. **Estimate a context budget.** A model has a 128K-token window. If a chat keeps ~750 tokens per turn, roughly how many turns fit before you must trim history? What strategy would you use when it fills?
 3. **Spot the heads.** For `"The river bank was muddy after the storm,"` describe two *different* relationships separate attention heads might capture (e.g. one for meaning, one for grammar).
 4. **Extend the mental model.** Explain in two sentences why parallel processing makes transformers faster to train than older left-to-right RNNs.
+5. **Disambiguate "bank."** In `"The bank by the river was overgrown with grass,"` which words would have high attention with `bank`, and what does that tell the model `bank` means?
 
 <details><summary>Solutions (approaches)</summary>
 
@@ -364,4 +335,11 @@ mindmap
 2. `128000 / 750` ≈ **170 turns**. Past that, summarize older turns or drop the oldest (sliding window) — both covered in later days.
 3. One head might link `bank` ↔ `river`/`muddy` (meaning → riverbank), another might link the article `The` ↔ `bank` (grammatical structure).
 4. RNNs process token *t* only after *t-1*, so work is serial; transformers compute all positions' attention simultaneously, which maps cleanly onto GPU parallelism.
+5. `river`, `overgrown`, and `grass` would all have high attention with `bank` — telling the model it's a riverbank, not a financial bank.
 </details>
+
+---
+
+## What's Next?
+
+Next up, Day 3: Tokenization — the subword chunks (tokens) LLMs actually read text in, and why one word is not always one token.

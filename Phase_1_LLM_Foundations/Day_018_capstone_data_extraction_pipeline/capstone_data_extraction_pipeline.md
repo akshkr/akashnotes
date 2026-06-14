@@ -1,8 +1,8 @@
 # Capstone — Build a Structured Data Extraction Pipeline
 
-You've spent the last 20 days learning the fundamentals: how LLMs work, how to call APIs, how to write prompts that don't embarrass you, and how to force structured output using Pydantic. Today you put it all together.
+You've spent the past few weeks learning the fundamentals: how LLMs work, how to call APIs, how to write prompts that don't embarrass you, and how to force structured output using Pydantic. Today you put it all together.
 
-> **Coming from Software Engineering?** This capstone is basically an ETL pipeline where the "Transform" step is an LLM instead of regex or rule-based parsing. You'll use the same patterns you know — input validation, retry logic, error handling, structured schemas — but the transformation engine is probabilistic. If you've built data pipelines with tools like Apache Beam, Airflow, or even simple Python scripts that scrape and normalize data, this will feel very familiar.
+> **Coming from Software Engineering?** This capstone is basically an ETL pipeline where the "Transform" step is an LLM instead of regex or rule-based parsing. You'll use the same patterns you know — input validation, retry logic, error handling, structured schemas — but the transformation engine is probabilistic. Unlike regex, the same input can produce slightly different output each run — that is why we pin a low temperature (Day 4), validate every result, and retry on failure. Treat the LLM like a flaky upstream service, not a pure function. If you've built data pipelines with tools like Apache Beam, Airflow, or even simple Python scripts that scrape and normalize data, this will feel very familiar.
 
 > **Portfolio thread (1 of 5).** This is the first of five capstones that build one connected system. The extraction skills here feed the **Day 34 RAG chatbot** (ingesting documents), which the **Day 48 research agent** wraps as a tool, which the **Day 73 multi-agent pipeline** orchestrates, and which **Day 97** deploys to production. Together they're the portfolio you'll present on **Day 99** — so keep your code.
 
@@ -162,6 +162,12 @@ TEXT TO EXTRACT FROM:
 Return only valid JSON matching the schema above."""
 
 
+# `model_json_schema()` turns your Pydantic model — field names, types, and the
+# `description=` text — into a JSON-Schema document we paste into the prompt. It is
+# the contract we hand the LLM, the same way an OpenAPI spec describes an endpoint
+# to a client.
+
+
 def extract_with_retry(
     text: str,
     schema_class: Type[T],
@@ -181,9 +187,10 @@ def extract_with_retry(
         try:
             if attempt > 0:
                 logger.info(f"Retry attempt {attempt}/{max_retries - 1}")
-                time.sleep(retry_delay * attempt)  # exponential backoff
+                time.sleep(retry_delay * (2 ** attempt))  # exponential backoff
 
-            # Use JSON mode for reliable structured output
+            # JSON mode: OpenAI flag that forces a syntactically valid JSON response
+            # (no markdown fences or chatty preamble), so json.loads never chokes on prose
             response = client.chat.completions.create(
                 model=model,
                 messages=[
@@ -238,6 +245,7 @@ def extract_with_retry(
 
 def estimate_cost(tokens: int, model: str) -> float:
     """Rough cost estimate. Update these as pricing changes."""
+    # Blended input+output estimate; rates as of 2026-06 — verify current pricing at the provider.
     rates = {
         "gpt-4o-mini": 0.000375 / 1000,  # ~$0.375 per 1M tokens (blended input+output)
         "gpt-4o": 0.00625 / 1000,        # ~$6.25 per 1M tokens (blended input+output)
@@ -276,7 +284,8 @@ def extract_with_streaming(text: str, schema_class: Type[T]) -> T:
 
     print(f"Extracting {schema_class.__name__}... ", end="", flush=True)
 
-    with client.chat.completions.stream(
+    # Same create() call you already know — just stream=True and loop over chunks (Day 12–13).
+    stream = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[
             {"role": "system", "content": SYSTEM_PROMPT},
@@ -284,12 +293,13 @@ def extract_with_streaming(text: str, schema_class: Type[T]) -> T:
         ],
         response_format={"type": "json_object"},
         temperature=0.1,
-    ) as stream:
-        for chunk in stream:
-            delta = chunk.choices[0].delta.content
-            if delta:
-                collected_chunks.append(delta)
-                print(".", end="", flush=True)  # progress dots
+        stream=True,
+    )
+    for chunk in stream:
+        delta = chunk.choices[0].delta.content
+        if delta:
+            collected_chunks.append(delta)
+            print(".", end="", flush=True)  # progress dots
 
     print(" done!")
 
@@ -530,7 +540,7 @@ export OPENAI_API_KEY="sk-..."
 python pipeline.py
 ```
 
-Expected output:
+Expected output (the result object for Example 1; your terminal will also print the auto-detected type for Example 2, the review extraction, and a Usage line for each):
 ```json
 {
   "title": "Senior AI Engineer",
@@ -579,7 +589,7 @@ That's a concrete, specific answer that demonstrates you understand both the AI 
 
 ## Checkpoint
 
-Run the pipeline's `__main__` block on a sample document and confirm: it auto-detects the input type, prints a running cost estimate, and writes a validated JSON file to disk. If the run aborts on a single bad record, check that `extract_with_retry` is catching `ValidationError` per item so one malformed input doesn't sink the whole batch — the batch summary should report partial success (e.g. `4/5 succeeded`).
+Run the pipeline's `__main__` block. Confirm it auto-detects the input type for Example 2, extracts a validated model for both samples, and prints a per-run Usage line with the cost estimate. Then call `run_pipeline(..., output_file="out.json")` yourself to confirm it writes validated JSON to disk, and try `batch_extract` on a small list with one malformed input to see the partial-success summary (e.g. `4/5 succeeded`) and per-item `ValidationError` handling.
 
 ---
 

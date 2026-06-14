@@ -71,6 +71,8 @@ def generate_response(state: AgentState) -> dict:
     }
 ```
 
+Each node returns a partial dict and LangGraph merges it into the running state. By default a returned field REPLACES the old value (like `state[k] = v`) — that is why `current_step` and `result` just hold the latest value. The `Annotated[list, add]` annotation changes the merge rule for that one field to append instead of replace (like `state[k] += v`), which is why `messages` grows as a running log while the others get overwritten.
+
 ---
 
 ## Adding Nodes to the Graph
@@ -158,6 +160,8 @@ flowchart TB
 
 ## Complete Routing Example
 
+This example uses its own `AgentState` (intent-based) — a fresh schema, independent of the one defined earlier.
+
 ```python
 # script_id: day_042_nodes_and_edges/complete_routing
 from langgraph.graph import StateGraph, END
@@ -243,9 +247,20 @@ print(result["response"])  # "The weather is sunny!"
 
 Create agents that can loop back:
 
+Coming back to the routing analogy: a conditional edge is your route guard picking the next handler, and a self-loop is middleware that re-queues the same handler until a condition clears.
+
 ```python
 # script_id: day_042_nodes_and_edges/loops_and_cycles
-def should_continue(state: AgentState) -> Literal["continue", "end"]:
+from langgraph.graph import StateGraph, END
+from typing import TypedDict, Annotated, Literal
+from operator import add
+
+class LoopState(TypedDict):
+    messages: Annotated[list, add]
+    iterations: int
+    task_complete: bool
+
+def should_continue(state: LoopState) -> Literal["continue", "end"]:
     """Decide whether to continue or end."""
     iterations = state.get("iterations", 0)
 
@@ -256,7 +271,7 @@ def should_continue(state: AgentState) -> Literal["continue", "end"]:
 
     return "continue"
 
-def agent_step(state: AgentState) -> dict:
+def agent_step(state: LoopState) -> dict:
     """One step of the agent loop."""
     iterations = state.get("iterations", 0)
     return {
@@ -265,7 +280,7 @@ def agent_step(state: AgentState) -> dict:
     }
 
 # Build looping graph
-workflow = StateGraph(AgentState)
+workflow = StateGraph(LoopState)
 
 workflow.add_node("step", agent_step)
 workflow.set_entry_point("step")
@@ -278,6 +293,10 @@ workflow.add_conditional_edges(
         "end": END
     }
 )
+
+# Compile and run — stops once iterations reaches 3
+app = workflow.compile()
+app.invoke({"messages": [], "iterations": 0, "task_complete": False})
 ```
 
 ```mermaid
@@ -297,6 +316,7 @@ Handle parallel branches that merge:
 ```python
 # script_id: day_042_nodes_and_edges/branching_and_merging
 from langgraph.graph import StateGraph, END
+from typing import TypedDict
 
 class ParallelState(TypedDict):
     input: str
@@ -317,10 +337,10 @@ def merge_results(state: ParallelState) -> dict:
     combined = f"{state['branch_a_result']} | {state['branch_b_result']}"
     return {"final_result": combined}
 
-# Two edges out of "start" make branch_a and branch_b run in parallel within the
-# same superstep; the two edges into "merge" make it wait for BOTH to finish.
-# (This static fan-out is built in. Use the `Send` API only when the number of
-# branches is dynamic — e.g. one branch per item in a list.)
+# Two edges out of "start" make branch_a and branch_b both run before the graph
+# moves on; the two edges into "merge" make merge wait until BOTH branches have
+# finished. (For a dynamic number of branches — one per item in a list —
+# LangGraph has a separate `Send` mechanism, out of scope here.)
 workflow = StateGraph(ParallelState)
 
 workflow.add_node("start", start_node)
@@ -339,6 +359,19 @@ workflow.add_edge("branch_a", "merge")
 workflow.add_edge("branch_b", "merge")
 
 workflow.add_edge("merge", END)
+
+app = workflow.compile()
+app.invoke({"input": "hi", "branch_a_result": "", "branch_b_result": "", "final_result": ""})
+```
+
+```mermaid
+flowchart TB
+    START["START"] --> S["start"]
+    S --> A["branch_a"]
+    S --> B["branch_b"]
+    A --> M["merge"]
+    B --> M
+    M --> END["END"]
 ```
 
 ---
@@ -422,7 +455,7 @@ def validate_input(state: AgentState) -> dict:
 
 ## Checkpoint
 
-Run the Complete Routing Example and invoke it with `{"messages": ["What's the weather?"], ...}`. The `classify_intent` node should set `intent` to `"weather"`, the `route_by_intent` conditional edge should send it to the `weather` node, and `result["response"]` should be `"The weather is sunny!"`. If every input lands in the `general` handler, your routing function is returning the wrong key — make sure `route_by_intent` reads `state["intent"]` and that the keys in `add_conditional_edges` match the strings it returns.
+Run the Complete Routing Example and invoke it with `{"messages": ["What's the weather?"], ...}`. The `classify_intent` node should set `intent` to `"weather"`, the `route_by_intent` conditional edge should send it to the `weather` node, and `result["response"]` should be `"The weather is sunny!"`. If you get `"I can help with that!"` instead, the weather query fell through to the `general` handler — check that `route_by_intent` returns `state["intent"]` and that the keys in `add_conditional_edges` exactly match the strings it returns.
 
 ## Summary
 
@@ -497,4 +530,4 @@ app = workflow.compile()
 
 ## What's Next?
 
-Now let's learn how to **compile and run your graph** as a working agent!
+Next up — **Day 43: Compiling and Running Graphs** — turn this graph into a working, runnable agent.

@@ -1,10 +1,10 @@
-# Temperature, Top-P, and Frequency Penalties
+# Temperature and Top-P (Part 1)
 
-Welcome back! Now that you understand how LLMs see text (tokenization) and process it (transformers), let's learn how to control the **creativity** and **randomness** of their outputs.
+Welcome back! Now that you understand how LLMs read text (tokenization) and turn it into predictions, let's learn how to control the **creativity** and **randomness** of their outputs.
 
 Think of these as the "personality knobs" for your AI!
 
-> **Coming from Software Engineering?** Temperature is like a randomness seed on steroids. If you've tuned randomization in load balancers or A/B testing, you'll get this: temperature=0 is deterministic (same input → same output, great for testing), while higher values add controlled randomness — useful when you want creative variety.
+> **Coming from Software Engineering?** Temperature is a dial for HOW MUCH randomness you allow — like a config flag from fully deterministic to highly varied. temperature=0 behaves like a fixed test (same input → same output, great for testing); higher values trade reproducibility for creative variety.
 
 ---
 
@@ -21,7 +21,7 @@ When an LLM generates text, it doesn't just pick the "best" next word. Instead, 
 ```mermaid
 flowchart LR
     A["Input: 'The cat sat on the'"] --> B["Calculate\nProbabilities"]
-    B --> C["mat: 25%\nfloor: 20%\nbed: 15%\nroof: 10%\n..."]
+    B --> C["mat: 40%\nfloor: 25%\nbed: 20%\nroof: 10%\nmoon: 5%"]
     C --> D["Sampling\nParameters"]
     D --> E["Selected: 'mat'"]
 
@@ -60,7 +60,9 @@ flowchart TB
 
 ### How Temperature Works (Simplified)
 
-Temperature adjusts the probability distribution:
+Temperature adjusts the probability distribution — the full list of every possible next token paired with its percentage chance:
+
+Under the hood, temperature is just a divisor applied to the model's raw scores before they become percentages. Dividing by a small number (below 1) exaggerates the gaps so the top choice dominates; dividing by a larger number shrinks the gaps so the choices become more equal. Temperature = 1 leaves them unchanged.
 
 - **Low temperature (0-0.3)**: Makes high-probability tokens MUCH more likely
 - **Medium temperature (0.5-0.8)**: Balanced selection
@@ -80,7 +82,7 @@ probabilities = {
 }
 
 # With temperature = 0.1 (very focused)
-# "mat" becomes almost certain (~95%)
+# "mat" becomes almost certain (~85%)
 
 # With temperature = 1.0 (neutral)
 # Probabilities stay roughly the same
@@ -125,6 +127,7 @@ def generate_with_temperature(prompt: str, temperature: float):
         model="gpt-4o-mini",
         messages=[{"role": "user", "content": prompt}],
         temperature=temperature,
+        # Note: gpt-4o uses max_tokens; OpenAI o-series reasoning models require max_completion_tokens instead.
         max_tokens=50
     )
     return response.choices[0].message.content
@@ -166,8 +169,10 @@ for temp in temperatures:
   3. Robot-7 transcended its circuits through interpretive welding dance.
 ```
 
+Your exact wording will differ — what matters is the pattern: identical at temp 0, increasingly varied as temperature rises.
+
 Notice how:
-- **Temp 0**: Same output every time
+- **Temp 0**: Same (or near-identical) output every time
 - **Temp 0.5**: Slight variations
 - **Temp 1.0**: Creative but coherent
 - **Temp 1.5**: Wild and unexpected
@@ -217,7 +222,9 @@ flowchart TB
 
 ## Top-P (Nucleus Sampling): The Probability Filter
 
-Top-P is another way to control randomness, but with a different approach.
+Top-P is another way to control randomness, but with a different approach (called nucleus sampling because you keep only the dense "nucleus" of likely options and discard the thin tail).
+
+> **Coming from Software Engineering?** Top-P is like a percentile cutoff: sort the candidates, keep just enough of the top to cover P% of the total probability, and drop the rest.
 
 ### The Intuition
 
@@ -240,8 +247,8 @@ flowchart TB
         T1["mat: 40%"]
         T2["floor: 25%"]
         T3["bed: 20%"]
-        T4["roof: 5%"]
-        T5["moon, banana, etc: EXCLUDED"]
+        T4["roof: 10%"]
+        T5["moon, banana, galaxy, purple: EXCLUDED"]
     end
 
     O1 & O2 & O3 & O4 --> T1 & T2 & T3 & T4
@@ -369,6 +376,7 @@ mindmap
 
 ```python
 # script_id: day_004_temperature_and_sampling_part1/quick_reference
+# fragment: illustrative cheat-sheet, not standalone-runnable
 response = client.chat.completions.create(
     model="gpt-4o-mini",
     messages=[{"role": "user", "content": prompt}],

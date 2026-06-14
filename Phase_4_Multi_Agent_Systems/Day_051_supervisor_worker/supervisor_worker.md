@@ -4,6 +4,8 @@ The most common multi-agent pattern: one agent delegates tasks to specialized wo
 
 > **Coming from Software Engineering?** This is the task queue pattern you've used a hundred times. The supervisor is a job dispatcher (think Celery beat or a Kubernetes Job controller), and workers are specialized consumers. You already understand fan-out, result aggregation, worker health checks, and retry on failure. The only twist: the "dispatcher logic" is an LLM deciding which worker to route to, rather than hard-coded routing rules.
 
+You could hard-code this with if/elif on keywords. Use an LLM router instead when the routing decision depends on intent you cannot enumerate — "help me understand why my deploy is failing" should go to the code worker, but no keyword list catches every phrasing. The LLM reads intent the way a human dispatcher would.
+
 ---
 
 ## The Supervisor Pattern
@@ -164,13 +166,17 @@ Steps can depend on previous steps (by index)."""},
 
         # Include previous results if this step depends on them
         task = step["task"]
-        if step.get("depends_on") is not None:
-            prev_result = results[step["depends_on"]]
+        dep = step.get("depends_on")
+        if isinstance(dep, int) and 0 <= dep < len(results):
+            prev_result = results[dep]
             task = f"{task}\n\nContext from previous step:\n{prev_result}"
 
-        # Execute worker
+        # Execute worker (skip hallucinated worker names instead of crashing)
         workers = {"research": research_worker, "writing": writing_worker, "code": code_worker}
-        result = workers[step["worker"]](task)
+        worker_fn = workers.get(step["worker"])
+        if worker_fn is None:
+            continue
+        result = worker_fn(task)
         results.append(result)
 
     # Combine results
@@ -200,10 +206,10 @@ from typing import TypedDict, Annotated, Literal, List
 from operator import add
 
 class SupervisorState(TypedDict):
-    messages: Annotated[List, add]
+    messages: Annotated[List, add]  # updates append, not overwrite
     task: str
     next_worker: str
-    worker_results: Annotated[List, add]
+    worker_results: Annotated[List, add]  # results accumulate across workers
     final_result: str
 
 def supervisor_node(state: SupervisorState) -> dict:
@@ -213,19 +219,21 @@ def supervisor_node(state: SupervisorState) -> dict:
     results = state.get("worker_results", [])
 
     # Check if we have enough results
-    if len(results) >= 2:  # Example: after 2 workers
+    MAX_WORKER_STEPS = 2  # stop after this many workers so the supervisor->worker loop can't run forever
+    if len(results) >= MAX_WORKER_STEPS:
         return {"next_worker": "synthesize"}
 
     # Decide next worker
     response = client.chat.completions.create(
         model="gpt-4o",
         messages=[
-            {"role": "system", "content": "Decide the next worker: research, writing, code, or synthesize if done."},
+            {"role": "system", "content": "Respond with exactly one of: research, writing, code, synthesize (synthesize if done)."},
             {"role": "user", "content": f"Task: {task}\nCompleted: {len(results)} steps"}
         ]
     )
 
-    next_worker = response.choices[0].message.content.strip().lower()
+    nw = response.choices[0].message.content.strip().lower()
+    next_worker = nw if nw in {"research", "writing", "code", "synthesize"} else "synthesize"
     return {"next_worker": next_worker, "messages": [f"Routing to: {next_worker}"]}
 
 def research_node(state: SupervisorState) -> dict:
@@ -298,7 +306,7 @@ flowchart TB
 
 ## Parallel Worker Execution
 
-Run workers in parallel for speed:
+Run workers in parallel for speed. The `asyncio.sleep(1)` below stands in for a real API call; `asyncio.gather` runs both workers concurrently in ~1s instead of ~2s.
 
 ```python
 # script_id: day_051_supervisor_worker/parallel_workers
@@ -308,10 +316,12 @@ from typing import List, Dict
 async def async_research_worker(query: str) -> str:
     """Async research worker."""
     # In real code, use async OpenAI client
+    await asyncio.sleep(1)  # stands in for a real API call
     return f"Research result for: {query}"
 
 async def async_writing_worker(task: str) -> str:
     """Async writing worker."""
+    await asyncio.sleep(1)  # stands in for a real API call
     return f"Writing result for: {task}"
 
 async def parallel_supervisor(request: str) -> Dict:
@@ -392,6 +402,8 @@ def expert_router(query: str) -> str:
 
 Handle complex tasks by breaking them down:
 
+Unlike ordinary recursion, every level here is one or more paid LLM calls, so breadth x depth is your bill — keep max_depth small (2-3) and cap subtasks per level.
+
 ```python
 # script_id: day_051_supervisor_worker/supervisor_system
 def recursive_supervisor(task: str, depth: int = 0, max_depth: int = 3) -> str:
@@ -404,7 +416,7 @@ def recursive_supervisor(task: str, depth: int = 0, max_depth: int = 3) -> str:
     analysis = client.chat.completions.create(
         model="gpt-4o",
         messages=[
-            {"role": "system", "content": """Analyze this task.
+            {"role": "system", "content": """Analyze this task and respond in JSON.
 If it's simple, respond: {"simple": true, "response": "direct answer"}
 If complex, respond: {"simple": false, "subtasks": ["subtask1", "subtask2"]}"""},
             {"role": "user", "content": task}

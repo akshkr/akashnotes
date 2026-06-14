@@ -21,14 +21,16 @@ flowchart LR
 
 Instead of the LLM making up information, it can request to call your functions!
 
+Key mental model: the model never runs your code. It returns a structured request — function name plus arguments as JSON — and stops. Your code runs the function and passes the result back in a second call. Think of the model as a caller handing you an RPC envelope and waiting; you are the executor.
+
 > **What Can Go Wrong?** Tool calling introduces real-world side effects — the LLM is now triggering your code. Common failure modes:
-> - **Hallucinated arguments:** The LLM invents parameters that don't match your schema (e.g., calling `get_weather("Atlantis")`)
+> - **Hallucinated arguments** (the model confidently invents values that were never real): it calls `get_weather("Atlantis")` or fills a parameter with a plausible-looking but made-up value.
 > - **Wrong tool selection:** The LLM picks `delete_user()` when it should pick `get_user()`
 > - **Infinite loops:** The LLM keeps calling the same tool without making progress
 > - **Injection via arguments:** User input flows through the LLM into tool arguments — never pass them to `eval()`, SQL, or shell commands without sanitization
 > - **Cost spirals:** Multi-turn tool loops burn tokens on every round trip
 >
-> We'll address error handling patterns in Days 37-38, but keep these failure modes in mind as you design tool schemas.
+> We'll cover tool-execution and error-handling patterns in Days 30-31 (and the infinite-loop / max-iterations safeguard in Day 37), but keep these failure modes in mind as you design tool schemas.
 
 ---
 
@@ -65,6 +67,7 @@ client = OpenAI()
 class GetWeather(BaseModel):
     """Get the current weather for a location."""
     city: str = Field(description="The city name, e.g., 'London'")
+    # json_schema_extra injects raw JSON-schema keys (here enum = the only allowed values) into the generated tool schema
     unit: str = Field(default="celsius", description="Temperature unit", json_schema_extra={"enum": ["celsius", "fahrenheit"]})
 
 # pydantic_function_tool() converts the model to the OpenAI tool format automatically
@@ -75,7 +78,7 @@ response = client.chat.completions.create(
     model="gpt-4o-mini",
     messages=[{"role": "user", "content": "What's the weather in Tokyo?"}],
     tools=tools,
-    tool_choice="auto"  # Let the model decide when to use tools
+    tool_choice="auto"  # let the model decide; you can also force a tool — see Forcing Tool Use below
 )
 
 print(response.choices[0].message)
@@ -112,6 +115,8 @@ The `pydantic_function_tool()` call above produces this raw JSON schema — you 
 }
 ```
 
+Simplified for readability. The current SDK also emits `"strict": true` and `"additionalProperties": false`, and under strict mode lists every property (including `unit`) in `"required"` regardless of defaults — Day 29 covers the exact output.
+
 ---
 
 ## Implementing Tool Functions
@@ -128,6 +133,7 @@ client = OpenAI()
 class GetWeather(BaseModel):
     """Get current weather for a city."""
     city: str = Field(description="City name")
+    # json_schema_extra injects raw JSON-schema keys (here enum = the only allowed values) into the generated tool schema
     unit: str = Field(default="celsius", description="Temperature unit", json_schema_extra={"enum": ["celsius", "fahrenheit"]})
 
 class Calculate(BaseModel):
@@ -164,7 +170,7 @@ def calculate(expression: str) -> dict:
                 return ops[type(node.op)](safe_eval(node.left), safe_eval(node.right))
             elif isinstance(node, ast.UnaryOp) and isinstance(node.op, ast.USub):
                 return -safe_eval(node.operand)
-            raise ValueError(f"Unsupported expression")
+            raise ValueError("Unsupported expression")
         
         tree = ast.parse(expression, mode='eval')
         result = safe_eval(tree.body)
@@ -227,7 +233,7 @@ def chat_with_tools(user_message: str) -> str:
                 "content": json.dumps(result)
             })
 
-        # Second API call with tool results
+        # Second call: the model hasn't seen the function output yet — we send it back so it can phrase a natural-language answer ("Paris is 22°C and sunny") instead of leaving the user with raw JSON
         final_response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=messages
@@ -262,29 +268,7 @@ flowchart TB
     G --> H["Paris is warmer at 22°C\nvs Tokyo's 18°C"]
 ```
 
-```python
-# script_id: day_028_function_calling_basics/tool_calling_loop
-def process_parallel_tools(response_message):
-    """Process multiple tool calls in parallel."""
-    results = []
-
-    for tool_call in response_message.tool_calls:
-        function_name = tool_call.function.name
-        function_args = json.loads(tool_call.function.arguments)
-
-        if function_name in AVAILABLE_FUNCTIONS:
-            result = AVAILABLE_FUNCTIONS[function_name](**function_args)
-        else:
-            result = {"error": f"Unknown function: {function_name}"}
-
-        results.append({
-            "role": "tool",
-            "tool_call_id": tool_call.id,
-            "content": json.dumps(result)
-        })
-
-    return results
-```
+The model can request several calls in one turn (like a client batching requests); the `chat_with_tools` loop above already handles this — it iterates every entry in `tool_calls`, executes each, and appends one `{"role": "tool", ...}` message per call before re-calling the model. They run sequentially here; reach for `asyncio` if a tool is slow.
 
 ---
 
@@ -293,17 +277,25 @@ def process_parallel_tools(response_message):
 Anthropic uses `input_schema` instead of `parameters`. You can generate this from Pydantic too:
 
 ```python
-# script_id: day_028_function_calling_basics/tool_calling_loop
+# script_id: day_028_function_calling_basics/anthropic_tool_calling
+import json
 from anthropic import Anthropic
 from pydantic import BaseModel, Field
 
-client = Anthropic()
+anthropic_client = Anthropic()
 
 # Same Pydantic model, different SDK format
 class GetWeather(BaseModel):
     """Get current weather for a city."""
     city: str = Field(description="City name")
+    # json_schema_extra injects raw JSON-schema keys (here enum = the only allowed values) into the generated tool schema
     unit: str = Field(default="celsius", description="Temperature unit", json_schema_extra={"enum": ["celsius", "fahrenheit"]})
+
+def get_weather(city: str, unit: str = "celsius") -> dict:
+    """Get weather for a city (mock implementation)."""
+    return {"city": city, "temp": 22, "condition": "sunny", "unit": unit}
+
+available_functions = {"get_weather": get_weather}
 
 # Anthropic format: use model_json_schema() to generate input_schema
 tools = [
@@ -318,8 +310,8 @@ def chat_with_claude_tools(user_message: str) -> str:
     """Chat using Claude's tool calling."""
     messages = [{"role": "user", "content": user_message}]
 
-    response = client.messages.create(
-        model="claude-sonnet-4-5",
+    response = anthropic_client.messages.create(
+        model="claude-sonnet-4-6",
         max_tokens=1024,
         tools=tools,
         messages=messages
@@ -332,7 +324,7 @@ def chat_with_claude_tools(user_message: str) -> str:
             tool_input = block.input
 
             # Execute function
-            result = AVAILABLE_FUNCTIONS[tool_name](**tool_input)
+            result = available_functions[tool_name](**tool_input)
 
             # Continue conversation with result
             messages.append({"role": "assistant", "content": response.content})
@@ -346,8 +338,8 @@ def chat_with_claude_tools(user_message: str) -> str:
             })
 
             # Get final response
-            final = client.messages.create(
-                model="claude-sonnet-4-5",
+            final = anthropic_client.messages.create(
+                model="claude-sonnet-4-6",
                 max_tokens=1024,
                 messages=messages
             )
@@ -379,61 +371,7 @@ mindmap
       Examples given
 ```
 
-### Good Tool Definition
-
-```python
-# script_id: day_028_function_calling_basics/good_tool_example
-good_tool = {
-    "type": "function",
-    "function": {
-        "name": "search_products",  # Clear, action-oriented name
-        "description": "Search for products in the catalog by name, category, or price range. Use this when the user wants to find products to buy.",  # Detailed description
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "query": {
-                    "type": "string",
-                    "description": "Search query, e.g., 'red shoes' or 'laptop'"
-                },
-                "category": {
-                    "type": "string",
-                    "enum": ["electronics", "clothing", "home", "sports"],
-                    "description": "Product category to filter by"
-                },
-                "max_price": {
-                    "type": "number",
-                    "description": "Maximum price in USD"
-                },
-                "min_price": {
-                    "type": "number",
-                    "description": "Minimum price in USD"
-                }
-            },
-            "required": ["query"]  # Only truly required params
-        }
-    }
-}
-```
-
-### Bad Tool Definition
-
-```python
-# script_id: day_028_function_calling_basics/bad_tool_example
-bad_tool = {
-    "type": "function",
-    "function": {
-        "name": "do_stuff",  # Vague name
-        "description": "Does stuff",  # Useless description
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "x": {"type": "string"}  # No description
-            },
-            "required": ["x", "y", "z"]  # Too many required params
-        }
-    }
-}
-```
+Day 29 covers tool-schema design (good vs bad definitions) in depth.
 
 ---
 
@@ -566,12 +504,6 @@ print(system.chat("What's 42 + 17?"))
 
 ---
 
-## Checkpoint
-
-Run `chat_with_tools("What's the weather in Paris?")` and confirm the full loop fires: the model returns a tool call, your code prints `Calling get_weather with {...}`, executes it, and the model folds the result into a natural-language final answer. If the model answers the weather directly without ever calling the tool, check that you passed your `tools` list into the request and that the function descriptions clearly state when to use them.
-
----
-
 ## Summary
 
 ```mermaid
@@ -620,6 +552,12 @@ mindmap
 3. Store `(prompt, expected_tool)` pairs, run each, compare `tool_calls[0].function.name` to the expected name, and print the hit rate.
 4. Iterate over every item in `tool_calls`, append one `{"role": "tool", ...}` message per call (matching `tool_call_id`), then re-call the model once.
 </details>
+
+---
+
+## Checkpoint
+
+Run `chat_with_tools("What's the weather in Paris?")` and confirm the full loop fires: the model returns a tool call, your code prints `Calling get_weather with {...}`, executes it, and the model folds the result into a natural-language final answer. If the model answers the weather directly without ever calling the tool, check that you passed your `tools` list into the request and that the function descriptions clearly state when to use them.
 
 ---
 

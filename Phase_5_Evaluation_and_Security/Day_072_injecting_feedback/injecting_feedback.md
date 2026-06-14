@@ -112,20 +112,21 @@ print("\nRevised:", result2[:200])
 
 ## LangGraph Feedback Injection
 
-Inject feedback into graph state:
+Inject feedback into graph state. Output generation is stubbed (a plain f-string) so the focus stays on graph state and the resume mechanics — swap in the `client.chat.completions.create` call from the first example for real output.
 
 ```python
 # script_id: day_072_injecting_feedback/langgraph_feedback_injection
 from langgraph.graph import StateGraph, END
-from langgraph.checkpoint.sqlite import SqliteSaver
+from langgraph.checkpoint.memory import MemorySaver
 from typing import TypedDict, Annotated, List
 from operator import add
 
 class AgentState(TypedDict):
     task: str
     output: str
-    feedback: List[str]  # Accumulated feedback
+    feedback: Annotated[List[str], add]  # Accumulated across revisions
     revision_count: int
+    approved: bool
     messages: Annotated[List, add]
 
 def generate_output(state: AgentState) -> dict:
@@ -173,7 +174,7 @@ workflow.add_conditional_edges(
 )
 
 # Compile with checkpoint for feedback injection
-checkpointer = SqliteSaver.from_conn_string("feedback.db")
+checkpointer = MemorySaver()
 app = workflow.compile(
     checkpointer=checkpointer,
     interrupt_after=["generate"]  # Pause after generation for feedback
@@ -194,21 +195,21 @@ print()
 # Human reviews and provides feedback
 feedback = input("Enter feedback (or 'approve' to finish): ")
 
+# Passing the same thread_id loads the saved checkpoint; update_state patches one
+# field and invoke(None, config) resumes — task and output are preserved.
 if feedback.lower() != "approve":
-    # Inject feedback and continue
-    result = app.invoke(
-        {"feedback": [feedback], "approved": False},
-        config=config
-    )
+    # Inject feedback and resume
+    app.update_state(config, {"feedback": [feedback]})
+    result = app.invoke(None, config=config)
     print(f"Revised output: {result['output']}")
 else:
-    # Approve and finish
-    result = app.invoke(
-        {"approved": True},
-        config=config
-    )
+    # Approve and resume to finish
+    app.update_state(config, {"approved": True})
+    result = app.invoke(None, config=config)
     print("Approved!")
 ```
+
+That answers the intro's question: `update_state` patches one keyed field of the saved state instead of rebuilding the whole object — the way a config hot-reload changes one key without restarting the process.
 
 ---
 
@@ -290,6 +291,8 @@ print(state["structured_feedback"])
 
 ## Real-Time Feedback During Execution
 
+This is the classic producer/consumer queue: a listener thread (producer) drops feedback on a queue; the agent loop (consumer) drains it between steps — like a web server pulling jobs off a work queue while still serving requests.
+
 Allow feedback injection during agent execution:
 
 ```python
@@ -311,8 +314,8 @@ class InteractiveAgent:
                 try:
                     feedback = input()  # Or use other input method
                     self.feedback_queue.put(feedback)
-                except:
-                    pass
+                except EOFError:
+                    break  # stdin closed — stop the listener cleanly
 
         self.running = True
         thread = threading.Thread(target=listener, daemon=True)
@@ -433,9 +436,11 @@ def rating_feedback(agent, output: str):
 
 ---
 
-## Feedback Storage and Learning
+## Feedback Storage and Reuse
 
-Store feedback for long-term learning:
+Store feedback for long-term reuse.
+
+Note: this is not model training — the model's weights never change. "Reuse" here just means we save past feedback and paste the relevant bits back into future prompts, like a FAQ cache the agent consults rather than retraining it.
 
 ```python
 # script_id: day_072_injecting_feedback/feedback_store
@@ -472,7 +477,7 @@ class FeedbackStore:
 
     def get_relevant_feedback(self, task: str, limit: int = 5) -> list:
         """Get feedback relevant to a task."""
-        # Simple keyword matching (use embeddings for better results)
+        # Simple keyword matching. For better matches, swap in embedding similarity (see Days 19-21).
         task_words = set(task.lower().split())
 
         scored = []
@@ -500,10 +505,6 @@ relevant = store.get_relevant_feedback("Write a product description for headphon
 print(f"Found {len(relevant)} relevant feedback entries")
 ```
 
-## Checkpoint
-
-Run the `FeedbackStore` example — no API call, just file I/O and keyword matching. After `store.add(...)` for "Write a product description", the `get_relevant_feedback("Write a product description for headphones")` call should print "Found 1 relevant feedback entries" because the two tasks share words. If you get 0, the keyword overlap is being computed against the wrong field (match `entry["task"]`, not the output text); if a `feedback_history.json` is left behind, that's expected — that's the persistence working.
-
 ---
 
 ## Summary
@@ -522,7 +523,7 @@ mindmap
       Rating-based
     Storage
       History
-      Learning
+      Reuse
       Retrieval
 ```
 
@@ -566,6 +567,12 @@ store.add(task, output, feedback)
 3. Embed each stored `task` once, embed the query, rank by cosine similarity instead of `len(task_words & entry_words)`.
 4. In `check_approval`, `return "complete"` when `state.get("revision_count", 0) >= state["max_revisions"]`, regardless of approval, to break the loop.
 </details>
+
+---
+
+## Checkpoint
+
+Run the `FeedbackStore` example — no API call, just file I/O and keyword matching. After `store.add(...)` for "Write a product description", the `get_relevant_feedback("Write a product description for headphones")` call should print "Found 1 relevant feedback entries" because the two tasks share words. If you get 0, the keyword overlap is being computed against the wrong field (match `entry["task"]`, not the output text); if a `feedback_history.json` is left behind, that's expected — that's the persistence working.
 
 ---
 

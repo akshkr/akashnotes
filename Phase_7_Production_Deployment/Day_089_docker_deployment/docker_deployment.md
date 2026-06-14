@@ -10,7 +10,7 @@ Let's package your AI applications into Docker containers so they run the same w
 
 ```dockerfile
 # Dockerfile
-FROM python:3.11-slim
+FROM python:3.12-slim
 
 WORKDIR /app
 
@@ -38,8 +38,6 @@ docker run -p 8000:8000 -e OPENAI_API_KEY=$OPENAI_API_KEY my-ai-agent
 
 ```yaml
 # docker-compose.yml
-version: '3.8'
-
 services:
   api:
     build: .
@@ -72,11 +70,16 @@ volumes:
 
 ## Handling Rate Limits
 
+LLM providers cap you on two axes at once — requests per minute AND tokens per minute. Unlike a typical REST API, a single large prompt can blow the token budget even when your request rate is low, so 429s show up in production more than you'd expect. The fix is the same retry-with-backoff you'd use for any flaky upstream.
+
 ```python
 # script_id: day_089_docker_deployment/retry_with_backoff
 import time
 from functools import wraps
 import random
+from openai import OpenAI
+
+client = OpenAI()
 
 def retry_with_exponential_backoff(
     max_retries: int = 5,
@@ -97,6 +100,7 @@ def retry_with_exponential_backoff(
                         if retries == max_retries:
                             raise
 
+                        # 2^n backoff + a random fraction of a second ("jitter") so many clients don't all retry at the same instant and re-overload the API
                         delay = min(base_delay * (2 ** retries) + random.uniform(0, 1), max_delay)
                         print(f"Rate limited. Waiting {delay:.2f}s (attempt {retries}/{max_retries})")
                         time.sleep(delay)
@@ -118,10 +122,15 @@ def call_openai(messages):
 
 ## Circuit Breaker Pattern
 
+A retry handles a blip; a circuit breaker handles an outage. After N failures it "trips" and fails fast instead of hammering a dead provider, then after a cooldown lets a few test requests through to see if things recovered — like a tripped breaker in your house that stays open until you confirm the fault is gone.
+
 ```python
 # script_id: day_089_docker_deployment/circuit_breaker
 from datetime import datetime, timedelta
 from enum import Enum
+from openai import OpenAI
+
+client = OpenAI()
 
 class CircuitState(Enum):
     CLOSED = "closed"      # Normal operation
@@ -303,6 +312,9 @@ from fastapi.middleware.cors import CORSMiddleware
 import logging
 import time
 import os
+from openai import OpenAI
+
+client = OpenAI()
 
 # Configure logging
 logging.basicConfig(
@@ -348,7 +360,8 @@ async def ready():
     # Check dependencies
     checks = {
         "openai": check_openai(),
-        "database": check_database()
+        "database": check_database(),
+        "vectordb": check_vectordb()
     }
     all_ready = all(checks.values())
     return {"ready": all_ready, "checks": checks}
@@ -357,19 +370,21 @@ def check_openai():
     try:
         client.models.list()
         return True
-    except:
+    except Exception:
         return False
 
 def check_database():
     # Check your database connection
     return True
+
+def check_vectordb():
+    # For a RAG app, your readiness probe should also confirm the vector
+    # store (Chroma) is reachable — if it's down, retrieval silently returns
+    # nothing. Ping your Chroma client here; stubbed True for the example.
+    return True
 ```
 
 ---
-
-## Checkpoint
-
-Build and run the `production_setup` container, then hit the app's port from your host and confirm you get a healthy response back. If the container exits immediately or the port isn't reachable, check that `EXPOSE`/`-p` map the same port your app binds to and that the `ANTHROPIC_API_KEY` was passed in as an env var (not baked into the image).
 
 ## Summary
 
@@ -432,6 +447,12 @@ docker history agent                     # Verify no secrets are baked in
 
 ---
 
+## Checkpoint
+
+Build and run the `production_setup` container, then hit the app's port from your host and confirm you get a healthy response back. If the container exits immediately or the port isn't reachable, check that `EXPOSE`/`-p` map the same port your app binds to and that the `OPENAI_API_KEY` was passed in as an env var (not baked into the image).
+
+---
+
 ## What's Next?
 
-Your service is containerized — but containers alone don't survive real traffic. Next up: **Rate Limits and Backoffs** — exponential backoff with jitter, token-bucket rate limiting, and the circuit-breaker state machine that keeps you online when a provider degrades.
+Your service is containerized — but containers alone don't survive real traffic. Next up: **Rate Limits, Exponential Backoffs & Circuit Breakers** — token-bucket rate limiting and provider fallback, the resilience pieces that complement the retries and circuit breaker you just built.

@@ -1,6 +1,6 @@
 # Synthetic Data Generation
 
-Fine-tuning an LLM requires thousands of high-quality examples, but human annotation is expensive and slow. Synthetic data generation uses frontier models to create training data at scale -- producing diverse, domain-specific examples for a fraction of the cost. This guide walks you through building a complete synthetic data pipeline.
+Fine-tuning (covered next, in Day 078) means continuing to train an existing model on example input/output pairs so it picks up your specific style or task -- and like seeding a database with realistic fixtures, you need a lot of those examples for the pattern to hold. Producing them by hand (human annotation) is expensive and slow. Synthetic data generation uses frontier models (the strongest general-purpose models, like GPT-4o or Claude) to create training data at scale -- producing diverse, domain-specific examples for a fraction of the cost. This guide walks you through building a complete synthetic data pipeline.
 
 > **Coming from Software Engineering?** Synthetic data generation is like property-based testing for ML -- you define the shape of good data, then auto-generate thousands of examples. Just as tools like Hypothesis generate test inputs from specifications, you use a powerful LLM to generate training examples from seed data and quality constraints. The pipeline even looks similar: define schema, generate candidates, filter invalid ones.
 
@@ -44,7 +44,7 @@ flowchart LR
 
 ## The Self-Instruct Pattern
 
-The most common approach: start with a handful of seed examples, use a frontier model to generate more, then filter for quality.
+The most common approach: start with a handful of seed examples, use a frontier model to generate more, then filter for quality. It is called self-instruct because the model writes its own new instructions from your handful of seeds -- like taking a few hand-written unit tests as templates and asking a generator to fan out many more cases in the same shape.
 
 ```mermaid
 flowchart TB
@@ -105,7 +105,7 @@ Requirements:
 - Make outputs detailed and educational
 - Do NOT repeat or closely paraphrase the examples above
 
-Return as a JSON array with keys: instruction, input, output"""
+Return a JSON object of the form {{"examples": [ ... ]}}, where each element has keys: instruction, input, output"""
 
     response = client.chat.completions.create(
         model="gpt-4o",
@@ -114,8 +114,9 @@ Return as a JSON array with keys: instruction, input, output"""
         response_format={"type": "json_object"},
     )
 
+    # json_object mode requires the model to return a wrapping object, not a bare array
     result = json.loads(response.choices[0].message.content)
-    return result.get("examples", result.get("data", []))
+    return result.get("examples", [])
 
 generated = generate_examples(seed_examples, num_to_generate=20)
 print(f"Generated {len(generated)} new examples")
@@ -274,6 +275,7 @@ def score_diversity(examples: list) -> dict:
         "coverage": len(topic_counts) / len(topic_keywords),
     }
 
+filtered_examples = filter_quality(generated)
 diversity = score_diversity(filtered_examples)
 print(f"Topic coverage: {diversity['coverage']:.0%}")
 print(f"Topics: {diversity['topic_distribution']}")
@@ -283,9 +285,11 @@ print(f"Topics: {diversity['topic_distribution']}")
 
 ## Formatting for Fine-Tuning
 
-Different fine-tuning approaches expect different formats.
+Different fine-tuning approaches expect different formats. These are just three JSON shapes for the same data -- pick whichever your fine-tuning tool expects, the way an API might accept either form-encoded or JSON bodies.
 
 ### Alpaca Format (Instruction Tuning)
+
+Alpaca is the simple instruction/input/output shape from Stanford's Alpaca project.
 
 ```python
 # script_id: day_077_synthetic_data/to_alpaca_format
@@ -302,6 +306,8 @@ def to_alpaca_format(examples: list) -> list:
 ```
 
 ### Chat Format (ChatML / OpenAI)
+
+ChatML is OpenAI's role-tagged message list.
 
 ```python
 # script_id: day_077_synthetic_data/synthetic_data_pipeline
@@ -321,6 +327,8 @@ def to_chat_format(examples: list, system_prompt: str = "") -> list:
 ```
 
 ### ShareGPT Format
+
+ShareGPT is the human/gpt turn list used by many open-source trainers.
 
 ```python
 # script_id: day_077_synthetic_data/to_sharegpt_format
@@ -352,6 +360,8 @@ flowchart LR
     style B fill:#90EE90
     style C fill:#90EE90
 ```
+
+(Axolotl, TRL, FastChat, and LLaMA-Factory are all open-source fine-tuning tools -- each just prefers one of these formats.)
 
 ---
 
@@ -452,7 +462,7 @@ flowchart TB
 
 Key risks to watch for:
 - **Bias amplification**: The generator model's biases get baked into training data
-- **Data contamination**: Generated data may contain memorized benchmark answers
+- **Data contamination**: your generated data accidentally contains the exact questions from a standard test set -- a benchmark like MMLU or HumanEval, the industry's shared exams for models -- which inflates scores the way a leaked answer key would
 - **Hallucinated facts**: Frontier models confidently generate incorrect information
 - **Homogeneity**: Without careful prompting, outputs converge to similar patterns
 
@@ -466,7 +476,7 @@ Mitigations:
 
 ## Checkpoint
 
-Run the `synthetic_data_pipeline` and confirm it writes out a batch of generated examples, then that `to_alpaca_format`/`to_sharegpt_format` turn them into valid JSON records with the expected keys. If the file is empty or the formatter throws a KeyError, check that the generation step actually returned parseable JSON (log one raw response) before it reaches the formatter.
+Run the `synthetic_data_pipeline` and confirm it writes out a batch of generated examples. After `run_synthetic_data_pipeline` returns `final_data` (a list of raw examples), pass it into the standalone `to_alpaca_format(final_data)` or `to_sharegpt_format(final_data)` snippets and confirm they produce valid JSON records with the expected keys. If the file is empty or a formatter throws a KeyError, check that the generation step actually returned parseable JSON (log one raw response) before it reaches the formatter.
 
 ## Summary
 
@@ -523,9 +533,30 @@ with open("train.jsonl", "w") as f:
 
 1. **Domain Pipeline**: Build a synthetic data pipeline for a specific domain (legal Q&A, medical triage, or code review). Start with 10 seed examples and generate 200 filtered examples. Measure topic coverage.
 
+<details>
+<summary>Solution</summary>
+
+Reuse the pipeline functions from this lesson on domain seeds: `generated = generate_examples(seed_examples)`, then `filtered = filter_quality(generated)`, then `deduplicate(filtered)`, and finally `score_diversity(...)` to read topic coverage. Swap the `topic_keywords` in `score_diversity` for terms from your domain, and loop the generate/filter/dedup steps until you reach 200 kept examples.
+
+</details>
+
 2. **Quality Showdown**: Generate 100 examples at temperature 0.5 and 100 at temperature 1.0. Compare quality (manually score 20 from each batch) and diversity. Which temperature produces better training data?
 
+<details>
+<summary>Solution</summary>
+
+Run `generate_examples` twice with the `temperature` argument changed (0.5 vs 1.0), filter each batch with `filter_quality`, then sample 20 from each and score them by hand. Compare `score_diversity` output across batches: higher temperature usually raises diversity but lowers per-example quality, so the "better" setting depends on which your task needs more.
+
+</details>
+
 3. **Contamination Detector**: Write a script that checks your synthetic dataset against a set of known benchmark questions (e.g., from MMLU or HumanEval). Flag any examples with >80% similarity to benchmark items.
+
+<details>
+<summary>Solution</summary>
+
+Reuse `SequenceMatcher` from the deduplication section: for each generated example, loop over the benchmark items and compute `SequenceMatcher(None, example_text.lower(), benchmark_text.lower()).ratio()`. Flag any pair scoring above 0.80 and drop those examples before training.
+
+</details>
 
 ---
 

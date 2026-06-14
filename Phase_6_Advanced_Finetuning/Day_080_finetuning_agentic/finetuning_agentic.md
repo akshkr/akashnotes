@@ -1,6 +1,6 @@
 # Fine-tuning for Agentic Tasks
 
-Your agent calls tools, parses JSON, and chains multi-step actions. But frontier models sometimes hallucinate function names, produce malformed arguments, or ignore your schema. Fine-tuning a smaller model on your exact tool-calling patterns can produce a specialist that outperforms a generalist on **your** workflow -- at a fraction of the cost and latency.
+Your agent calls tools, parses JSON, and chains multi-step actions. But frontier models -- the big general-purpose hosted models like GPT-4o or Claude Opus that try to do everything -- sometimes hallucinate function names, produce malformed arguments, or ignore your schema. Fine-tuning a smaller model on your exact tool-calling patterns can produce a specialist that outperforms a generalist on **your** workflow -- at a fraction of the cost and latency.
 
 > **Coming from Software Engineering?** Fine-tuning for tool use is like writing a specialized API client -- you train the model to speak your API's protocol fluently. Instead of hoping a generic HTTP library guesses the right headers, you build a typed client that knows every endpoint, every parameter, and every error code by heart.
 
@@ -10,7 +10,7 @@ Your agent calls tools, parses JSON, and chains multi-step actions. But frontier
 
 ```mermaid
 flowchart TD
-    A["Generic Frontier Model"] --> B{"Tool Call Request"}
+    A["Generic General-Purpose Model"] --> B{"Tool Call Request"}
     B -->|"Sometimes wrong"| C["Hallucinated function name"]
     B -->|"Sometimes broken"| D["Malformed JSON args"]
     B -->|"Sometimes right"| E["Correct call"]
@@ -225,6 +225,7 @@ import json
 
 client = OpenAI()
 
+# fine-tuning needs a dated base-model snapshot, not the bare alias
 def prepare_and_finetune(dataset: list, model: str = "gpt-4o-mini-2024-07-18"):
     """Prepare a JSONL file and launch a fine-tuning job."""
 
@@ -244,10 +245,16 @@ def prepare_and_finetune(dataset: list, model: str = "gpt-4o-mini-2024-07-18"):
     job = client.fine_tuning.jobs.create(
         training_file=file_obj.id,
         model=model,
-        hyperparameters={
-            "n_epochs": 3,
-            "batch_size": "auto",
-            "learning_rate_multiplier": "auto"
+        method={
+            "type": "supervised",
+            "supervised": {
+                # n_epochs = passes over your data; "auto" lets OpenAI pick batch size + learning rate (see Day 078)
+                "hyperparameters": {
+                    "n_epochs": 3,
+                    "batch_size": "auto",
+                    "learning_rate_multiplier": "auto"
+                }
+            }
         },
         suffix="tool-calling-agent"
     )
@@ -285,8 +292,11 @@ sequenceDiagram
     Eval->>Test: Score (exact, fuzzy, functional)
 ```
 
+Exact and fuzzy match are cheap to read off the JSON. True functional match means actually running the call and checking the result -- here we approximate it with a similarity threshold, but in production you'd execute against a sandbox.
+
 ```python
 # script_id: day_080_finetuning_agentic/evaluate_tool_call_accuracy
+import json
 from difflib import SequenceMatcher
 
 def evaluate_tool_calls(predictions: list, ground_truth: list) -> dict:
@@ -317,9 +327,9 @@ def evaluate_tool_calls(predictions: list, ground_truth: list) -> dict:
             ).ratio()
             if similarity > 0.8:
                 fuzzy_match += 1
-                functional_match += 1  # Close enough to work
+                functional_match += 1  # proxy for functional match (verify by execution in production)
             elif similarity > 0.5:
-                functional_match += 1  # Might still produce correct result
+                functional_match += 1  # proxy for functional match (verify by execution in production)
 
     total = len(predictions)
     return {
@@ -338,16 +348,16 @@ def evaluate_tool_calls(predictions: list, ground_truth: list) -> dict:
 
 ---
 
-## Case Study: 7B Model vs GPT-4o on Tool Calling
+## Case Study: 8B Model vs GPT-4o on Tool Calling
 
 A common production pattern: fine-tune a small open-source model to match or beat GPT-4o on your specific tool-calling task, then serve it locally for 10x cost savings.
 
 ```python
 # script_id: day_080_finetuning_agentic/benchmark_comparison
-# Benchmark: compare fine-tuned 7B vs GPT-4o on your tool-calling eval set
+# Benchmark: compare fine-tuned 8B vs GPT-4o on your tool-calling eval set
 
 benchmark_results = {
-    "model": ["GPT-4o (baseline)", "Llama-3 7B (base)", "Llama-3 7B (fine-tuned)"],
+    "model": ["GPT-4o (baseline)", "Llama-3 8B (base)", "Llama-3 8B (fine-tuned)"],
     "exact_match":      [0.87, 0.41, 0.91],
     "fuzzy_match":      [0.93, 0.58, 0.95],
     "functional_match": [0.96, 0.65, 0.97],
@@ -368,7 +378,7 @@ for i in range(len(benchmark_results["model"])):
         f"${benchmark_results['cost_per_1k'][i]:>8.2f}"
     )
 
-# Key insight: the fine-tuned 7B beats GPT-4o on exact match
+# Key insight: the fine-tuned 8B beats GPT-4o on exact match
 # because it learned YOUR specific tool schemas, not generic ones
 ```
 
@@ -376,7 +386,7 @@ for i in range(len(benchmark_results["model"])):
 
 ## Checkpoint
 
-Run `validate_schema_compliance` and `evaluate_tool_call_accuracy` against a handful of model outputs and confirm you get a numeric accuracy score back, with malformed tool calls correctly flagged as failures. If everything scores 100% suspiciously fast, check that the validator is actually parsing the tool-call JSON rather than just checking that a string is non-empty.
+Run `validate_training_examples` and `evaluate_tool_calls` against a handful of model outputs and confirm you get a numeric accuracy score back, with malformed tool calls correctly flagged as failures. If everything scores 100% suspiciously fast, check that the validator is actually parsing the tool-call JSON rather than just checking that a string is non-empty.
 
 ## Summary
 
@@ -423,7 +433,7 @@ mindmap
 # Launch fine-tuning (OpenAI)
 client.fine_tuning.jobs.create(
     training_file=file_id,
-    model="gpt-4o-mini-2024-07-18",
+    model="gpt-4o-mini-2024-07-18",  # fine-tuning needs a dated base-model snapshot, not the bare alias
     suffix="tool-calling-agent"
 )
 ```
@@ -434,9 +444,94 @@ client.fine_tuning.jobs.create(
 
 1. **Build a Training Set**: Create 50 training examples covering all three categories (successful calls, error recovery, multi-step chains) for a 3-tool agent (search, calculate, send_email)
 
+<details><summary>Solution</summary>
+
+```python
+# Reuse build_tool_use_dataset from this lesson
+scenarios = []
+for _ in range(20):
+    scenarios.append({
+        "type": "single_call",
+        "query": "Search for Q3 sales",
+        "expected_call": {"id": "call_1", "type": "function",
+                          "function": {"name": "search", "arguments": '{"query": "Q3 sales"}'}},
+        "tool_response": '{"rows": 42}',
+        "final_answer": "Found 42 matching rows.",
+    })
+for _ in range(15):
+    scenarios.append({
+        "type": "error_recovery",
+        "query": "Email the report to Sam",
+        "first_call": {"id": "c1", "type": "function",
+                       "function": {"name": "send_email", "arguments": '{"to": "sam"}'}},
+        "error_response": '{"error": "missing body"}',
+        "retry_call": {"id": "c2", "type": "function",
+                       "function": {"name": "send_email", "arguments": '{"to": "sam@x.com", "body": "report"}'}},
+        "success_response": '{"sent": true}',
+        "final_answer": "Email sent to Sam.",
+    })
+for _ in range(15):
+    scenarios.append({
+        "type": "multi_step",
+        "query": "Sum the search results and email them",
+        "steps": [
+            {"call": {"id": "c1", "type": "function",
+                      "function": {"name": "calculate", "arguments": '{"expr": "1+2"}'}},
+             "response": '{"result": 3}'},
+        ],
+        "final_answer": "The total is 3.",
+    })
+
+dataset = build_tool_use_dataset(tools, scenarios)
+print(f"Built {len(dataset)} training examples")  # 50
+```
+
+</details>
+
 2. **Schema Validator**: Write a validation pipeline that checks every training example for valid JSON arguments against Pydantic schemas, and reports statistics on coverage per tool
 
+<details><summary>Solution</summary>
+
+```python
+# Reuse validate_training_examples from this lesson
+from pydantic import BaseModel
+from typing import Optional
+
+class SearchArgs(BaseModel):
+    query: str
+    max_results: int = 10
+
+class EmailArgs(BaseModel):
+    to: str
+    body: Optional[str] = None
+
+schemas = {"search": SearchArgs, "send_email": EmailArgs}
+stats = validate_training_examples(dataset, schemas)
+print(f"Valid: {stats['valid']}, Invalid: {stats['invalid']}")
+for err in stats["errors"]:
+    print(err)
+```
+
+</details>
+
 3. **Eval Harness**: Build an evaluation harness that tests a model on 20 tool-calling scenarios and reports exact match, fuzzy match, and functional correctness scores
+
+<details><summary>Solution</summary>
+
+```python
+# Reuse evaluate_tool_calls from this lesson
+predictions, ground_truth = [], []
+for scenario in test_scenarios[:20]:        # your 20 held-out scenarios
+    predictions.append(call_model(scenario["query"]))   # returns a tool_call dict
+    ground_truth.append(scenario["expected_call"])
+
+results = evaluate_tool_calls(predictions, ground_truth)
+print(f"Exact:      {results['exact_match']:.1%}")
+print(f"Fuzzy:      {results['fuzzy_match']:.1%}")
+print(f"Functional: {results['functional_match']:.1%}")
+```
+
+</details>
 
 ---
 

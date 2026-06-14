@@ -140,6 +140,8 @@ class RedisLLMCache:
 
 Match queries by **meaning**, not exact text. Use embeddings to find similar past queries.
 
+An **embedding** is an API call (`client.embeddings.create`) that turns a string into a fixed-length list of floats — e.g. 1536 numbers — such that texts with similar meaning produce nearby lists. Think of it like a hash, except a one-character edit nudges the output slightly instead of changing it completely, so close meanings give close outputs. (You don't need to know how embeddings are trained to use them.)
+
 ```mermaid
 flowchart TB
     A["New Query"] --> B["Generate Embedding"]
@@ -153,6 +155,8 @@ flowchart TB
     style E fill:#90EE90
     style F fill:#FFB6C1
 ```
+
+To compare two embeddings we use **cosine similarity**: a score from 0 (unrelated) to 1 (identical meaning). Many vector stores return **distance** instead (0 = identical, higher = further apart), so `similarity = 1 - distance`. We keep a cache hit only when similarity clears a threshold like 0.92.
 
 ### Complete Semantic Cache
 
@@ -174,7 +178,7 @@ class SemanticCache:
         self.chroma = chromadb.Client()
         self.collection = self.chroma.get_or_create_collection(
             name="llm_cache",
-            metadata={"hnsw:space": "cosine"}
+            metadata={"hnsw:space": "cosine"}  # cosine similarity for vector comparison (hnsw is the fast nearest-neighbor index Chroma uses under the hood — you don't need to tune it)
         )
         self.stats = {"hits": 0, "misses": 0}
 
@@ -272,14 +276,16 @@ print(smart_chat(q3))  # Cache hit! Same meaning
 
 ## Choosing Similarity Thresholds
 
-The threshold controls the tradeoff between cache hit rate and response accuracy:
+The threshold controls the tradeoff between cache hit rate and response accuracy. On the 0-1 similarity scale, a higher threshold demands closer meaning, so fewer queries match (lower hit rate) but matches are safer:
 
-| Threshold | Hit Rate | Risk | Best For |
+| Threshold | Hit Rate (illustrative — varies by dataset and embedding model; measure your own) | Risk | Best For |
 |-----------|----------|------|----------|
 | 0.98+ | Low (~10%) | Very safe | Factual/compliance queries |
 | 0.95 | Moderate (~30%) | Safe | Customer support, FAQ |
 | 0.92 | High (~50%) | Some false positives | Conversational, general Q&A |
 | 0.85 | Very high (~70%) | Risky | Only for non-critical use |
+
+When in doubt, start at 0.95+ and only loosen if your hit rate is too low and you have measured the wrong-answer rate.
 
 ```python
 # script_id: day_091_semantic_caching/adaptive_thresholds
@@ -421,21 +427,29 @@ print(estimate_cache_savings())
 
 Separately from semantic caching, major providers now offer **server-side prompt caching** that discounts repeated prefixes in your API calls. This is especially useful for system prompts, few-shot examples, or large context documents that stay the same across requests.
 
-**OpenAI** automatically caches prompt prefixes for requests to supported models, giving a 50% discount on cached input tokens with no code changes required.
+**OpenAI** automatically caches prompt prefixes for requests to supported models, giving roughly a 50% discount on cached input tokens with no code changes required (as of 2026-06; verify current discounts at the provider).
 
-**Anthropic** offers explicit cache control -- you mark which parts of the prompt to cache and receive a 90% discount on cached input tokens:
+**Anthropic** offers explicit cache control -- you mark which parts of the prompt to cache and receive roughly a 90% discount on cached input tokens (as of 2026-06; verify current discounts at the provider):
 
 ```python
 # script_id: day_091_semantic_caching/anthropic_prompt_caching
-# Anthropic prompt caching — 90% discount on cached input tokens
-response = client.messages.create(
-    model="claude-sonnet-4-5",
+# Anthropic prompt caching — ~90% discount on cached input tokens
+import anthropic
+
+anthropic_client = anthropic.Anthropic()
+query = "Your question here"
+
+response = anthropic_client.messages.create(
+    model="claude-sonnet-4-6",
     max_tokens=1024,
     system=[{
         "type": "text",
         "text": "Your large system prompt here...",
         "cache_control": {"type": "ephemeral"}
     }],
+    # prompt caching only kicks in above the model's minimum cacheable prefix
+    # (roughly 1k+ tokens, varies by model — check the provider), so a real
+    # system prompt or context document is needed for the discount to apply
     messages=[{"role": "user", "content": query}]
 )
 ```

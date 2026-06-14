@@ -76,7 +76,7 @@ def analyze_image(image_path: str, question: str) -> str:
                         "type": "image_url",
                         "image_url": {
                             "url": f"data:{mime_type};base64,{b64_image}",
-                            "detail": "high"  # "low", "high", or "auto"
+                            "detail": "high"  # how closely the model looks: "low" cheap/coarse, "high" reads fine text but costs more, "auto" picks for you (cost details below)
                         },
                     },
                 ],
@@ -138,20 +138,27 @@ Claude uses a slightly different content block format — `image` type with `sou
 
 ```python
 # script_id: day_032_multimodal_inputs/vision_claude
+import base64
+from pathlib import Path
 from anthropic import Anthropic
 
 client = Anthropic()
 
 
+def encode_image(image_path: str) -> str:
+    """Read an image file and return its base64 encoding."""
+    return base64.standard_b64encode(Path(image_path).read_bytes()).decode("utf-8")
+
+
 def analyze_image_claude(image_path: str, question: str) -> str:
     """Send an image to Claude and ask a question about it."""
-    b64_image = encode_image(image_path)  # Same helper from above
+    b64_image = encode_image(image_path)
 
     suffix = Path(image_path).suffix.lower()
     media_type = {".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".gif": "image/gif", ".webp": "image/webp"}.get(suffix, "image/png")
 
     response = client.messages.create(
-        model="claude-sonnet-4-5",
+        model="claude-sonnet-4-6",
         max_tokens=1024,
         messages=[
             {
@@ -202,33 +209,42 @@ Vision is not free. The API tiles your image into chunks and each tile costs tok
 | Detail Level | How It Works | Tokens |
 |---|---|---|
 | `low` | Image resized to 512x512, single tile | 85 tokens fixed |
-| `high` | Image split into 512x512 tiles + thumbnail | 85 tokens per tile + 85 base |
+| `high` | Image split into 512x512 tiles + thumbnail | 170 tokens per tile + 85 base |
 | `auto` | API chooses based on image size | Varies |
 
-A 2048x2048 image on `high` detail gets split into 16 tiles: `(16 * 85) + 85 = 1,445 tokens`. At GPT-4o input pricing ($2.50 per 1M tokens), that is about $0.0036 per image. Sounds cheap until you process 10,000 receipts.
+OpenAI first shrinks the image so the long side is <=2048px and the short side is <=768px, then counts 512px tiles. A 2048x2048 image shrinks to 768x768 = 4 tiles: `(4 * 170) + 85 = 765 tokens`. At GPT-4o input pricing (~$2.50 per 1M tokens as of 2026-06, verify at OpenAI), that is about $0.0019 per image. Cheap per image, but it adds up across 10,000 receipts.
+
+These constants are OpenAI's documented vision sizing rule, not ML magic: it shrinks the image to fit within 2048px (long side) and 768px (short side), then charges a fixed number of tokens per 512x512 tile plus an 85-token base.
 
 ```python
 # script_id: day_032_multimodal_inputs/estimate_image_tokens
+import math
+
+
 def estimate_image_tokens(width: int, height: int, detail: str = "high") -> int:
     """Estimate token cost for an image based on dimensions and detail level."""
     if detail == "low":
         return 85
 
-    # High detail: resize so shortest side is 768px, then tile into 512x512
-    scale = min(768 / min(width, height), 2048 / max(width, height), 1.0)
+    # High detail: OpenAI's two-step resize, then tile into 512x512.
+    # Step 1: shrink so the long side fits within 2048px.
+    scale = min(2048 / max(width, height), 1.0)  # long side cap
     w, h = int(width * scale), int(height * scale)
+    # Step 2: shrink so the short side fits within 768px.
+    scale = min(768 / min(w, h), 1.0)  # short side cap
+    w, h = int(w * scale), int(h * scale)
 
     # Count 512x512 tiles (ceiling division)
-    tiles_x = -(-w // 512)  # Ceiling division trick
-    tiles_y = -(-h // 512)
+    tiles_x = math.ceil(w / 512)
+    tiles_y = math.ceil(h / 512)
     total_tiles = tiles_x * tiles_y
 
-    return (total_tiles * 85) + 85  # 85 per tile + 85 base
+    return (total_tiles * 170) + 85  # 170 per tile + 85 base
 
 
 # Examples
-print(estimate_image_tokens(1024, 768, "high"))   # 595 tokens
-print(estimate_image_tokens(4096, 4096, "high"))   # 1445 tokens
+print(estimate_image_tokens(1024, 1024, "high"))   # 765 tokens
+print(estimate_image_tokens(2048, 2048, "high"))   # 765 tokens (shrinks to 768x768 = 4 tiles)
 print(estimate_image_tokens(512, 512, "low"))      # 85 tokens
 ```
 
@@ -445,6 +461,11 @@ Here is a focused agent that analyzes UI screenshots for a QA workflow:
 
 ```python
 # script_id: day_032_multimodal_inputs/screenshot_analyzer
+import base64
+from pathlib import Path
+from openai import OpenAI
+
+
 class ScreenshotAnalyzer:
     """Analyze UI screenshots for bugs, layout issues, and accessibility."""
 
@@ -513,8 +534,8 @@ Understanding cost differences helps you decide when vision is worth it:
 | 500-word text prompt | ~700 tokens | $0.0018 |
 | Single image (low detail) | 85 tokens | $0.0002 |
 | Single image (high detail, 1024x1024) | 765 tokens | $0.0019 |
-| Single image (high detail, 2048x2048) | 1,445 tokens | $0.0036 |
-| 1-minute audio (Whisper) | N/A (flat rate) | $0.006 |
+| Single image (high detail, 2048x2048) | 765 tokens | $0.0019 |
+| 1-minute audio (Whisper) | N/A (flat rate) | ~$0.006/min (as of 2026-06, verify at OpenAI) |
 | Image + text combo | ~1,500 tokens | $0.0038 |
 
 > **Key insight:** A single high-resolution image costs roughly the same as a 500-word text prompt. The real cost danger is processing many images per request or using `high` detail when `low` would suffice.
@@ -573,7 +594,8 @@ import base64; b64 = base64.standard_b64encode(open("img.png","rb").read()).deco
 client.audio.transcriptions.create(model="whisper-1", file=open("audio.mp3","rb"))
 
 # Estimate image tokens (high detail)
-tokens = (ceil(w/512) * ceil(h/512) * 85) + 85
+# First fit within 2048x2048, then shrink short side to <=768; then:
+tokens = (ceil(w/512) * ceil(h/512) * 170) + 85
 ```
 
 ---
@@ -585,6 +607,15 @@ tokens = (ceil(w/512) * ceil(h/512) * 85) + 85
 2. **Voice Memo Summarizer:** Create a pipeline that takes an audio file, transcribes it with Whisper, then passes the transcript to an LLM with instructions to produce a bullet-point summary and a list of action items. Add word-level timestamps so each action item references when it was mentioned.
 
 3. **Multimodal QA Bot:** Build an agent that accepts a screenshot of a web page plus a text question (e.g., "Is the navigation bar aligned correctly?"). The agent should analyze the image, answer the question, and output a severity-rated list of any other issues it notices. Compare costs between `low` and `high` detail modes for the same image.
+
+<details>
+<summary>Solutions (approaches)</summary>
+
+1. **Receipt Scanner:** Encode the receipt with `encode_image`, prompt GPT-4o for strict JSON line items (`item`, `quantity`, `price`, `total`), then in plain Python assert `sum(line prices) == total` — the model reads the image, your code does the arithmetic check.
+2. **Voice Memo Summarizer:** Call Whisper with `response_format="verbose_json"` and `timestamp_granularities=["word"]`, feed the transcript to an LLM asking for bullet-point notes plus action items, then tag each action item with the nearest `word.start` timestamp.
+3. **Multimodal QA Bot:** Send the screenshot + question at `detail="high"`, then re-run the same call at `detail="low"` and diff the token counts via `estimate_image_tokens` to see the cost trade-off for yourself.
+
+</details>
 
 ---
 

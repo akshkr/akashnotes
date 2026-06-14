@@ -109,7 +109,7 @@ class ChatRequest(BaseModel):
     message: str
     conversation_id: Optional[str] = None
     system_prompt: str = "You are a helpful AI assistant."
-    temperature: float = Field(0.7, ge=0, le=2)
+    temperature: float = Field(0.7, ge=0, le=2)  # 0 = deterministic/repeatable, higher = more random/creative
     max_tokens: int = Field(1000, ge=1, le=4000)
 
 class ChatResponse(BaseModel):
@@ -200,11 +200,15 @@ async def health_check():
     }
 ```
 
+`temperature` controls randomness in the model's output — think of it as a creativity dial; leave it at the default unless a user wants more varied answers.
+
 ---
 
 ## Handling Long-Running Tasks
 
 AI tasks can take a while. Use background tasks:
+
+This is the classic submit-and-poll pattern — return a `task_id` immediately (like a 202 Accepted), then let the client poll `GET /task/{id}`, same as any async job queue.
 
 ```python
 # script_id: day_083_fastapi_agents/complete_agent_api
@@ -273,9 +277,13 @@ async def get_task(task_id: str):
     )
 ```
 
+In production a real worker would run the LLM call off the event loop (e.g. a task queue or `run_in_executor`) so it doesn't block other requests.
+
 ---
 
 ## Streaming Responses
+
+LLMs generate their answer a few words at a time, so instead of waiting for the whole reply you can forward each piece (a "chunk") to the client as it is produced — like flushing a response body incrementally. `delta.content` is the new text in that chunk. This uses Server-Sent Events (SSE) format — we explain the protocol below.
 
 ```python
 # script_id: day_083_fastapi_agents/complete_agent_api
@@ -305,7 +313,7 @@ async def chat_stream(request: StreamRequest):
                 data = {"content": chunk.choices[0].delta.content}
                 yield f"data: {json.dumps(data)}\n\n"
 
-        yield f"data: {json.dumps({'done': True})}\n\n"
+        yield "data: [DONE]\n\n"
 
     return StreamingResponse(
         generate(),
@@ -313,9 +321,13 @@ async def chat_stream(request: StreamRequest):
     )
 ```
 
+Here each `data:` payload is a small JSON object (`{"content": "..."}`), and the `[DONE]` sentinel marks the end of the stream — the same convention the OpenAI API uses. This is the async/streaming payoff promised up top — the user sees words appear immediately instead of waiting seconds for the full response.
+
 ---
 
 ## WebSocket for Real-Time Chat
+
+FastAPI also supports WebSockets for bidirectional streaming — we go deep on production WebSocket handling (disconnects, reconnection, token streaming) on Day 85; this is a minimal taste.
 
 ```python
 # script_id: day_083_fastapi_agents/complete_agent_api
@@ -444,18 +456,22 @@ async def limited_chat(request: ChatRequest, _: None = Depends(rate_limit)):
 
 ---
 
-## Streaming Responses with SSE
+## Server-Sent Events (SSE), Explained
 
-Server-Sent Events (SSE) is the standard pattern for streaming LLM output over HTTP. Unlike WebSockets, SSE is unidirectional (server to client), uses plain HTTP, and works through most proxies and CDNs without special configuration. This is how ChatGPT, Claude, and most LLM-powered UIs stream responses to the browser.
+The streaming endpoint above already speaks SSE — here's the protocol behind it. Server-Sent Events is the standard pattern for streaming LLM output over HTTP. Unlike WebSockets, SSE is unidirectional (server to client), uses plain HTTP, and works through most proxies and CDNs without special configuration. This is how ChatGPT, Claude, and most LLM-powered UIs stream responses to the browser. The minimal version below strips the endpoint down to just the SSE mechanics.
 
 ```python
 # script_id: day_083_fastapi_agents/sse_streaming
 from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
+from pydantic import BaseModel
 from openai import OpenAI
 
 app = FastAPI()
 client = OpenAI()
+
+class ChatRequest(BaseModel):
+    message: str
 
 @app.post("/chat/stream")
 async def chat_stream(request: ChatRequest):
@@ -474,15 +490,11 @@ async def chat_stream(request: ChatRequest):
     return StreamingResponse(generate(), media_type="text/event-stream")
 ```
 
-On the client side, you consume SSE with the `EventSource` API in JavaScript or any HTTP client that supports streaming. The `data:` prefix and double newline are part of the SSE protocol -- each `data:` line is one event delivered to the client in real time.
+On the client side, you consume SSE with the `EventSource` API in JavaScript or any HTTP client that supports streaming. The `data:` prefix and double newline are part of the SSE protocol -- each `data:` line is one event delivered to the client in real time. Here each `data:` payload is raw text (just the new words); the earlier endpoint wrapped its payload in JSON instead — pick one and have your client parse accordingly.
 
 The `[DONE]` sentinel signals the end of the stream — this convention is also used by the OpenAI API itself. The `text/event-stream` media type tells the client to expect SSE.
 
 ---
-
-## Checkpoint
-
-Run the `complete_agent_api` with `uvicorn`, then `curl` the agent endpoint — you should get a JSON response back and see the request logged in the server console. If you get a 500, check the server logs for a missing `ANTHROPIC_API_KEY`; if the connection refuses, confirm uvicorn is bound to the host/port you're curling.
 
 ## Summary
 
@@ -546,6 +558,12 @@ async def task(background_tasks: BackgroundTasks):
 3. `async def task(bg: BackgroundTasks): bg.add_task(run_job, ...); return {"task_id": uuid4().hex}`.
 4. `@asynccontextmanager async def lifespan(app): app.state.client = OpenAI(); yield`; pass `lifespan=lifespan` to `FastAPI(...)`.
 </details>
+
+---
+
+## Checkpoint
+
+Run the `complete_agent_api` with `uvicorn`, then `curl` the agent endpoint — you should get a JSON response back and see the request logged in the server console. If you get a 500, check the server logs for a missing `OPENAI_API_KEY`; if the connection refuses, confirm uvicorn is bound to the host/port you're curling.
 
 ---
 

@@ -42,7 +42,7 @@ LangChain provides:
 ## Installation
 
 ```bash
-pip install langchain langchain-openai langchain-community
+pip install langchain langchain-openai langchain-community langchain-chroma
 ```
 
 ---
@@ -118,13 +118,15 @@ json_parser = JsonOutputParser(pydantic_object=MovieReview)
 print(json_parser.get_format_instructions())
 ```
 
-> **Modern Alternative:** In LangChain 0.4+, use `model.with_structured_output(MyPydanticModel)` instead of `JsonOutputParser` for more reliable structured output. For complex multi-step workflows, consider LangGraph over LCEL chains.
+> **Modern Alternative:** In modern LangChain (0.2+, including the 1.x line), prefer `model.with_structured_output(MyPydanticModel)` for production-grade structured output. `JsonOutputParser` shown above is the portable fallback. For complex multi-step workflows, consider LangGraph over LCEL chains.
 
 ---
 
 ## LangChain Expression Language (LCEL)
 
 LCEL is LangChain's declarative way to compose chains using the pipe (`|`) operator:
+
+If you've used Unix pipes (`cat file | grep foo | sort`), this is the same idea — each stage's output becomes the next stage's input, left to right. LangChain overloads Python's `|` so `prompt | model | parser` reads exactly like a shell pipeline (it is not bitwise-OR here).
 
 ```python
 # script_id: day_038_langchain_basics/lcel_basic_chain
@@ -163,7 +165,7 @@ from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 
-model = ChatOpenAI()
+model = ChatOpenAI(model="gpt-4o-mini")
 
 # Chain 1: Generate an outline
 outline_prompt = ChatPromptTemplate.from_template(
@@ -179,21 +181,9 @@ expand_prompt = ChatPromptTemplate.from_template(
 outline_chain = outline_prompt | model | StrOutputParser()
 expand_chain = expand_prompt | model | StrOutputParser()
 
-# Full pipeline
-full_chain = (
-    {"outline": outline_chain, "topic": lambda x: x["topic"]}
-    | expand_prompt
-    | model
-    | StrOutputParser()
-)
-
-# Alternative: Using RunnablePassthrough
-from langchain_core.runnables import RunnablePassthrough
-
-full_chain = (
-    {"outline": outline_chain}
-    | expand_chain
-)
+# A dict in an LCEL pipe runs each value and builds a dict of results for the
+# next stage — here it feeds the {outline} placeholder in expand_prompt.
+full_chain = {"outline": outline_chain} | expand_chain
 
 result = full_chain.invoke({"topic": "AI in healthcare"})
 print(result)
@@ -257,6 +247,8 @@ text = "Your long document text here..."
 chunks = splitter.split_text(text)
 
 # Or split documents directly
+from langchain_community.document_loaders import TextLoader
+loader = TextLoader("document.txt")
 documents = loader.load()
 split_docs = splitter.split_documents(documents)
 
@@ -268,10 +260,12 @@ print(f"After split: {len(split_docs)} chunks")
 
 ## Building a RAG Chain
 
+These pieces (embeddings, vector store, retriever) come from Phase 2 — see Day 34. `k=3` just means fetch the 3 most relevant chunks.
+
 ```python
 # script_id: day_038_langchain_basics/rag_chain
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
-from langchain_community.vectorstores import Chroma
+from langchain_chroma import Chroma
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
@@ -296,7 +290,11 @@ Answer:""")
 def format_docs(docs):
     return "\n\n".join(doc.page_content for doc in docs)
 
-# Build RAG chain with LCEL
+# Build RAG chain with LCEL.
+# The dict keys (context, question) must match the {placeholders} in the prompt.
+# RunnablePassthrough() is a no-op stage that forwards the chain input unchanged —
+# here it copies the incoming question into the prompt, while
+# retriever | format_docs fetches and formats the matching documents.
 rag_chain = (
     {"context": retriever | format_docs, "question": RunnablePassthrough()}
     | rag_prompt
@@ -350,6 +348,8 @@ for chunk in chain.stream({"topic": "a robot learning to paint"}):
 
 ## Async Support
 
+Each LLM call spends most of its time waiting on the network, so firing several at once with `asyncio.gather` cuts total wait from the sum of calls to roughly the slowest single call — the same reason you'd parallelize independent HTTP requests.
+
 ```python
 # script_id: day_038_langchain_basics/async_support
 import asyncio
@@ -357,7 +357,7 @@ from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 
 prompt = ChatPromptTemplate.from_template("Explain {topic} briefly")
-model = ChatOpenAI()
+model = ChatOpenAI(model="gpt-4o-mini")
 chain = prompt | model
 
 async def process_topics(topics: list):
@@ -401,7 +401,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 
 prompt = ChatPromptTemplate.from_template("Context: {context}\n\nQuestion: {question}")
-chain = prompt | ChatOpenAI() | StrOutputParser()
+chain = prompt | ChatOpenAI(model="gpt-4o-mini") | StrOutputParser()
 result = chain.invoke({"context": docs, "question": question})
 ```
 
@@ -495,8 +495,26 @@ chain = (
 
 3. **Streaming RAG**: Implement a RAG chain with streaming responses
 
+<details><summary>Solutions (approaches)</summary>
+
+1. Build each template with `ChatPromptTemplate.from_template(...)` and store them in a dict, e.g. `templates = {"summarize": ChatPromptTemplate.from_template("Summarize:\n{text}"), "translate": ChatPromptTemplate.from_template("Translate to {lang}:\n{text}"), ...}`. Pick one and pipe it: `chain = templates["summarize"] | ChatOpenAI(model="gpt-4o-mini") | StrOutputParser()`.
+2. Reuse the chaining pattern from this lesson:
+   ```python
+   model = ChatOpenAI(model="gpt-4o-mini")
+   outline_chain = ChatPromptTemplate.from_template(
+       "Outline an article about {topic}"
+   ) | model | StrOutputParser()
+   expand_chain = ChatPromptTemplate.from_template(
+       "Write a short article from this outline:\n{outline}"
+   ) | model | StrOutputParser()
+   article_chain = {"outline": outline_chain} | expand_chain
+   print(article_chain.invoke({"topic": "vector databases"}))
+   ```
+3. Take the `rag_chain` from this lesson and call `.stream(...)` instead of `.invoke(...)`, printing each chunk: `for chunk in rag_chain.stream("What is RAG?"): print(chunk, end="", flush=True)`. With `StrOutputParser()` at the end, each chunk is a plain string.
+</details>
+
 ---
 
 ## What's Next?
 
-Now let's explore **LlamaIndex** - another framework with a focus on data ingestion and query engines!
+Next (Day 39), we explore **LlamaIndex** — another framework focused on data ingestion and query engines!

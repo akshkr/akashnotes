@@ -2,7 +2,7 @@
 
 You've defined nodes and edges. Now let's compile your graph into a runnable agent and learn how to execute it effectively.
 
-> **Coming from Software Engineering?** Compiling a LangGraph graph is like bundling a webpack config or docker-compose build — you declare the structure, then compile it into a runnable artifact. If you've worked with declarative configs (Terraform, CloudFormation, Docker Compose), the compile-then-run pattern is familiar.
+> **Coming from Software Engineering?** Compiling a LangGraph graph is like bundling a webpack config or docker-compose build — you declare the structure, then compile it into a runnable artifact. If you've worked with declarative configs (Terraform, CloudFormation, Docker Compose), the compile-then-run pattern is familiar. Closer to home: it is like `re.compile(pattern)` or a prepared SQL statement — you hand it the declarative structure once, it validates and returns a reusable object you call (`invoke`/`stream`) many times. Nothing is written to disk.
 
 ---
 
@@ -74,6 +74,8 @@ print(result)
 # {'messages': ['Hello!', 'Processed'], 'result': 'Done!'}
 ```
 
+Why did `messages` grow but `result` get replaced? `Annotated[list, add]` tells LangGraph how to MERGE each node's return into the running state — `add` means append/concatenate, like `+=` on a list. Fields without that annotation (like `result`) are just overwritten with the last value, like a normal dict assignment.
+
 ### stream() - Step by Step
 
 Watch each step as it executes:
@@ -93,9 +95,9 @@ for step in app.stream({"messages": ["Hello!"], "result": ""}):
 #   Output: {'process': {...}}
 ```
 
-### Stream with Updates
+### Stream Modes: updates vs values
 
-Get detailed updates during execution:
+`updates` gives you only what each node changed (like a diff/patch); `values` gives you the full state snapshot after each step (like reading the whole row). Use `updates` for logging deltas, `values` when you need the complete picture.
 
 ```python
 # script_id: day_043_compiling_graphs/stream_modes
@@ -232,6 +234,8 @@ print("Final Result:")
 print(result["result"])
 ```
 
+In this happy-path example `execute` always succeeds, so `check_result` always returns `"done"`; the `retry` edge is here to show the SHAPE of a conditional loop — in a real agent `check_result` would inspect the output and send work back to `plan` on failure. Cycles are allowed, but LangGraph caps them with a `recursion_limit` (default 25) and raises `GraphRecursionError` if exceeded — see Error Handling below. Think of it as a built-in circuit breaker so a stuck agent can not spin forever.
+
 ---
 
 ## Compilation Options
@@ -240,6 +244,7 @@ print(result["result"])
 
 ```python
 # script_id: day_043_compiling_graphs/checkpointing
+# fragment: illustrative / not standalone-runnable
 from langgraph.checkpoint.memory import MemorySaver  # or: pip install langgraph-checkpoint-sqlite
 
 # Create a checkpointer
@@ -249,6 +254,7 @@ checkpointer = MemorySaver()
 app = workflow.compile(checkpointer=checkpointer)
 
 # Run with a thread ID
+# thread_id works like a session key — the same id resumes the same state, a new id starts a fresh session.
 config = {"configurable": {"thread_id": "user-123"}}
 result = app.invoke({"messages": ["Hello"]}, config=config)
 
@@ -260,11 +266,11 @@ result2 = app.invoke({"messages": ["Continue"]}, config=config)
 
 ```python
 # script_id: day_043_compiling_graphs/checkpointing
+# fragment: illustrative / not standalone-runnable
 # Compile with interrupt points
 app = workflow.compile(
     checkpointer=checkpointer,
-    interrupt_before=["execute"],  # Pause before this node
-    interrupt_after=["plan"]  # Or pause after this node
+    interrupt_before=["execute"]  # Pause before this node
 )
 
 # Run until interrupt
@@ -275,6 +281,8 @@ result = app.invoke({"task": "Do something"}, config=config)
 print("Paused! Current state:", result)
 
 # Resume after human review
+# Passing None means: do not add new input — resume from where the checkpoint left off.
+# The saved state (keyed by thread_id) is the starting point, so there is nothing new to pass in.
 final = app.invoke(None, config=config)  # Continue from checkpoint
 ```
 
@@ -316,7 +324,7 @@ def debug_stream(app, initial_state):
     print("=" * 50)
 
 # Usage
-debug_stream(agent, {"task": "Test", "messages": [], ...})
+debug_stream(agent, {"task": "Test", "messages": [], "plan": "", "result": "", "status": ""})
 ```
 
 ### Error Handling
@@ -383,6 +391,8 @@ result = app.invoke(
     }
 )
 ```
+
+`debug=True` prints internal step logs to stdout (verbose, dev-only). `tags` attach labels that show up in tracing/observability tools (like LangSmith) so you can filter runs — covered in the later debugging day.
 
 ---
 
@@ -459,10 +469,6 @@ def test_agent_streaming():
 
 ---
 
-## Checkpoint
-
-Run the same compiled graph through both `app.invoke(initial_state)` and `for step in app.stream(initial_state): print(step)`. `invoke` returns one final merged-state dict; `stream` prints one event per node as it fires, keyed by node name. Seeing the per-node breakdown from `stream` but only the end result from `invoke` confirms compilation worked and both execution modes are wired up. If `stream` prints nothing, you likely forgot `workflow.set_entry_point(...)` before `compile()`.
-
 ## Summary
 
 ```mermaid
@@ -528,6 +534,12 @@ result = await app.ainvoke(state)
 3. LangGraph raises at `compile()` (not at `invoke`) — e.g. it complains the target node isn't registered. Catching it early is the point of a compile step.
 4. State is keyed by `thread_id` inside the checkpointer, so a new id starts a fresh conversation/state.
 </details>
+
+---
+
+## Checkpoint
+
+Run the same compiled graph through both `app.invoke(initial_state)` and `for step in app.stream(initial_state): print(step)`. `invoke` returns one final merged-state dict; `stream` prints one event per node as it fires, keyed by node name. Seeing the per-node breakdown from `stream` but only the end result from `invoke` confirms compilation worked and both execution modes are wired up. If `stream` prints nothing, you likely forgot `workflow.set_entry_point(...)` before `compile()`.
 
 ---
 

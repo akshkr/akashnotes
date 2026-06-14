@@ -65,7 +65,7 @@ if prompt := st.chat_input("What would you like to know?"):
                       for m in st.session_state.messages],
             stream=True
         )
-        response = st.write_stream(stream)
+        response = st.write_stream(stream)  # renders the reply as it arrives, so the user sees text appear live instead of waiting for the whole answer
 
     st.session_state.messages.append({"role": "assistant", "content": response})
 
@@ -94,17 +94,24 @@ collection = chroma_client.get_or_create_collection("documents")
 with st.sidebar:
     st.header("Settings")
     num_results = st.slider("Documents to retrieve", 1, 10, 3)
-    temperature = st.slider("Temperature", 0.0, 2.0, 0.7)
+    temperature = st.slider("Temperature", 0.0, 2.0, 0.7)  # higher = more random/creative, lower = more focused (Day 4)
 
     st.header("Upload Documents")
-    uploaded_file = st.file_uploader("Choose a file", type=["txt", "pdf"])
+    # keep it to plain text here; for PDFs use pypdf (from pypdf import PdfReader) to extract text first
+    uploaded_file = st.file_uploader("Choose a file", type=["txt"])
 
     if uploaded_file:
         content = uploaded_file.read().decode()
+        # document and query embeddings must come from the same model
+        emb = openai_client.embeddings.create(
+            model="text-embedding-3-small",
+            input=content
+        )
         # Add to vector store
         collection.add(
             ids=[uploaded_file.name],
-            documents=[content]
+            documents=[content],
+            embeddings=[emb.data[0].embedding]
         )
         st.success(f"Added {uploaded_file.name}!")
 
@@ -206,7 +213,7 @@ st.dataframe(queries_df, use_container_width=True)
 
 ---
 
-## Gradio: The ML Demo Framework
+## Gradio: The Fastest Path to a Shareable Demo
 
 ### Installation
 
@@ -316,7 +323,7 @@ with gr.Blocks(title="Multi-Modal AI") as demo:
         transcribe_btn.click(transcribe_audio, audio_input, transcript_output)
 
     with gr.Tab("Chat"):
-        chatbot = gr.ChatInterface(chat)
+        chatbot = gr.ChatInterface(chat, type="messages")  # same {role,content} shape as the standalone example above
 
 demo.launch()
 ```
@@ -357,10 +364,7 @@ def agent_chat(message, history):
 Use [TOOL:name:input] to use tools.
 Available: search, calculate"""}]
 
-    for h in history:
-        messages.append({"role": "user", "content": h[0]})
-        if h[1]:
-            messages.append({"role": "assistant", "content": h[1]})
+    messages.extend(history)  # history is already a list of {role, content} dicts (type="messages")
 
     messages.append({"role": "user", "content": message})
 
@@ -388,6 +392,7 @@ Available: search, calculate"""}]
 
 demo = gr.ChatInterface(
     agent_chat,
+    type="messages",
     title="🛠️ Agent with Tools",
     description="I can search and calculate!",
     examples=["Search for Python", "Calculate 15 * 23", "What is 100 / 4?"]
@@ -449,7 +454,7 @@ if prompt := st.chat_input("Message"):
 
 # Gradio Chat
 import gradio as gr
-demo = gr.ChatInterface(fn=my_chat_function)
+demo = gr.ChatInterface(fn=my_chat_function, type="messages")
 demo.launch()
 ```
 
@@ -459,7 +464,7 @@ demo.launch()
 
 1. **Streamlit chat.** Build a minimal chat app with `st.chat_input` / `st.chat_message` that keeps history across turns using `st.session_state`.
 2. **Gradio in three lines.** Wrap your chat function in `gr.ChatInterface(fn=..., type="messages")` and launch it. Note how little code it took.
-3. **Stream the reply.** Make either UI render tokens as they arrive instead of after the full response (Streamlit `st.write_stream`, or yield from the Gradio fn).
+3. **Stream the reply.** Make either UI render the response incrementally (text appearing piece-by-piece, like the live typing effect in ChatGPT) instead of after the full response (Streamlit `st.write_stream`, or yield from the Gradio fn).
 4. **Add a file upload.** Let the user upload a document and feed its text into the next prompt.
 
 <details><summary>Solutions (approaches)</summary>

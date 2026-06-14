@@ -1,6 +1,6 @@
 # Text Chunking Strategies
 
-You've parsed your documents into text. But embedding entire documents isn't effective - they're too long and contain mixed topics. The solution? **Chunking** - splitting text into smaller, meaningful pieces.
+You've parsed your documents into text. But embedding entire documents (turning the whole text into one list-of-numbers vector, as in Day 19) isn't effective — one vector can't represent a 10,000-word doc that spans many topics. The solution? **Chunking** - splitting text into smaller, meaningful pieces.
 
 > **Coming from Software Engineering?** Text chunking is like pagination or sharding — you're breaking large data into smaller, manageable pieces. If you've implemented paginated APIs or database sharding strategies, the tradeoffs are similar: chunk too small and you lose context, chunk too large and you waste resources.
 
@@ -65,6 +65,8 @@ chunks = chunk_by_characters(text, chunk_size=500, overlap=50)
 print(f"Created {len(chunks)} chunks")
 ```
 
+Overlap means each chunk repeats the last N characters of the previous one. Without it, a sentence split across a boundary is cut in half in both chunks, and a query matching that sentence may miss both. With overlap, the straddling text lives fully in at least one chunk.
+
 ### Problems with Fixed Size
 
 ```mermaid
@@ -103,6 +105,8 @@ def recursive_chunk(
     if separators is None:
         separators = ["\n\n", "\n", ". ", " ", ""]
 
+    # Note: overlap is accepted for API symmetry but not applied in this
+    # recursive splitter; see the fixed-size chunker above for an overlap implementation.
     chunks = []
     current_sep = separators[0]
     remaining_seps = separators[1:]
@@ -170,8 +174,13 @@ for i, chunk in enumerate(chunks):
 
 Split based on meaning, not just characters:
 
+The idea: turn each sentence into an embedding (Day 19), then walk the sentences comparing each to the one before it using cosine similarity (Day 20). When two neighbors point in very DIFFERENT directions — low similarity — the topic likely just changed, so we start a new chunk there.
+
+`similarity_threshold` is the cutoff for "still the same topic": higher (e.g. 0.85) splits more aggressively into many small chunks; lower (e.g. 0.7) keeps more sentences together. Start around 0.75-0.8 and tune by eyeballing the output.
+
 ```python
 # script_id: day_025_text_chunking/semantic_chunking
+import re
 from openai import OpenAI
 import numpy as np
 
@@ -205,6 +214,8 @@ def semantic_chunk(
 
     for i in range(1, len(sentences)):
         # Compare with previous sentence
+        # cosine similarity (Day 20): how aligned these two sentence-vectors are
+        # (1.0 = same direction/same topic, near 0 = unrelated).
         similarity = np.dot(embeddings[i], embeddings[i-1]) / (
             np.linalg.norm(embeddings[i]) * np.linalg.norm(embeddings[i-1])
         )
@@ -373,6 +384,8 @@ flowchart TB
     Q2 --> B1["10-20% overlap\npreserves context"]
 ```
 
+Rough rule of thumb: ~4 characters per token in English, so e.g. 500 tokens ≈ 2000 characters. The table below uses characters to match the code.
+
 ### Chunk Size Guidelines
 
 | Use Case | Chunk Size | Overlap | Reasoning |
@@ -532,12 +545,6 @@ for chunk in chunks:
 
 ---
 
-## Checkpoint
-
-Run the `DocumentChunker` on a long document and confirm: you get multiple chunks, each carries its `chunk_index`/`total_chunks`, and consecutive chunks share the overlap you configured (the tail of one reappears at the head of the next). If chunks have no overlap, check that your `overlap` parameter is actually being subtracted from the stride — a stride equal to chunk size means zero overlap and lost context at the seams.
-
----
-
 ## Summary
 
 ```mermaid
@@ -596,6 +603,12 @@ paragraphs = text.split('\n\n')
 3. Split on a heading regex, then post-process: any section longer than the limit goes through your recursive/fixed splitter. Keep the heading text as a prefix for context.
 4. Have the chunker `enumerate(chunks)` and emit dicts; downstream `collection.add` passes the extra fields via `metadatas=`.
 </details>
+
+---
+
+## Checkpoint
+
+Run `DocumentChunker(strategy="fixed", overlap=50)` on a long document and confirm: you get multiple chunks, each carries its `chunk_index`/`total_chunks`, and consecutive chunks share the overlap you configured (the tail of one reappears at the head of the next). If chunks have no overlap, check that your `overlap` parameter is actually being subtracted from the stride — a stride equal to chunk size means zero overlap and lost context at the seams.
 
 ---
 

@@ -1,14 +1,14 @@
 # Chain of Thought (CoT) and Step-by-Step Reasoning
 
-Ever noticed how explaining your thinking helps you solve problems better? The same is true for LLMs! In this guide, you'll learn **Chain of Thought prompting** — a powerful technique that dramatically improves reasoning. First introduced in [Wei et al. 2022](https://arxiv.org/abs/2201.11903) ("Chain-of-Thought Prompting Elicits Reasoning in Large Language Models"), CoT showed that simply asking a model to "think step by step" could boost accuracy on math reasoning benchmarks (GSM8K) from ~18% to ~57%.
+Ever noticed how explaining your thinking helps you solve problems better? The same is true for LLMs! In this guide, you'll learn **Chain of Thought prompting** — a powerful technique that dramatically improves reasoning. First introduced in [Wei et al. 2022](https://arxiv.org/abs/2201.11903) ("Chain-of-Thought Prompting Elicits Reasoning in Large Language Models"), CoT showed that simply asking a model to "think step by step" roughly tripled accuracy on grade-school math word problems in the original paper (about 18% to 57% on GSM8K, depending on model and setup).
 
-> **Coming from Software Engineering?** Chain of Thought is like adding verbose logging to a complex function. Instead of just getting the return value, you ask the model to show its work — each intermediate step. If you've ever debugged by adding print statements to trace execution flow, CoT is the same idea applied to reasoning.
+> **Coming from Software Engineering?** Chain of Thought is like adding verbose logging to a complex function. Instead of just getting the return value, you ask the model to show its work — each intermediate step. If you've ever debugged by adding print statements to trace execution flow, CoT is the same idea applied to reasoning. Unlike logging — which just records what already happened — writing the steps actually helps the model reach the right next step, the way showing your work on a math test helps you, not just the grader.
 
 ---
 
 ## The Problem: LLMs Take Shortcuts
 
-By default, LLMs try to jump straight to answers. This works for simple questions but fails for complex reasoning.
+By default, LLMs try to jump straight to answers. This works for simple questions but fails for complex reasoning. The model writes its answer one word at a time with no scratchpad to hold intermediate results — so a multi-step problem has to be resolved all at once, like being forced to compute a long calculation in a single expression with no intermediate variables. Asking it to write the steps out gives it those intermediate variables to build on.
 
 ```mermaid
 flowchart LR
@@ -34,7 +34,7 @@ flowchart LR
 
 **Without CoT (Intuitive but wrong):** "The ball costs $0.10" ❌
 
-**With CoT (Reasoned correctly):** "Let me work through this... If the ball is $0.10, the bat would be $1.10, totaling $1.20. That's wrong. Let me set up equations... The ball costs $0.05" ✅
+**With CoT (Reasoned correctly):** "Let me work through this... If the ball is $0.10, the bat would be $1.10, totaling $1.20. That's wrong. Let me set up equations: ball + (ball + $1) = $1.10 → 2·ball = $0.10 → ball = $0.05; check: bat $1.05 + ball $0.05 = $1.10, and $1.05 is exactly $1.00 more than $0.05." ✅
 
 ---
 
@@ -126,6 +126,8 @@ Step 5: Verify
 Answer: Sarah bought 3 apples and 2 oranges.
 ```
 
+_Output is illustrative — exact wording and formatting will vary from run to run._
+
 ---
 
 ## Magic Phrases That Trigger CoT
@@ -180,6 +182,8 @@ for trigger in triggers:
     print(response.choices[0].message.content)
     print()
 ```
+
+Watch the contrast: the no-trigger baseline often blurts the wrong intuitive answer (100 minutes), while any of the step-by-step triggers leads the model to reason out the correct answer (still 5 minutes, since each machine makes one widget in 5 minutes).
 
 ---
 
@@ -354,6 +358,8 @@ Final Answer: It will take 5 hours to travel 300 miles.
 
 A powerful technique is to generate multiple reasoning chains and pick the most common answer:
 
+Unlike a normal function, an LLM at temperature > 0 can take a different reasoning path each run (see Days 4-5). Most paths land on the right answer and the wrong ones tend to disagree with each other, so a majority vote filters out the occasional bad chain — like re-running a flaky test and trusting the result you get most often.
+
 ```mermaid
 flowchart TB
     P["Problem"] --> C1["Chain 1"]
@@ -435,7 +441,7 @@ print(f"Vote Distribution: {result['vote_distribution']}")
 
 ## Checkpoint
 
-Run `self_consistency_cot` on a multi-step word problem and confirm: it prints a final answer plus a confidence and vote distribution, and the majority-vote answer is more reliable than any single sample. If confidence is always 100% with one vote, check that `num_samples > 1` and that temperature is high enough (not 0) for the samples to actually diverge.
+Run `self_consistency_cot` on a multi-step word problem and confirm: it prints a final answer plus a confidence and vote distribution, and the majority-vote answer is more reliable than any single sample. If confidence is always 100% with one vote, check that `num_samples > 1` and that temperature is high enough (not 0) for the samples to actually diverge. If confidence looks low, it is usually because the same answer was written different ways ("9" vs "9 sheep" vs "9.") and the votes split — not because the model disagreed. Exercise 4 walks through hardening the extractor to normalize these.
 
 ---
 

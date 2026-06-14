@@ -27,7 +27,7 @@ At a high level the Claude Agent SDK exposes:
 - **`query(...)`** — fire a prompt and stream the agent's messages back (a one-shot/async-iterator entry point).
 - **`ClaudeSDKClient`** — a stateful client for multi-turn agent sessions.
 - **`ClaudeAgentOptions`** — configuration (model, system prompt, allowed tools, working directory, permission mode, etc.).
-- **custom tools** via a tool decorator + `create_sdk_mcp_server` (your tools are exposed to the agent as an in-process MCP server).
+- **custom tools** via a tool decorator + `create_sdk_mcp_server` — your own Python functions become tools the agent can call, packaged behind the same MCP interface from Day 095 but running inside your process (no separate server).
 - built-in **file, bash, and MCP** tools and a managed agent loop.
 
 Reach for it when you want Anthropic to run that loop for you. Reach for the Messages API (below) when you want to own every step. Consult the docs for exact signatures before you build — they change between releases.
@@ -144,6 +144,8 @@ def run_agent(system: str, tools: list, impls: dict, user_message: str,
                     "tool_use_id": block.id,
                     "content": str(output),
                 })
+        # Tool results go back under role="user" — that is just how the Messages API
+        # carries tool output to the model; it is not literally from the human.
         messages.append({"role": "user", "content": results})
     return "Stopped: max steps reached."
 
@@ -162,7 +164,7 @@ That `run_agent` function is, in essence, what `Runner.run()` (OpenAI Agents SDK
 
 ## Routing: the "handoff" pattern
 
-A "handoff" is a triage agent deciding which specialist should handle a request. You can implement it by forcing a routing decision with `tool_choice`, then dispatching to the chosen specialist — each specialist is just another `run_agent` call with its own system prompt and tools.
+A "handoff" is just request routing — like an API gateway picking which backend handles a request, except an LLM makes the routing call. A "handoff" is a triage agent deciding which specialist should handle a request. You can implement it by forcing a routing decision with `tool_choice`, then dispatching to the chosen specialist — each specialist is just another `run_agent` call with its own system prompt and tools.
 
 ```python
 # script_id: day_096_claude_agent_sdk/support_agent
@@ -398,10 +400,6 @@ The SDK saves you the boilerplate; the raw loop gives you total control and zero
 
 ---
 
-## Checkpoint
-
-Run the `support_agent` example and confirm it completes a multi-turn tool-using loop — calling a tool, getting a result, and returning a final answer — with the `guardrails` rejecting any disallowed action. If the loop never terminates, check that you're feeding each tool result back into the next Messages API call and stopping once `stop_reason` is `end_turn`.
-
 ## Summary
 
 ```mermaid
@@ -455,6 +453,12 @@ mindmap
 4. Run the same prompt on both models, read `response.usage.input_tokens`/`output_tokens`; route cheap/simple to Haiku, hard to Opus.
 5. Follow the official Agent SDK docs for `query`/`ClaudeAgentOptions`; don't hand-write signatures from memory.
 </details>
+
+---
+
+## Checkpoint
+
+Run the `support_agent` example and confirm it completes a multi-turn tool-using loop — calling a tool, getting a result, returning a final answer. Then wrap a call in `guarded_run` and confirm `input_guardrail` raises `GuardrailTripped` on a message containing an SSN (e.g. "My SSN is 123-45-6789"). If the loop never terminates, check that you feed each tool result back into the next Messages API call and that you stop once `stop_reason` is no longer `tool_use` (the model returns `end_turn` instead).
 
 ---
 

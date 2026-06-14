@@ -2,7 +2,7 @@
 
 You already know how to generate embeddings. Now the question is: **where do you put them?** If your application already uses PostgreSQL, the answer is surprisingly simple -- keep them right next to your relational data with **pgvector**, a PostgreSQL extension that adds vector storage, distance operators, and approximate nearest-neighbor indexing directly to your existing database.
 
-> **Coming from Software Engineering?** pgvector is like adding a spatial index to PostGIS, but for meaning-space instead of geo-space. Just as PostGIS lets you run `ST_Distance` queries on geographic coordinates alongside your regular SQL, pgvector lets you run similarity searches on embedding vectors alongside JOINs, WHERE clauses, and transactions you already know.
+> **Coming from Software Engineering?** pgvector is like adding a spatial index to PostGIS, but for meaning-space instead of geo-space. Just as PostGIS lets you run `ST_Distance` queries on geographic coordinates alongside your regular SQL, pgvector lets you run similarity searches on embedding vectors alongside JOINs, WHERE clauses, and transactions you already know. (Never used PostGIS? Think of it as a normal indexed column you can sort and filter by -- the index just ranks by similarity instead of `=`.)
 
 ---
 
@@ -106,6 +106,7 @@ Generate embeddings with the OpenAI API and insert them using psycopg2.
 ```python
 # script_id: day_022_pgvector/pgvector_crud_operations
 import psycopg2
+from pgvector.psycopg2 import register_vector  # pip install pgvector
 from openai import OpenAI
 
 client = OpenAI()
@@ -125,6 +126,7 @@ conn = psycopg2.connect(
     user="postgres",
     password="secret"
 )
+register_vector(conn)  # teaches psycopg2 how to bind/return vector columns
 cur = conn.cursor()
 
 # Insert a document with its embedding
@@ -135,7 +137,7 @@ embedding = get_embedding(content)
 cur.execute(
     """
     INSERT INTO documents (title, content, category, embedding)
-    VALUES (%s, %s, %s, %s::vector)
+    VALUES (%s, %s, %s, %s)
     """,
     (title, content, "machine-learning", embedding)
 )
@@ -178,7 +180,7 @@ def store_documents_batch(
             VALUES %s
             """,
             rows,
-            template="(%s, %s, %s, %s::vector)"
+            template="(%s, %s, %s, %s)"
         )
         print(f"Inserted {min(i + batch_size, len(documents))}/{len(documents)}")
 
@@ -196,7 +198,7 @@ conn.commit()
 
 ## Distance Operators
 
-pgvector provides three distance operators. Choosing the right one matters.
+For text embeddings, use cosine distance (`<=>`). The other two are optimizations for special cases. pgvector provides three distance operators.
 
 ```mermaid
 flowchart TB
@@ -235,7 +237,7 @@ ORDER BY embedding <#> query_embedding
 LIMIT 5;
 ```
 
-> **Tip:** OpenAI embeddings are normalized, so cosine distance (`<=>`) and negative inner product (`<#>`) produce equivalent rankings. Cosine distance is the safer default because it works correctly whether or not vectors are normalized.
+> **Tip:** "Normalized" means every vector has been scaled to length 1, so only its direction matters. OpenAI's embeddings come this way. Because they are normalized, cosine distance (`<=>`) and negative inner product (`<#>`) produce equivalent rankings. Cosine distance is the safer default because it works correctly whether or not vectors are normalized.
 
 ---
 
@@ -257,10 +259,10 @@ def search_documents(
     if category:
         cur.execute(
             """
-            SELECT id, title, content, embedding <=> %s::vector AS distance
+            SELECT id, title, content, embedding <=> %s AS distance
             FROM documents
             WHERE category = %s
-            ORDER BY embedding <=> %s::vector
+            ORDER BY embedding <=> %s
             LIMIT %s
             """,
             (query_embedding, category, query_embedding, limit)
@@ -268,9 +270,9 @@ def search_documents(
     else:
         cur.execute(
             """
-            SELECT id, title, content, embedding <=> %s::vector AS distance
+            SELECT id, title, content, embedding <=> %s AS distance
             FROM documents
-            ORDER BY embedding <=> %s::vector
+            ORDER BY embedding <=> %s
             LIMIT %s
             """,
             (query_embedding, query_embedding, limit)
@@ -298,7 +300,7 @@ The pattern is always the same: **embed the query, ORDER BY distance, LIMIT N**.
 
 ## Indexing: IVFFlat vs HNSW
 
-Without an index, pgvector performs an exact (brute-force) scan of every row. That is fine for thousands of rows, but slows down at scale. pgvector offers two approximate nearest-neighbor (ANN) index types.
+Without an index, pgvector performs an exact (brute-force) scan of every row. That is fine for thousands of rows, but slows down at scale. pgvector offers two approximate nearest-neighbor (ANN) index types. An approximate index makes a trade a B-tree never does: instead of checking every candidate, it cleverly skips most of them and accepts a small chance of missing the true closest match -- in exchange for being far faster. For search ranking, usually-right-and-fast beats always-right-and-slow.
 
 ```mermaid
 flowchart TB
@@ -308,7 +310,7 @@ flowchart TB
         HNSW["<b>HNSW</b>\nHierarchical Navigable\nSmall World"]
     end
 
-    IVF -->|"Faster to build\nLess memory\nNeeds training data"| IVF_USE["Good for: static datasets\nthat rarely change"]
+    IVF -->|"Faster to build\nLess memory\nMust see existing rows to pick its clusters"| IVF_USE["Good for: static datasets\nthat rarely change"]
     HNSW -->|"Better recall\nFaster queries\nNo training step"| HNSW_USE["Good for: most use cases,\nespecially dynamic data"]
 
     style HNSW_USE fill:#90EE90
@@ -316,7 +318,7 @@ flowchart TB
 
 ### IVFFlat
 
-Partitions vectors into lists (clusters) and searches only a subset at query time.
+Partitions vectors into lists (clusters) and searches only a subset at query time. It groups your existing vectors into clusters once at build time, so the table cannot be empty -- nothing ML is being trained, it is just measuring where your current data sits.
 
 ```sql
 -- Create IVFFlat index (requires data in the table first)
@@ -345,13 +347,15 @@ SET hnsw.ef_search = 40;
 
 ### Which Should You Pick?
 
+Recall here just means: of the documents that are genuinely closest, what fraction did the index actually return? An approximate index trades a little recall -- it may occasionally miss a true match -- for a lot of speed.
+
 | Factor | IVFFlat | HNSW |
 |---|---|---|
 | Build speed | Faster | Slower |
 | Query speed | Good | Better |
 | Recall accuracy | Good (tune probes) | Better |
 | Memory usage | Lower | Higher |
-| Works on empty table | No (needs training data) | Yes |
+| Works on empty table | No (must build clusters from existing rows first) | Yes |
 | Insert performance | Fast | Slower (updates graph) |
 
 **Default recommendation:** Use **HNSW** unless you have a very large, mostly-static dataset and need to minimize memory usage.
@@ -361,6 +365,8 @@ SET hnsw.ef_search = 40;
 ## Hybrid Search: Vectors + Full-Text
 
 One of pgvector's biggest advantages is combining semantic similarity with PostgreSQL's built-in full-text search (`tsvector`). This gives you the best of both worlds: keyword precision and semantic understanding.
+
+The hybrid query below has three moving parts: (1) get the top-N rows by meaning (vector distance), (2) get keyword matches with a full-text rank, (3) LEFT JOIN the two and blend their scores by weight, treating a missing keyword match as 0.
 
 ```sql
 -- Add a tsvector column for full-text search
@@ -388,10 +394,13 @@ def hybrid_search(
     cur.execute(
         """
         WITH semantic AS (
+            -- <=> is a distance (0 = identical, higher = less similar);
+            -- 1 - distance flips it to a similarity score (higher = better)
+            -- so it lines up with the full-text rank, then we sort DESC.
             SELECT id, title, content,
-                   1 - (embedding <=> %s::vector) AS semantic_score
+                   1 - (embedding <=> %s) AS semantic_score
             FROM documents
-            ORDER BY embedding <=> %s::vector
+            ORDER BY embedding <=> %s
             LIMIT %s
         ),
         fulltext AS (
@@ -488,7 +497,7 @@ mindmap
     Indexing
       IVFFlat
         Faster build
-        Needs training data
+        Needs existing rows to cluster
       HNSW
         Better recall
         Recommended default
@@ -507,10 +516,12 @@ mindmap
 ```python
 # script_id: day_022_pgvector/quick_reference
 import psycopg2
+from pgvector.psycopg2 import register_vector  # pip install pgvector
 from openai import OpenAI
 
 client = OpenAI()
 conn = psycopg2.connect(host="localhost", dbname="myapp", user="postgres", password="secret")
+register_vector(conn)  # bind/return vector columns as Python lists
 cur = conn.cursor()
 
 # --- Setup ---
@@ -526,15 +537,15 @@ cur.execute("""
 # --- Store ---
 text = "Some document text"
 emb = client.embeddings.create(model="text-embedding-3-small", input=text).data[0].embedding
-cur.execute("INSERT INTO documents (content, embedding) VALUES (%s, %s::vector)", (text, emb))
+cur.execute("INSERT INTO documents (content, embedding) VALUES (%s, %s)", (text, emb))
 conn.commit()
 
 # --- Search ---
 query_emb = client.embeddings.create(model="text-embedding-3-small", input="my query").data[0].embedding
 cur.execute("""
-    SELECT id, content, embedding <=> %s::vector AS distance
+    SELECT id, content, embedding <=> %s AS distance
     FROM documents
-    ORDER BY embedding <=> %s::vector
+    ORDER BY embedding <=> %s
     LIMIT 5
 """, (query_emb, query_emb))
 results = cur.fetchall()
@@ -556,6 +567,14 @@ conn.commit()
 2. **Index Benchmark**: Insert 10,000 randomly generated 1536-dimension vectors. Measure query latency (a) with no index, (b) with IVFFlat, and (c) with HNSW. Plot the results and note the recall-vs-speed tradeoff as you vary `probes` and `ef_search`.
 
 3. **Hybrid Search Pipeline**: Extend your knowledge base with a `tsvector` column and implement the hybrid search function from this tutorial. Compare results for queries that contain specific technical terms versus vague conceptual questions. When does hybrid search outperform pure semantic search?
+
+<details><summary>Solutions (approaches)</summary>
+
+1. **Build a Knowledge Base**: Load your passages, `ALTER`/`CREATE` a `vector(1536)` column, embed each passage with `get_embedding`, and store it. To answer a question, embed it and `ORDER BY embedding <=> %s LIMIT 3`, returning each row's distance.
+2. **Index Benchmark**: Time each query path with `time.perf_counter()` around the search. Raise `ivfflat.probes` / `hnsw.ef_search` to trade speed for recall -- higher values search more candidates, so you find more of the true closest matches but each query takes longer.
+3. **Hybrid Search Pipeline**: Blend `ts_rank` with `1 - (embedding <=> q)` as in the lesson. Exact-term queries (error codes, function names) are where hybrid wins -- pure semantic search can miss a literal token that full-text matches exactly.
+
+</details>
 
 ---
 

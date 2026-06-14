@@ -2,7 +2,7 @@
 
 Before you can search your documents, you need to extract text from them. In this guide, you'll learn to parse PDFs, text files, and web pages - the foundation of any RAG system.
 
-> **Coming from Software Engineering?** Document parsing for AI is the same ETL problem you've solved before — extract data from messy sources, transform it, load it somewhere useful. If you've built data pipelines that ingest PDFs, CSVs, or API responses, this is the same skill applied to AI knowledge bases.
+> **Coming from Software Engineering?** Document parsing for AI is the same ETL problem you've solved before — extract data from messy sources, transform it, load it somewhere useful. If you've built data pipelines that ingest PDFs, CSVs, or API responses, this is the same skill applied to AI knowledge bases — the front of any RAG system (Retrieval-Augmented Generation: look up relevant text, then feed it to the model — the pipeline you have been building since Day 19).
 
 ---
 
@@ -19,6 +19,8 @@ flowchart LR
 ```
 
 Today we focus on the **Parse** step!
+
+Everything downstream — chunking, embedding, search quality — is only as good as the text you pull out here. A garbled extraction quietly corrupts every later step, which is why parsing earns its own day.
 
 ---
 
@@ -86,7 +88,7 @@ def parse_markdown(file_path: str) -> dict:
 
 ## Parsing PDFs
 
-PDFs are trickier - they're designed for display, not extraction.
+PDFs are trickier - they're designed for display, not extraction. Because a PDF records where each character sits on the page rather than its reading order, multi-column pages and tables can come out scrambled — and different libraries guess the order differently, so the three below can give different results on the same file.
 
 > **Recommendation:** For new projects, start with **PyMuPDF** (`fitz`) as your default PDF parser -- it is the fastest and handles most layouts accurately. Use **pdfplumber** when you need precise table extraction. `pypdf` is shown first below for simplicity, but PyMuPDF is the better production choice.
 
@@ -234,7 +236,7 @@ def parse_webpage(url: str) -> dict:
         element.decompose()
 
     # Get title
-    title = soup.title.string if soup.title else "Untitled"
+    title = soup.title.get_text(strip=True) if soup.title else "Untitled"
 
     # Get main content
     # Try common content containers
@@ -349,7 +351,15 @@ class DocumentLoader:
         return self.parsers[suffix](path)
 
     def _parse_text(self, path: Path) -> dict:
-        content = path.read_text(encoding='utf-8')
+        content = None
+        for enc in ('utf-8', 'latin-1', 'cp1252'):
+            try:
+                content = path.read_text(encoding=enc)
+                break
+            except UnicodeDecodeError:
+                continue
+        if content is None:
+            raise ValueError(f"Could not decode file: {path}")
         return {
             "source": str(path),
             "type": "text",
@@ -359,16 +369,18 @@ class DocumentLoader:
 
     def _parse_pdf(self, path: Path) -> dict:
         import fitz
-        doc = fitz.open(str(path))
-        text = "\n\n".join(page.get_text() for page in doc)
+        with fitz.open(str(path)) as doc:
+            text = "\n\n".join(page.get_text() for page in doc)
+            num_pages = len(doc)
+            metadata = doc.metadata
         return {
             "source": str(path),
             "type": "pdf",
             "content": text,
             "metadata": {
                 "filename": path.name,
-                "pages": len(doc),
-                **doc.metadata
+                "pages": num_pages,
+                **metadata
             }
         }
 
@@ -405,7 +417,7 @@ for doc in [doc1, doc2, doc3]:
 
 ---
 
-## Handling Large Documents
+## Batch Loading a Directory
 
 ```python
 # script_id: day_024_document_parsing/web_and_universal_loader
@@ -451,7 +463,7 @@ print(f"Loaded {len(docs)} documents")
 
 ## Checkpoint
 
-Point the `DocumentLoader` at a PDF and a webpage and confirm: each returns extracted text plus a `type` reflecting the source, and the character counts are non-zero. If a PDF comes back empty, check whether it's a scanned image (no text layer) — `pypdf` extracts text, not pixels, so those need OCR before parsing.
+Point the `DocumentLoader` at a PDF and a webpage and confirm: each returns extracted text plus a `type` reflecting the source, and the character counts are non-zero. If a PDF comes back empty, it is probably a scanned image rather than real text. A PDF can store text two ways: as selectable characters (a "text layer", like a string in a file) or as a flat picture of the page (like a screenshot). `pypdf` and PyMuPDF only read the first kind — to recover text from a scanned page you need OCR (optical character recognition, e.g. Tesseract) to read the characters out of the image before parsing.
 
 ---
 

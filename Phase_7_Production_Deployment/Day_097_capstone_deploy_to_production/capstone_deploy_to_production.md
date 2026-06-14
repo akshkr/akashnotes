@@ -2,7 +2,7 @@
 
 You've built real systems. Now it's time to put them on the internet.
 
-> **Coming from Software Engineering?** This capstone is a standard deployment exercise — Dockerize, configure, deploy, monitor. You've done this for web apps, APIs, and microservices. The AI parts (LLM API calls, vector DB, streaming responses) are just components inside the same container/service architecture you already know. This is where your SWE background gives you the biggest advantage: many AI engineers can build impressive demos but struggle with production. You won't.
+> **Coming from Software Engineering?** This capstone is a standard deployment exercise — Dockerize, configure, deploy, monitor. You've done this for web apps, APIs, and microservices. The plumbing (Docker, FastAPI, env vars) is exactly what you know. What is new: an LLM call can take 30+ seconds and cost real money per request, and the provider can rate-limit you — so timeouts, cost tracking, and rate limiting are not optional here the way they might be for a CRUD API. This is where your SWE background gives you the biggest advantage: many AI engineers can build impressive demos but struggle with production. You won't.
 
 This is where many AI engineers stop. They have impressive demos that run on localhost, but they've never deployed an AI system to production. That gap is both a career liability and a missed learning opportunity — because production is where you discover all the things your demo hid from you.
 
@@ -53,11 +53,14 @@ graph LR
 ```
 deploy/
 ├── api/
+│   ├── __init__.py
 │   ├── main.py           # FastAPI app
 │   ├── routers/
+│   │   ├── __init__.py
 │   │   ├── pipeline.py   # Pipeline endpoints
 │   │   └── health.py     # Health check endpoints
 │   ├── middleware/
+│   │   ├── __init__.py
 │   │   ├── rate_limit.py
 │   │   └── cost_tracker.py
 │   └── models.py         # Pydantic request/response models
@@ -90,8 +93,8 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from routers.pipeline import router as pipeline_router
-from routers.health import router as health_router
+from api.routers.pipeline import router as pipeline_router
+from api.routers.health import router as health_router
 
 logging.basicConfig(
     level=logging.INFO,
@@ -231,6 +234,12 @@ async def run_pipeline(
             ),
         )
 
+        # Track and log the estimated cost, then attach it to the response
+        cost = await track_cost(
+            result.get("run_id"), result, request.content_type.value
+        )
+        result["estimated_cost_usd"] = cost
+
         return PipelineResponse(**result)
 
     except Exception as e:
@@ -246,18 +255,13 @@ async def stream_pipeline(request: PipelineRequest):
 
     async def event_generator():
         """Generate SSE events for pipeline progress."""
-
-        async def progress_callback(stage: str, data: dict = None):
-            event = {"stage": stage, "data": data or {}}
-            yield f"data: {json.dumps(event)}\n\n"
-
         try:
             yield f"data: {json.dumps({'stage': 'started', 'topic': request.topic})}\n\n"
 
             pipeline = ContentPipeline(
                 min_quality_threshold=request.min_quality_threshold,
                 max_revisions=2,
-                require_human_review=False,  # Can't do HITL in streaming
+                require_human_review=False,  # Can't pause for human-in-the-loop review (HITL) over a streaming connection
             )
 
             # Run in thread pool
@@ -285,6 +289,10 @@ async def stream_pipeline(request: PipelineRequest):
         },
     )
 ```
+
+Server-Sent Events (SSE) is a one-way HTTP stream — the server holds the connection open and pushes text lines prefixed with `data: ` as work progresses, like tailing a log over HTTP. It is simpler than WebSockets when you only need server-to-client updates. The `X-Accel-Buffering: no` header tells proxies not to buffer, so events reach the client immediately.
+
+This endpoint streams start/complete/error markers. True per-stage streaming requires the pipeline to accept a progress callback and emit an event as each agent finishes — see the exercises.
 
 ```python
 # script_id: day_097_capstone_deploy_to_production/api_router_health
@@ -364,9 +372,10 @@ from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
-# Rough token costs (update as pricing changes)
+# Rough $/1K-token estimate (blended input+output, directional);
+# verify current pricing at the provider (as of 2026-06).
 COST_PER_1K_TOKENS = {
-    "gpt-4o": 0.005,
+    "gpt-4o": 0.0025,
     "gpt-4o-mini": 0.00015,
 }
 
@@ -551,8 +560,6 @@ CMD ["streamlit", "run", "ui/app.py", "--server.port=8501", "--server.address=0.
 
 ```yaml
 # docker-compose.yml
-version: "3.8"
-
 services:
   api:
     build:
@@ -565,7 +572,7 @@ services:
     volumes:
       - ./data:/app/data  # Persist SQLite databases
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/health').status==200 else 1)"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -729,7 +736,7 @@ A production-deployed AI system with:
 
 ## Checkpoint
 
-Run the `api_main` service and confirm the full path works end to end: a request passes through the rate-limit and cost-tracking middleware, hits `/pipeline`, and returns a result while `/health` and `/health/detailed` report green. If a request is rejected with a 429 on the very first call, check that the rate-limit middleware's window/counter is initialized per-client and not pre-exhausted.
+Run the `api_main` service and confirm the full path works end to end: a request passes through the rate-limit and cost-tracking middleware, hits `POST /api/v1/run`, and returns a result while `/health` and `/health/detailed` report green. If a request is rejected with a 429 on the very first call, check that the rate-limit middleware's window/counter is initialized per-client and not pre-exhausted.
 
 ## Summary
 

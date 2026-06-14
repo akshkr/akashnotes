@@ -33,15 +33,19 @@ flowchart TB
 | Goal | Use | Settings |
 |------|-----|----------|
 | Deterministic output | Temperature | `temperature=0` |
-| Creative but safe | Top-P | `top_p=0.9, temperature=1` |
+| Creative but safe | Top-P | `top_p=0.9 (leave temperature at its default 1.0)` |
 | Maximum creativity | Temperature | `temperature=1.5` |
 | Balanced general use | Either | `temperature=0.7` or `top_p=0.9` |
+
+Leaving temperature at its default 1.0 means you are effectively only tuning top_p — that is still one knob.
 
 ---
 
 ## Frequency and Presence Penalties
 
 These parameters help prevent repetition in outputs.
+
+> **Coming from Software Engineering?** Think of these as two rate-limiting strategies. Frequency penalty is a per-request throttle that gets stricter the more times a token is used (more uses = bigger penalty). Presence penalty is a one-time flag: once a token has appeared at all it is penalized a flat amount regardless of count — like a feature flag flipping on after first use.
 
 ### Frequency Penalty
 
@@ -66,6 +70,8 @@ flowchart LR
 ### Presence Penalty
 
 Reduces the likelihood of tokens that have appeared **at all**, regardless of how many times.
+
+A penalty simply lowers a token's chance of being picked before sampling — the bigger the penalty, the less likely that token. Frequency scales that reduction by how many times the token already appeared; presence applies it once, flat.
 
 ```mermaid
 flowchart TB
@@ -140,6 +146,8 @@ from openai import OpenAI
 client = OpenAI()
 
 # Different configurations for different tasks
+# Note: a few presets nudge both temperature and top_p off-default as a pragmatic recipe.
+# In your own code, start by tuning just one and reach for the second only if the first is not enough.
 CONFIGS = {
     "code_generation": {
         "temperature": 0,
@@ -304,8 +312,8 @@ mindmap
 |---|---|---|---|
 | `temperature` | Reshapes the whole distribution | 0 – 2 | You want a single creativity dial |
 | `top_p` | Keeps only the top probability mass | 0.1 – 1.0 | You want nucleus sampling (instead of temperature) |
-| `frequency_penalty` | Penalizes tokens by how *often* they've appeared | 0.0 – 1.0 (try 0.3–0.7) | Output keeps repeating the same words |
-| `presence_penalty` | Penalizes tokens that have appeared *at all* | 0.0 – 1.0 (try 0.3–0.5) | You want the model to introduce new topics |
+| `frequency_penalty` | Penalizes tokens by how *often* they've appeared | 0.0–1.0 typical (API accepts -2 to 2) | Output keeps repeating the same words |
+| `presence_penalty` | Penalizes tokens that have appeared *at all* | 0.0–1.0 typical (API accepts -2 to 2) | You want the model to introduce new topics |
 
 **Rule of thumb:** tune *one* of temperature / top_p, then add a small penalty only if you see repetition.
 
@@ -315,13 +323,34 @@ mindmap
 
 1. **Temperature Explorer**: Create a script that generates the same prompt with temperatures from 0 to 2 in 0.2 increments. Visualize how the outputs change.
 
+<details><summary>Solution</summary>
+
+Loop temperature from 0 to 2 in 0.2 steps, calling the model with the same prompt each time and printing the result alongside its temperature. You should see near-identical, "safe" outputs at low values and increasingly varied (eventually erratic) outputs as you climb past ~1.2. A simple list of `(temperature, output)` pairs is enough to eyeball the trend.
+
+</details>
+
 2. **Repetition Fighter**: Take a prompt that tends to produce repetitive output. Find the optimal frequency/presence penalty combination.
+
+<details><summary>Solution</summary>
+
+Start with both penalties at 0 to confirm the repetition, then sweep `frequency_penalty` in steps of 0.2 up to ~1.0. Add a small `presence_penalty` (~0.3) only if whole topics keep recurring rather than individual words. The "optimal" value is the lowest one that removes the loop without making the text feel forced — usually in the 0.3–0.7 range.
+
+</details>
 
 3. **Task Matcher**: Given these tasks, choose appropriate settings:
    - Generating unit tests
    - Writing poetry
    - Extracting dates from text
    - Generating product descriptions
+
+<details><summary>Solution</summary>
+
+- Generating unit tests → `temperature=0` (you want deterministic, correct code)
+- Writing poetry → `temperature≈1.2` plus `frequency_penalty≈0.5` (creative and non-repetitive)
+- Extracting dates from text → `temperature=0` (exact, repeatable extraction)
+- Generating product descriptions → `temperature≈0.8` or `top_p≈0.9` (lively but on-topic)
+
+</details>
 
 ---
 
@@ -332,4 +361,4 @@ You now understand the three pillars of LLM interaction:
 2. How they see text (Tokenization)
 3. How to control their output (Sampling Parameters)
 
-Next, we'll dive into **Advanced Prompting Techniques** - the art of communicating effectively with LLMs to get exactly what you want!
+Tomorrow (Day 6) we start prompting techniques proper with **Zero-Shot vs Few-Shot Prompting** — how giving the model a few worked examples changes what you get back.

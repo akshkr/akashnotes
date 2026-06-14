@@ -227,6 +227,7 @@ class PostgresConversationStore:
                     conversation_id UUID REFERENCES conversations(id) ON DELETE CASCADE,
                     role TEXT NOT NULL,
                     content TEXT NOT NULL,
+                    -- tokens and latency_ms record per-message LLM cost and response time (the token count comes from the API usage field, e.g. response.usage.total_tokens)
                     tokens INTEGER,
                     latency_ms INTEGER,
                     timestamp TIMESTAMPTZ DEFAULT NOW(),
@@ -286,12 +287,22 @@ class PostgresConversationStore:
             return cur.fetchall()
 
     def get_recent_context(self, conversation_id: str, max_tokens: int = 4000) -> List[Dict]:
-        """Get recent messages within a token budget."""
+        """Get recent messages within a token budget.
+
+        An LLM can only read a fixed amount of text per request (its context
+        window), counted in tokens -- think of a token as roughly a word-piece,
+        like a fixed request-body size limit. Long conversations exceed it, so
+        before each call we replay only the most recent messages that fit a
+        token budget. This is like pagination, but the page size is a token
+        budget instead of a row count: the query walks newest-first and stops
+        once the running total passes the budget.
+        """
         with self.conn.cursor(cursor_factory=RealDictCursor) as cur:
             # Get messages in reverse order, accumulate until budget exceeded
             cur.execute(
                 """WITH token_sum AS (
                        SELECT *,
+                              -- if a message has no recorded token count, assume ~100 as a rough average so the budget math still works
                               SUM(COALESCE(tokens, 100)) OVER (ORDER BY timestamp DESC) as running_total
                        FROM messages
                        WHERE conversation_id = %s
@@ -350,29 +361,45 @@ context = store.get_recent_context(conv_id, max_tokens=2000)
 
 ## Integration with LangGraph
 
-Use database storage with LangGraph checkpointing:
+Use database storage with LangGraph checkpointing. LangGraph can snapshot an
+agent's state after each step (a *checkpoint*) and reload it later — like
+auto-save / session resume. `PostgresSaver` stores those snapshots in Postgres
+for you, keyed by `thread_id` (one thread = one conversation), instead of you
+hand-writing the message table above.
+
+Install the checkpointer (it lives in a separate distribution and pulls in
+psycopg 3, distinct from the psycopg2 used by the store classes above):
+
+```bash
+pip install langgraph langgraph-checkpoint-postgres
+```
 
 ```python
 # script_id: day_046_database_storage/langgraph_postgres_integration
 from langgraph.checkpoint.postgres import PostgresSaver
-from langgraph.graph import StateGraph, END
+from langgraph.graph import StateGraph
 
-# Create PostgreSQL checkpointer
-checkpointer = PostgresSaver.from_conn_string(
+# AgentState comes from your LangGraph graph (prior day); user_id/conv_id/initial_state come from your app.
+
+# from_conn_string is a context manager: use it inside a with-block so the
+# DB connection actually opens.
+with PostgresSaver.from_conn_string(
     "postgresql://user:pass@localhost:5432/agents"
-)
-# For async applications, use `AsyncPostgresSaver` from the same package.
+) as checkpointer:
+    checkpointer.setup()  # creates checkpoint tables on first run
 
-# Build your graph
-workflow = StateGraph(AgentState)
-# ... add nodes and edges ...
+    # Build your graph
+    workflow = StateGraph(AgentState)
+    # ... add nodes and edges ...
 
-# Compile with PostgreSQL checkpointing
-app = workflow.compile(checkpointer=checkpointer)
+    # Compile with PostgreSQL checkpointing
+    app = workflow.compile(checkpointer=checkpointer)
 
-# Run with thread ID (stored in PostgreSQL)
-config = {"configurable": {"thread_id": f"user-{user_id}-conv-{conv_id}"}}
-result = app.invoke(initial_state, config=config)
+    # Run with thread ID (stored in PostgreSQL)
+    config = {"configurable": {"thread_id": f"user-{user_id}-conv-{conv_id}"}}
+    result = app.invoke(initial_state, config=config)
+
+# For async apps, use AsyncPostgresSaver from langgraph.checkpoint.postgres.aio (an async context manager).
 ```
 
 ---
@@ -507,6 +534,7 @@ def migrate_sqlite_to_postgres(sqlite_path: str, postgres_conn: str):
     """Migrate data from SQLite to PostgreSQL."""
 
     import sqlite3
+    import json
     import psycopg2
     from psycopg2.extras import Json
 
@@ -543,10 +571,6 @@ migrate_sqlite_to_postgres("local.db", "postgresql://localhost/production")
 ```
 
 ---
-
-## Checkpoint
-
-Run the SQLite example: create a `SQLiteConversationStore`, `create_conversation(...)`, add a user and an assistant message, then call `get_conversation(conv_id)`. You should get back a dict whose `messages` list contains both turns in insertion order — and the same data survives if you reopen the `.db` file in a fresh process. If `get_conversation` returns `None`, you're querying a different `conversation_id` than the one `create_conversation` returned.
 
 ## Summary
 
@@ -592,8 +616,10 @@ store.add_message(conv_id, "assistant", "Hi!", tokens=5)
 messages = store.get_messages(conv_id, limit=50)
 
 # LangGraph integration
-checkpointer = PostgresSaver.from_conn_string(conn_str)
-app = workflow.compile(checkpointer=checkpointer)
+# use inside a with-block:
+with PostgresSaver.from_conn_string(conn_str) as checkpointer:
+    checkpointer.setup()
+    app = workflow.compile(checkpointer=checkpointer)
 ```
 
 ---
@@ -612,6 +638,12 @@ app = workflow.compile(checkpointer=checkpointer)
 3. SQLite: `WHERE content LIKE '%term%'`. Postgres: a `tsvector` column + `to_tsquery` for ranked, language-aware search.
 4. Read all rows from SQLite, `INSERT` into Postgres in a transaction, then assert `COUNT(*)` is equal on both sides.
 </details>
+
+---
+
+## Checkpoint
+
+The point of durable storage is that data outlives the process. To prove it: in one Python process, create a `SQLiteConversationStore("agent.db")`, start a conversation, add a couple of messages, and note the `conv_id`. Then exit, start a **fresh** process, open `SQLiteConversationStore("agent.db")` again, and call `get_conversation(conv_id)` — the messages should still be there, in order. If they vanished, you most likely used an in-memory path or a different `.db` file; if `get_conversation` returns `None`, you're querying a different `conversation_id` than the one `create_conversation` returned.
 
 ---
 

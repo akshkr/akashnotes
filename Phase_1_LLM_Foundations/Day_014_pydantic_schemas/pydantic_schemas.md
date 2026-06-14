@@ -130,7 +130,7 @@ except ValidationError as e:
     print("Validation failed!")
     print(e.json())
 
-# Output:
+# Output (abridged):
 # [
 #   {
 #     "type": "int_parsing",
@@ -255,6 +255,9 @@ class Product(BaseModel):
     price: float = Field(gt=0)  # Must be greater than 0
     tags: List[str] = []
 
+    # @field_validator runs when the field is set; v is the incoming value, and
+    # whatever you return becomes the stored value (returning v.title() actually
+    # capitalizes it). @classmethod is required by Pydantic v2.
     @field_validator('name')
     @classmethod
     def name_must_not_be_empty(cls, v):
@@ -283,6 +286,8 @@ print(product.tags)  # ["electronics", "computers"] (lowercased)
 ## Generating JSON Schemas
 
 Pydantic can generate JSON schemas that LLMs understand:
+
+JSON Schema is just a machine-readable description of a data shape — like an OpenAPI/Swagger spec for a single object. We generate it from the model and paste it into the prompt so the LLM knows exactly which fields and types to return.
 
 ```python
 # script_id: day_014_pydantic_schemas/json_schema_generation
@@ -369,16 +374,17 @@ flowchart LR
 
 ```python
 # script_id: day_014_pydantic_schemas/llm_basic_implementation
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from openai import OpenAI
+from typing import Literal
 import json
 
 client = OpenAI()
 
 class MovieReview(BaseModel):
     title: str
-    rating: float
-    sentiment: str
+    rating: int = Field(ge=0, le=10)
+    sentiment: Literal["positive", "neutral", "negative"]  # overall tone of the review
     key_points: list[str]
 
 def extract_review(text: str) -> MovieReview:
@@ -400,11 +406,12 @@ Return only valid JSON, no other text."""
     response = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[{"role": "user", "content": prompt}],
+        response_format={"type": "json_object"},
         temperature=0
     )
 
     # Parse the JSON response
-    json_str = response.choices[0].message.content
+    json_str = response.choices[0].message.content or ""
     data = json.loads(json_str)
 
     # Validate with Pydantic
@@ -464,6 +471,8 @@ print(schema["properties"]["priority"])
 # {'description': 'Priority level: low, medium, high, or urgent', 'title': 'Priority', 'type': 'string'}
 ```
 
+`Literal[...]` enforces the value set inside Pydantic; a described `str` leans on the LLM to comply — choose `Literal` when you want a hard guarantee, a described `str` when you want flexibility.
+
 ### Examples in Schema
 
 ```python
@@ -489,6 +498,7 @@ from pydantic import BaseModel, Field, ValidationError
 from openai import OpenAI
 from typing import List, Optional
 import json
+import re
 
 client = OpenAI()
 
@@ -527,19 +537,17 @@ Return only the JSON object, nothing else."""
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt}
         ],
+        response_format={"type": "json_object"},
         temperature=0
     )
 
     # Parse and validate
-    json_str = response.choices[0].message.content
+    json_str = response.choices[0].message.content or ""
 
-    # Clean up potential markdown formatting
-    if json_str.startswith("```"):
-        json_str = json_str.split("```")[1]
-        if json_str.startswith("json"):
-            json_str = json_str[4:]
+    # Clean up potential markdown formatting (rarely needed with json_object mode)
+    json_str = re.sub(r'^```(?:json)?\s*|\s*```$', '', json_str.strip())
 
-    data = json.loads(json_str.strip())
+    data = json.loads(json_str)
     return ExtractedContacts(**data)
 
 # Step 3: Use it!
@@ -579,7 +587,7 @@ except json.JSONDecodeError as e:
 
 ## Checkpoint
 
-Run `extract_review` and confirm: a valid blurb returns a typed `MovieReview` object (access `review.rating` as an int, not a string), while malformed JSON raises a `ValidationError` instead of silently passing bad data downstream. If everything parses even when it shouldn't, check that your fields use real types/constraints (e.g. `rating: int = Field(ge=0, le=10)`) rather than bare `str`.
+Run `extract_review` and confirm: a valid blurb returns a typed `MovieReview` object (access `review.rating` as an int, not a string). Then pass a deliberately malformed value (e.g. `MovieReview(title="x", rating="great", sentiment="positive", key_points=[])`) and confirm it raises a `ValidationError` instead of silently passing bad data downstream. If everything parses even when it shouldn't, check that your fields use real types/constraints (e.g. `rating: int = Field(ge=0, le=10)`) rather than bare `str`.
 
 ---
 
@@ -642,9 +650,143 @@ obj.model_dump_json()  # To JSON string
 
 1. **Invoice Extractor**: Create a Pydantic model for invoices (vendor, items, totals) and extract from sample invoice text
 
+<details><summary>Solution</summary>
+
+```python
+# script_id: day_014_pydantic_schemas/exercise_1_solution
+from pydantic import BaseModel, Field
+from openai import OpenAI
+from typing import List
+import json
+
+client = OpenAI()
+
+class LineItem(BaseModel):
+    description: str
+    quantity: int = Field(ge=1)
+    unit_price: float = Field(ge=0)
+
+class Invoice(BaseModel):
+    vendor: str
+    items: List[LineItem]
+    total: float = Field(ge=0)
+
+def extract_invoice(text: str) -> Invoice:
+    schema = Invoice.model_json_schema()
+    prompt = f"""Extract invoice information from the text.
+Return a JSON object matching this schema:
+
+{json.dumps(schema, indent=2)}
+
+Text:
+{text}
+
+Return only valid JSON, no other text."""
+
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[{"role": "user", "content": prompt}],
+        response_format={"type": "json_object"},
+        temperature=0
+    )
+    data = json.loads(response.choices[0].message.content or "")
+    return Invoice(**data)
+```
+
+</details>
+
 2. **Resume Parser**: Build a schema for resumes and parse job application emails
 
+<details><summary>Solution</summary>
+
+```python
+# script_id: day_014_pydantic_schemas/exercise_2_solution
+from pydantic import BaseModel, Field
+from openai import OpenAI
+from typing import List, Optional
+import json
+
+client = OpenAI()
+
+class Experience(BaseModel):
+    company: str
+    title: str
+    years: Optional[float] = None
+
+class Resume(BaseModel):
+    name: str
+    email: Optional[str] = None
+    skills: List[str] = []
+    experience: List[Experience] = []
+
+def parse_resume(text: str) -> Resume:
+    schema = Resume.model_json_schema()
+    prompt = f"""Extract resume information from the email below.
+Return a JSON object matching this schema:
+
+{json.dumps(schema, indent=2)}
+
+Email:
+{text}
+
+Return only valid JSON, no other text."""
+
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[{"role": "user", "content": prompt}],
+        response_format={"type": "json_object"},
+        temperature=0
+    )
+    data = json.loads(response.choices[0].message.content or "")
+    return Resume(**data)
+```
+
+</details>
+
 3. **Sentiment Analyzer**: Create a model that extracts entities AND sentiment from product reviews
+
+<details><summary>Solution</summary>
+
+```python
+# script_id: day_014_pydantic_schemas/exercise_3_solution
+from pydantic import BaseModel, Field
+from openai import OpenAI
+from typing import List, Literal
+import json
+
+client = OpenAI()
+
+class Entity(BaseModel):
+    name: str
+    entity_type: str  # e.g. "product", "feature", "brand"
+
+class ReviewAnalysis(BaseModel):
+    entities: List[Entity]
+    sentiment: Literal["positive", "neutral", "negative"]  # overall tone
+
+def analyze_review(text: str) -> ReviewAnalysis:
+    schema = ReviewAnalysis.model_json_schema()
+    prompt = f"""Extract the entities mentioned and the overall sentiment
+from the product review. Return a JSON object matching this schema:
+
+{json.dumps(schema, indent=2)}
+
+Review:
+{text}
+
+Return only valid JSON, no other text."""
+
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[{"role": "user", "content": prompt}],
+        response_format={"type": "json_object"},
+        temperature=0
+    )
+    data = json.loads(response.choices[0].message.content or "")
+    return ReviewAnalysis(**data)
+```
+
+</details>
 
 ---
 

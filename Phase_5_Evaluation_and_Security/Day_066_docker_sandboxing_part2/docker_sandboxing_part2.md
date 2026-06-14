@@ -1,6 +1,8 @@
-# Docker Sandboxing — Part 2: API Key Security & Resource Limits
+# Docker Sandboxing — Part 2: Injecting Secrets & a Production SecureSandbox
 
 > **Coming from Software Engineering?** Everything in this section is standard secrets management — the same practices you follow for database passwords, cloud credentials, and service tokens. Environment variables, secrets managers (Vault, AWS Secrets Manager), and never logging credentials are all practices you already know. The AI-specific twist: agents may try to *include* API keys in their output or tool calls, so you need output filtering too.
+
+In Part 1 (Day 065) you built the sandbox container itself — resource limits, network isolation, dropped capabilities. Part 2 adds the secrets layer and assembles the full SecureSandbox.
 
 ## API Key Security
 
@@ -55,6 +57,7 @@ print(f"Using API key: {client.get_masked_key()}")  # sk-ab****wxyz
 ```python
 # script_id: day_066_docker_sandboxing_part2/secret_injection
 import docker
+import os
 import tempfile
 
 def run_with_secrets(code: str, secrets: dict) -> dict:
@@ -160,6 +163,7 @@ openai_key = secrets["OPENAI_API_KEY"]
 ```python
 # script_id: day_066_docker_sandboxing_part2/hashicorp_vault
 import hvac
+import os
 
 def get_vault_secret(path: str, vault_url: str = "http://localhost:8200") -> dict:
     """Retrieve secret from HashiCorp Vault."""
@@ -255,6 +259,7 @@ class SecureSandbox:
             code_path = f.name
 
         start_time = datetime.now()
+        container = None
 
         try:
             container = self.client.containers.run(
@@ -280,9 +285,6 @@ class SecureSandbox:
             result = container.wait(timeout=self.timeout)
             logs = container.logs().decode('utf-8')
             exit_code = result['StatusCode']
-
-            # Cleanup
-            container.remove()
 
             execution_time = (datetime.now() - start_time).total_seconds()
 
@@ -315,6 +317,18 @@ class SecureSandbox:
                 "success": False
             }
         finally:
+            # wait(timeout=...) bounds how long we wait for logs, not the
+            # container itself, so always tear it down here — a hung or
+            # timed-out container is killed and removed regardless of outcome.
+            if container is not None:
+                try:
+                    container.kill()
+                except Exception:
+                    pass  # already stopped
+                try:
+                    container.remove(force=True)
+                except Exception:
+                    pass
             os.unlink(code_path)
 
         # Log execution
@@ -334,6 +348,9 @@ class SecureSandbox:
             "open(",  # Can be allowed selectively
         ]
 
+        # Note: the default blocklist also rejects `open(`, so plain file I/O
+        # fails this static check — relax this list per use case. The container's
+        # read-only filesystem is the real guard, not the substring check.
         for pattern in dangerous_patterns:
             if pattern in code:
                 return {"valid": False, "reason": f"Forbidden pattern: {pattern}"}
@@ -341,7 +358,15 @@ class SecureSandbox:
         return {"valid": True}
 
     def _wrap_code(self, code: str, input_data: Optional[dict]) -> str:
-        """Wrap user code with I/O handling."""
+        """Wrap user code with I/O handling.
+
+        To get structured data back out of the container we use a convention
+        SWEs already know for cross-process I/O — the wrapper prints a sentinel
+        marker (__RESULT_JSON__) followed by JSON, then the parent splits the
+        logs on that marker. It also shadows print so it can both capture and
+        forward output, and it agrees with the user code on one rule: assign
+        your answer to a variable named `result`.
+        """
 
         return f'''
 import json
@@ -413,6 +438,7 @@ sandbox = SecureSandbox(
     timeout=10
 )
 
+# The sandbox injects INPUT_DATA for you, and returns whatever you assign to a variable named `result`.
 code = """
 numbers = INPUT_DATA.get('numbers', [])
 result = {
@@ -433,6 +459,8 @@ print(f"Result: {output.get('data')}")
 ## Checkpoint
 
 With `OPENAI_API_KEY` exported, run the `SecureAPIClient` example and confirm `client.get_masked_key()` prints something like `sk-ab****wxyz` — first four and last four characters only, middle masked. If you instead see a `ValueError` about a missing key, the env var isn't set in the shell you're running from; if the full key prints unmasked, your `get_masked_key` is returning `self.api_key` directly instead of the sliced version.
+
+If you have Docker running, also call `sandbox.execute(code, input_data={"numbers": [1, 2, 3, 4, 5]})` and confirm `output["success"]` is `True` and `output["data"]["sum"] == 15`. If Docker is not running you'll get an error from `docker.from_env()` instead — that's expected, and exercises only the masking-helper path above.
 
 ---
 
@@ -531,4 +559,4 @@ Before deploying sandboxed execution:
 
 ## What's Next?
 
-You've learned to secure your agents! In Month 6, we'll explore **Production Deployment** - taking your agents from development to the real world!
+You've locked down code execution and secrets. Next up (Day 67): **API Key Security in Agent Workflows** — key rotation, scoping to least privilege, usage monitoring, and catching key leakage in agent output.

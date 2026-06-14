@@ -1,8 +1,8 @@
 # Tool Schemas: From Pydantic Models to LLM-Ready Definitions
 
-When you want an LLM to call your Python functions, you need to describe those functions in a format the LLM understands: **JSON Schema**. The good news: modern SDKs generate these schemas automatically from Pydantic models. You rarely need to write them by hand.
+When you want an LLM to call your Python functions, you need to describe those functions in a format the LLM understands: **JSON Schema** (a standard way to describe the shape of a JSON object — its fields, their types, and which are required). The good news: modern SDKs generate these schemas automatically from Pydantic models. You rarely need to write them by hand.
 
-> **Coming from Software Engineering?** This is like OpenAPI/Swagger spec generation. Just as FastAPI auto-generates API docs from your type annotations, LLM SDKs auto-generate tool schemas from Pydantic models. The days of hand-writing JSON schemas for every function are over.
+> **Coming from Software Engineering?** This is like OpenAPI/Swagger spec generation. Just as FastAPI auto-generates API docs from your type annotations, LLM SDKs auto-generate tool schemas from Pydantic models. The days of hand-writing JSON schemas for every function are over. The LLM never runs your code. It reads your tool descriptions and, when it decides a tool fits, returns a JSON object naming the tool and its arguments — your code does the actual call. The schema is how the model knows which arguments are valid. And just as a frontend reads your OpenAPI spec to know which endpoints exist and what to send, the LLM reads these tool schemas to pick a tool and fill in its arguments.
 
 ---
 
@@ -68,7 +68,7 @@ tools = [
 ]
 
 response = client.messages.create(
-    model="claude-sonnet-4-5",
+    model="claude-sonnet-4-6",
     max_tokens=1024,
     tools=tools,
     messages=[{"role": "user", "content": "Find me running shoes under $100"}],
@@ -84,7 +84,7 @@ LangChain goes even further — it generates schemas directly from function sign
 from langchain_core.tools import tool
 
 @tool
-def search_products(query: str, category: str = None, max_price: float = None) -> list:
+def search_products(query: str, category: str | None = None, max_price: float | None = None) -> list:
     """Search for products in the catalog by name, category, or price range."""
     # Your implementation here
     return [{"name": "Running Shoe", "price": 89.99}]
@@ -108,7 +108,7 @@ class SearchInput(BaseModel):
     max_price: float | None = Field(None, description="Maximum price filter")
 
 @tool(args_schema=SearchInput)
-def search_products(query: str, category: str = None, max_price: float = None) -> list:
+def search_products(query: str, category: str | None = None, max_price: float | None = None) -> list:
     """Search for products in the catalog."""
     return [{"name": "Running Shoe", "price": 89.99}]
 ```
@@ -121,34 +121,44 @@ You rarely write these by hand, but understanding the format helps when debuggin
 
 ```python
 # script_id: day_029_tool_schemas_pydantic/raw_json_schema_example
-# This is what pydantic_function_tool(SearchProducts) generates for OpenAI:
+# This is what pydantic_function_tool(SearchProducts) generates for OpenAI.
+# Note the strict-mode artifacts: "strict": true, every field in "required",
+# optionals expressed as anyOf with null, and additionalProperties: false.
 {
     "type": "function",
     "function": {
         "name": "SearchProducts",
+        "strict": True,
         "description": "Search for products in the catalog.",
         "parameters": {
             "type": "object",
+            "title": "SearchProducts",
+            "description": "Search for products in the catalog.",
             "properties": {
                 "query": {
                     "type": "string",
+                    "title": "Query",
                     "description": "Search query for products"
                 },
                 "category": {
-                    "type": "string",
+                    "anyOf": [{"type": "string"}, {"type": "null"}],
+                    "title": "Category",
                     "description": "Filter by category"
                 },
                 "max_price": {
-                    "type": "number",
+                    "anyOf": [{"type": "number"}, {"type": "null"}],
+                    "title": "Max Price",
                     "description": "Maximum price filter"
                 },
                 "max_results": {
                     "type": "integer",
                     "default": 10,
+                    "title": "Max Results",
                     "description": "Maximum results to return"
                 }
             },
-            "required": ["query"]
+            "required": ["query", "category", "max_price", "max_results"],
+            "additionalProperties": False
         }
     }
 }
@@ -158,7 +168,7 @@ Key things to notice:
 - **`name`** comes from the class name (OpenAI) or you set it explicitly (Anthropic)
 - **`description`** comes from the docstring
 - **`properties`** map to Pydantic fields with types auto-converted
-- **`required`** only includes fields without defaults
+- **`required`**: with bare `model_json_schema()` (the Anthropic path) this includes only fields without defaults; OpenAI's `pydantic_function_tool` uses strict mode, so all fields land in `required` and optional fields become `anyOf` with null
 - Anthropic uses `input_schema` instead of `parameters` — same content, different key
 
 ---
@@ -247,7 +257,7 @@ print(json.dumps(CreateTicket.model_json_schema(), indent=2))
 | `list[str]` | `"type": "array", "items": {"type": "string"}` | Array of strings |
 | `Literal["a", "b"]` | `"enum": ["a", "b"]` | Constrained choices |
 | `Enum` | `"enum": [...]` | Constrained choices |
-| `Optional[str]` | Not in `required` | LLM may omit |
+| `Optional[str]` | Not in `required` (bare `model_json_schema()` path) | LLM may omit |
 | `Field(ge=1, le=5)` | `"minimum": 1, "maximum": 5` | Bounded range |
 | `Field(min_length=5)` | `"minLength": 5` | Minimum string length |
 
@@ -329,7 +339,10 @@ class DoStuff(BaseModel):
 A normal tool schema *describes* the shape you want, but the model can still
 return something slightly off. **Strict / structured-output modes** make the
 provider *enforce* the schema, so you get valid, parseable output every time —
-no defensive `try/except json.loads` dance.
+no defensive `try/except json.loads` dance. Under the hood the provider
+restricts the model so it can only produce output that keeps matching the
+schema — you don't need the internals, just that the result is guaranteed to
+parse.
 
 > **Coming from Software Engineering?** This is the difference between
 > documenting an API contract and having the framework validate it. Strict mode
@@ -374,12 +387,6 @@ parsing-and-hoping.**
 > almost-JSON" bugs. The trade-offs: schemas compile on first use (a one-time
 > latency hit, then cached), and a few JSON-Schema features (recursion, numeric
 > ranges) aren't supported — validate those client-side.
-
----
-
-## Checkpoint
-
-Run `to_openai` and `to_anthropic` on the same Pydantic model and confirm: both emit valid tool schemas with your fields, types, and descriptions intact — one Pydantic class, two provider formats, no hand-written JSON. If a constraint like an enum or `Field(description=...)` is missing from the output, check that you generated the schema with `model_json_schema()` rather than copying field names by hand.
 
 ---
 
@@ -431,6 +438,12 @@ flowchart LR
 3. Swap the docstring/`Field(description=...)` and rerun the same prompts; clearer descriptions reduce wrong or empty arguments.
 4. `REGISTRY = {"get_weather": (GetWeather, get_weather)}`; generate tool specs by iterating the registry and dispatch by name on a tool call.
 </details>
+
+---
+
+## Checkpoint
+
+Run `to_openai` and `to_anthropic` on the same Pydantic model and confirm: both emit valid tool schemas with your fields, types, and descriptions intact — one Pydantic class, two provider formats, no hand-written JSON. If a constraint like an enum or `Field(description=...)` is missing from the output, check that you generated the schema with `model_json_schema()` rather than copying field names by hand.
 
 ---
 

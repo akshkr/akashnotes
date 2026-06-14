@@ -2,7 +2,7 @@
 
 Ragas is a framework specifically designed to evaluate Retrieval-Augmented Generation systems. This guide shows you how to measure retrieval and generation quality.
 
-> **Coming from Software Engineering?** Ragas metrics are like test coverage and performance benchmarks for your RAG pipeline. Faithfulness measures "does the output match the retrieved data?" (like asserting a function returns values from its input). Context relevance measures "did we retrieve the right documents?" (like asserting your SQL query returns the right rows). Answer relevance measures "did we actually answer the question?" (like asserting API response matches the request). If you've built test suites with coverage metrics, this is the same discipline.
+> **Coming from Software Engineering?** Ragas metrics are like test coverage and performance benchmarks for your RAG pipeline. Faithfulness measures "does the output match the retrieved data?" (like asserting a function returns values from its input). Context relevance measures "did we retrieve the right documents?" (like asserting your SQL query returns the right rows). Answer relevance measures "did we actually answer the question?" (like asserting API response matches the request). Context recall measures "did we retrieve everything we needed?" — like checking your query didn't miss rows it should have returned. If you've built test suites with coverage metrics, this is the same discipline. One difference: unlike a normal assert, Ragas doesn't string-compare — it uses an LLM to read each answer against its context and grade it 0-1 (the LLM-as-judge idea from Day 58). Treat the scores as an automated reviewer's grade: approximate, and they can shift slightly run to run.
 
 ---
 
@@ -38,21 +38,26 @@ Ragas measures:
 - **Context Precision**: Are retrieved contexts relevant?
 - **Context Recall**: Do contexts contain the needed information?
 
+Precision = of the chunks we pulled back, what fraction were actually relevant (low precision = junk mixed in). Recall = of the info needed to answer, what fraction made it into the chunks (low recall = a needed chunk was missed). Like search results: precision = no spam, recall = nothing important left out.
+
 ---
 
 ## Installation
 
 ```bash
-pip install ragas>=0.3 datasets
+pip install "ragas>=0.2"
 ```
 
 ---
 
 ## Basic Ragas Evaluation
 
+Ragas scores by calling an LLM and an embedding model under the hood, so it needs API credentials and makes small paid API calls — set `OPENAI_API_KEY` in your environment before running (Ragas uses OpenAI models by default).
+
 ```python
 # script_id: day_060_ragas_evaluation/basic_ragas_eval
 from ragas import evaluate, EvaluationDataset
+# On newer Ragas this import path is moving to ragas.metrics.collections; check your version's docs.
 from ragas.metrics import faithfulness, answer_relevancy, context_precision, context_recall
 
 # Prepare your evaluation data
@@ -89,15 +94,23 @@ results = evaluate(
 )
 
 print(results)
-print(f"\nFaithfulness: {results['faithfulness']:.3f}")
-print(f"Answer Relevancy: {results['answer_relevancy']:.3f}")
-print(f"Context Precision: {results['context_precision']:.3f}")
-print(f"Context Recall: {results['context_recall']:.3f}")
+
+# results[key] is a list of per-sample scores, not a single float.
+# Use the pandas frame for aggregate scores (one column per metric).
+df = results.to_pandas()
+print(f"\nFaithfulness: {df['faithfulness'].mean():.3f}")
+print(f"Answer Relevancy: {df['answer_relevancy'].mean():.3f}")
+print(f"Context Precision: {df['context_precision'].mean():.3f}")
+print(f"Context Recall: {df['context_recall'].mean():.3f}")
 ```
+
+`faithfulness` and `answer_relevancy` need only `user_input` / `response` / `retrieved_contexts`; `context_recall` (and reference-based `context_precision`) also need a `reference` — a human-written correct answer. With no reference, those metrics return `None`.
 
 ---
 
 ## Understanding Each Metric
+
+Every metric returns a float in [0,1] where higher is better.
 
 ### Faithfulness
 
@@ -209,7 +222,7 @@ class RAGEvaluator:
     """Evaluate RAG system with Ragas metrics."""
 
     def __init__(self):
-        # In Ragas 0.3+, metrics are module-level instances, not classes
+        # In Ragas 0.2+, metrics are module-level instances, not classes
         self.metrics = [faithfulness, answer_relevancy, context_precision, context_recall]
         self.results_history = []
 
@@ -234,11 +247,13 @@ class RAGEvaluator:
         eval_dataset = EvaluationDataset.from_dict(data)
         results = evaluate(dataset=eval_dataset, metrics=self.metrics)
 
+        # Turn the per-sample frame into a plain dict of aggregate floats.
+        # Metrics with no reference (e.g. context_recall) simply won't appear.
+        df = results.to_pandas()
         return {
-            "faithfulness": results["faithfulness"],
-            "answer_relevancy": results["answer_relevancy"],
-            "context_precision": results["context_precision"],
-            "context_recall": results.get("context_recall", None)
+            m: float(df[m].mean())
+            for m in ("faithfulness", "answer_relevancy", "context_precision", "context_recall")
+            if m in df.columns
         }
 
     def evaluate_batch(self, test_cases: List[Dict]) -> Dict:
@@ -275,7 +290,7 @@ class RAGEvaluator:
         for name, key, description in metrics_display:
             score = results.get(key)
             if score is not None:
-                bar = "█" * int(score * 10) + "░" * (10 - int(score * 10))
+                bar = "█" * round(score * 10) + "░" * (10 - round(score * 10))
                 output += f"\n{name}:\n"
                 output += f"  [{bar}] {score:.2%}\n"
                 output += f"  {description}\n"
@@ -325,7 +340,7 @@ class EvaluatedRAG:
 
         self.collection.add(documents=documents, ids=ids)
 
-    def query(self, question: str, evaluate: bool = True) -> Dict:
+    def query(self, question: str, run_eval: bool = True) -> Dict:
         """Query the RAG system."""
 
         # Retrieve
@@ -351,7 +366,7 @@ class EvaluatedRAG:
         }
 
         # Evaluate if requested
-        if evaluate:
+        if run_eval:
             eval_result = self.evaluator.evaluate_single(
                 question=question,
                 answer=answer,
@@ -414,7 +429,7 @@ def run_benchmark(rag_system, test_set: List[Dict]) -> Dict:
 
         result = rag_system.query(
             question=test["question"],
-            evaluate=True
+            run_eval=True
         )
 
         results.append({
@@ -448,7 +463,7 @@ print(f"Avg Faithfulness: {benchmark_results['aggregate_metrics']['faithfulness'
 
 ## Checkpoint
 
-Run the basic Ragas evaluation and confirm `results["faithfulness"]` and the other three metrics print as floats between 0 and 1 (the Paris/Bell/photosynthesis samples should score high on faithfulness, since each answer is grounded in its context). If you hit a `KeyError` or empty result, it's almost always the field names: Ragas 0.2+ expects `user_input` / `response` / `retrieved_contexts` / `reference`, not the older `question` / `answer` / `contexts` / `ground_truth`.
+Run the basic Ragas evaluation and confirm the scores come back as columns in `results.to_pandas()`, each a float between 0 and 1 (the Paris/Bell/photosynthesis samples should score high on faithfulness, since each answer is grounded in its context). If you hit a `KeyError` or empty result, it's almost always the field names: Ragas 0.2+ expects `user_input` / `response` / `retrieved_contexts` / `reference`, not the older `question` / `answer` / `contexts` / `ground_truth`.
 
 ---
 
@@ -492,8 +507,10 @@ data = {
 eval_dataset = EvaluationDataset.from_dict(data)
 results = evaluate(dataset=eval_dataset, metrics=[faithfulness, answer_relevancy])
 
-print(results["faithfulness"])
-print(results["answer_relevancy"])
+# Aggregate scores live in the pandas frame (one column per metric)
+df = results.to_pandas()
+print(df["faithfulness"].mean())
+print(df["answer_relevancy"].mean())
 ```
 
 ---

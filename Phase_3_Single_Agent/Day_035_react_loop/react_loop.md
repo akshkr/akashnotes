@@ -2,7 +2,7 @@
 
 Welcome to Month 3! Now we're building **agents** - AI systems that can think, plan, and take actions autonomously. Let's start with the foundational pattern: **ReAct** (Reasoning + Acting).
 
-> **Coming from Software Engineering?** The ReAct loop is a game loop. If you've built game engines (update → render → check input → repeat) or event loops (Node.js, asyncio), the ReAct pattern is the same: observe → think → act → repeat. The LLM is both the 'brain' and the 'controller' in this loop.
+> **Coming from Software Engineering?** The ReAct loop is a game loop. If you've built game engines (update → render → check input → repeat) or event loops (Node.js, asyncio), the ReAct pattern is the same: observe → think → act → repeat. Feeding each tool result back is like a REPL: the agent runs a command, reads the output, and decides the next command from it. The LLM is both the 'brain' and the 'controller' in this loop.
 
 ---
 
@@ -35,6 +35,8 @@ ReAct combines:
 - **Reasoning**: The model explains its thinking
 - **Acting**: The model takes actions (tool calls)
 - **Observing**: The model sees the results
+
+The key trick: making the model spell out its reasoning before it picks an action measurably improves the action it picks — think rubber-duck debugging, where writing out the problem leads you to the fix. The Thought step is not just a log line; it is what makes the loop work.
 
 ```mermaid
 flowchart TB
@@ -125,7 +127,7 @@ Always start with a Thought. Never skip the thinking step."""
 
 ### Modern Alternative: Structured JSON Output
 
-Instead of parsing free-text with regex, you can ask the LLM to return structured JSON directly using `response_format`:
+Instead of parsing free-text with regex, you can ask the LLM to return structured JSON directly using JSON mode (`response_format={"type": "json_object"}`) — an OpenAI setting that guarantees the model returns syntactically valid JSON, so you can `json.loads()` it directly instead of regex-scraping free text:
 
 ```python
 # script_id: day_035_react_loop/structured_response_json_mode
@@ -178,7 +180,11 @@ Here's the full ReAct loop and a runnable example tying the pieces together:
         for iteration in range(self.max_iterations):
             print(f"\n--- Iteration {iteration + 1} ---")
 
-            # Get model response
+            # Get model response.
+            # temperature=0 tells the model to be as predictable as possible
+            # (higher values make it more random/creative). For an agent we want
+            # it boringly consistent so it reliably emits the exact
+            # Thought/Action format our parser expects.
             response = client.chat.completions.create(
                 model="gpt-4o",
                 messages=messages,
@@ -214,6 +220,10 @@ Here's the full ReAct loop and a runnable example tying the pieces together:
                     observation = f"Observation: Error - Unknown tool '{action}'"
 
                 print(observation)
+                # We send the tool result back as a user message: in this
+                # hand-rolled approach the model only reads user/assistant text,
+                # so the observation is just the next thing we "say" to it.
+                # (OpenAI native function calling uses a dedicated "tool" role instead.)
                 messages.append({"role": "user", "content": observation})
 
             else:
@@ -280,6 +290,8 @@ print(f"\n=== Final Result ===\n{result}")
 
 ## Managing Conversation History
 
+The run loop above appended to a raw `messages` list. As tasks get longer that list grows without bound and eventually overflows the model's context window. Here is a small helper that caps history while always keeping the system prompt — we go deeper on this tomorrow (Day 36).
+
 ```python
 # script_id: day_035_react_loop/conversation_manager
 class ConversationManager:
@@ -333,6 +345,7 @@ Prevent infinite loops:
 
 ```python
 # script_id: day_035_react_loop/safe_agent
+# fragment: illustrative — guard scaffolding only; assumes client from the core block and omits the loop body
 import time
 
 class SafeAgent:
@@ -374,14 +387,16 @@ class SafeAgent:
                     "elapsed_seconds": elapsed
                 }
 
-            # Make API call
+            # Make API call. This safety-demo agent uses the cheaper gpt-4o-mini
+            # to keep iteration costs low while you experiment with the stop conditions.
             response = client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=messages,
                 temperature=0
             )
 
-            # Track tokens
+            # Track tokens. (Recall tokens are the chunks the model bills and
+            # counts context in — capping them bounds both cost and runaway loops.)
             total_tokens += response.usage.total_tokens
             if total_tokens > self.max_tokens_per_run:
                 return {
@@ -413,6 +428,8 @@ class SafeAgent:
 ---
 
 ## Complete ReAct Agent
+
+This is a standalone, more complete rewrite of the scratch agent above — it replaces, not extends, the earlier `ReActAgent`. Paste this one on its own, not alongside the scratch version.
 
 ```python
 # script_id: day_035_react_loop/complete_react_agent
@@ -577,10 +594,6 @@ print(f"\nFinal: {result}")
 
 ---
 
-## Checkpoint
-
-Run the Complete ReAct Agent at the end of this lesson on `"What is 25 * 4, and search for 'Python programming'"`. With `verbose=True` you should see numbered `[Step N]` blocks where the agent emits a Thought/Action, the `calculate` tool returns `100`, and the loop ends with a `status: success` dict — not `max_iterations`. If it loops forever or never calls a tool, the most likely cause is the model not emitting the exact `Action:` / `Action Input:` format the regex expects — tighten the system prompt or switch to the JSON-mode approach shown above.
-
 ## Summary
 
 ```mermaid
@@ -630,6 +643,12 @@ mindmap
 3. Use the `_get_structured_response` helper already in the lesson; the returned dict has `final_answer` / `action` / `action_input`, so no parsing is needed.
 4. Add `total_tokens += response.usage.total_tokens` after each call and `if total_tokens > BUDGET: return "Token budget exceeded"` — mirrors `SafeAgent`.
 </details>
+
+---
+
+## Checkpoint
+
+Run the Complete ReAct Agent at the end of this lesson on `"What is 25 * 4, and search for 'Python programming'"`. With `verbose=True` you should see numbered `[Step N]` blocks where the agent emits a Thought/Action, the `calculate` tool returns `100`, and the loop ends with a `status: success` dict — not `max_iterations`. If it loops forever or never calls a tool, the most likely cause is the model not emitting the exact `Action:` / `Action Input:` format the regex expects — tighten the system prompt or switch to the JSON-mode approach shown above.
 
 ---
 

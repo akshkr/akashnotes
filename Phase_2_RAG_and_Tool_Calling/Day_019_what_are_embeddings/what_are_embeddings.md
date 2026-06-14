@@ -1,8 +1,8 @@
 # What Are Embeddings?
 
-Welcome to Month 2! We're about to unlock one of the most powerful concepts in AI: **embeddings**. These magical arrays of numbers allow computers to understand meaning, find similar content, and power search engines that actually understand what you're looking for.
+Welcome to Month 2! We're about to unlock one of the most powerful concepts in AI: **embeddings**. These arrays of numbers let computers compare meaning — and once you see how, there's nothing magical about it. They let computers find similar content and power search engines that actually understand what you're looking for.
 
-> **Coming from Software Engineering?** Embeddings are like hash functions for meaning. Just as a hash maps data to a fixed-size number, an embedding maps text to a fixed-size vector — but preserving semantic similarity. If you've built search with TF-IDF or feature engineering for ML models, embeddings are the modern, learned version of those features.
+> **Coming from Software Engineering?** Embeddings are like hash functions for meaning. Just as a hash maps data to a fixed-size number, an embedding maps text to a fixed-size vector — but preserving semantic similarity. If you've built search with TF-IDF or feature engineering for ML models, embeddings are the modern, learned version of those features. One twist: unlike a cryptographic hash — which scatters similar inputs to wildly different outputs — an embedding does the reverse, landing similar meanings near each other.
 
 ---
 
@@ -43,6 +43,7 @@ flowchart LR
 
 ```python
 # script_id: day_019_what_are_embeddings/conceptual_similarity
+# fragment
 # Conceptual example
 embedding_dog = [0.8, 0.3, -0.5, 0.2, ...]
 embedding_puppy = [0.79, 0.31, -0.48, 0.19, ...]  # Very similar!
@@ -114,13 +115,15 @@ flowchart TB
     A & B & C & E --> F
 ```
 
-Each of the 1536 numbers represents something about the text's meaning. We don't know exactly what each dimension represents (it's learned during training), but together they form a "fingerprint" of the text's meaning.
+Each of the 1536 numbers represents something about the text's meaning. We don't know exactly what each dimension represents, but together they form a "fingerprint" of the text's meaning. These numbers aren't hand-written by a programmer. The embedding model learned them by being shown enormous amounts of text and adjusting itself until words used in similar contexts ended up with similar numbers — the same way a spam filter "learns" from labeled examples rather than from hard-coded if-statements. You don't configure the dimensions; you just call the API and get the result.
 
 ---
 
-## Comparing Embeddings: The Magic
+## Comparing Embeddings: Where It Pays Off
 
 The real power comes from comparing embeddings:
+
+For now, treat `cosine_similarity` as a function that returns a score from -1 to 1 — 1 means "these mean almost the same thing," 0 means "unrelated," and negative means "opposite." We will derive the formula in Day 20; today, just trust the score.
 
 ```python
 # script_id: day_019_what_are_embeddings/compare_embeddings
@@ -166,16 +169,20 @@ for text in texts[1:]:
 ```
 Comparing with: 'I love dogs'
 
-'I adore puppies': 0.9234      # Very similar! (dogs ≈ puppies)
-'I enjoy pizza': 0.7123        # Somewhat similar (both positive statements)
-'Machine learning is fascinating': 0.4567  # Not very similar
+'I adore puppies': 0.92        # highest — closest meaning (dogs ≈ puppies)
+'I enjoy pizza': ~0.45         # lower — different topic
+'Machine learning is fascinating': ~0.30  # lowest — unrelated
 ```
+
+> Don't read these as absolute grades — what matters is the RANKING: the closest meaning gets the highest score. Exact values vary by model and version.
 
 ---
 
 ## Visualizing Embeddings
 
 Embeddings exist in high-dimensional space, but we can project them to 2D to visualize:
+
+Our embeddings have 1536 numbers each, which we can't draw. t-SNE is an off-the-shelf tool (from scikit-learn) that squashes those 1536 numbers down to just 2 — an x and a y — while keeping things that were close in the original space close on the chart. Think of it like flattening a 3D map to a 2D printout: some distortion, but the neighborhoods survive. You don't need its internals to use it.
 
 ```mermaid
 graph TB
@@ -363,6 +370,8 @@ for doc, score in results:
 
 ### 2. Cluster Similar Content
 
+Clustering = automatically sorting items into N groups so that items in the same group are similar. K-Means (from scikit-learn) does this: you tell it how many groups you want (`n_clusters`), and it assigns each document to the nearest group. It's like `GROUP BY`, except you group by "meaning" instead of by an exact column value.
+
 ```python
 # script_id: day_019_what_are_embeddings/cluster_documents
 from openai import OpenAI
@@ -464,7 +473,7 @@ response = client.embeddings.create(
     model="text-embedding-3-small",
     input=["Text 1", "Text 2", "Text 3"]
 )
-embeddings = [d.embedding for d in response.data]
+embeddings = [d.embedding for d in sorted(response.data, key=lambda x: x.index)]  # sort by index to keep input order
 ```
 
 ---
@@ -476,6 +485,14 @@ embeddings = [d.embedding for d in response.data]
 2. **Document Deduplicator**: Build a system that identifies near-duplicate documents using embedding similarity
 
 3. **Topic Detector**: Create clusters of your own content and see what topics emerge
+
+<details><summary>Solutions (approaches)</summary>
+
+1. Embed the input word and the candidate list in one batch call, cosine-rank candidates against the word, take the top 5.
+2. Embed all documents in a batch; flag any pair with cosine similarity above ~0.95 as a near-duplicate.
+3. Reuse `cluster_documents`, print the docs per cluster, and eyeball the emergent topic for each group.
+
+</details>
 
 ---
 

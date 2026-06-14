@@ -1,8 +1,8 @@
 # Multi-Agent Topologies
 
-Welcome to Month 4! You've mastered single agents. Now let's explore **multi-agent systems** - multiple AI agents working together to solve complex problems.
+Welcome to Phase 4! You've mastered single agents. Now let's explore **multi-agent systems** - multiple AI agents working together to solve complex problems.
 
-> **Coming from Software Engineering?** Multi-agent topologies map directly to distributed system architectures you already know. Hub-and-spoke is a load balancer with backend workers. Pipeline topology is a message queue chain (like Kafka consumers). Hierarchical is microservices with an API gateway. Mesh is peer-to-peer networking. The concepts of message passing, coordination, fault tolerance, and consensus all carry over — the "services" are just LLM-powered agents instead of containers.
+> **Coming from Software Engineering?** Multi-agent topologies map directly to distributed system patterns you already know. **Hierarchical** is a job dispatcher / load balancer handing work to a worker pool. **Networked** is peer-to-peer or a group chat (a service mesh where peers talk directly). **Adversarial** is a code-review or retry-with-feedback loop — a proposer versus a reviewer. The concepts of message passing, coordination, fault tolerance, and consensus all carry over — the "services" are just LLM-powered agents instead of containers.
 
 ---
 
@@ -11,7 +11,7 @@ Welcome to Month 4! You've mastered single agents. Now let's explore **multi-age
 ```mermaid
 flowchart TB
     subgraph "Single Agent"
-        A["One Agent\nDoes Everything"]
+        A["One Agent<br/>Does Everything"]
         A --> P1["Gets overwhelmed"]
         A --> P2["Context limits"]
         A --> P3["Single perspective"]
@@ -31,7 +31,7 @@ flowchart TB
 Benefits of multi-agent systems:
 - **Specialization**: Each agent masters one thing
 - **Parallel processing**: Agents work simultaneously
-- **Diverse perspectives**: Different "viewpoints" on problems
+- **Diverse perspectives**: Each agent runs the same model but with a different system prompt and its own context, so it reasons from a different angle (like giving the same engineer different roles in a design review)
 - **Scalability**: Add agents for new capabilities
 
 ---
@@ -281,6 +281,8 @@ discussion = network.run_discussion("Should AI replace human jobs?", rounds=2)
 
 ## Topology 3: Adversarial (Debate)
 
+Coming from SWE: this is the retry-with-validation loop you already write — generate, run a check, feed failures back in, stop when it passes or you hit max retries. Here the check is a second LLM (the critic) instead of an assertion.
+
 Agents challenge each other to improve outputs:
 
 ```python
@@ -374,16 +376,16 @@ print(f"\nFinal content:\n{result['final_content']}")
 
 ```mermaid
 flowchart TB
-    Start["What's your use case?"] --> Q1{"Clear task\nbreakdown?"}
+    Start["What's your use case?"] --> Q1{"Clear task<br/>breakdown?"}
 
-    Q1 -->|Yes| Hierarchical["Hierarchical\n(Supervisor/Worker)"]
-    Q1 -->|No| Q2{"Need multiple\nperspectives?"}
+    Q1 -->|Yes| Hierarchical["Hierarchical<br/>(Supervisor/Worker)"]
+    Q1 -->|No| Q2{"Need multiple<br/>perspectives?"}
 
-    Q2 -->|Yes| Q3{"Collaborative\nor competitive?"}
-    Q2 -->|No| Single["Single Agent\nmight be enough"]
+    Q2 -->|Yes| Q3{"Collaborative<br/>or competitive?"}
+    Q2 -->|No| Single["Single Agent<br/>might be enough"]
 
-    Q3 -->|Collaborative| Networked["Networked\n(Peer-to-Peer)"]
-    Q3 -->|Competitive| Adversarial["Adversarial\n(Debate)"]
+    Q3 -->|Collaborative| Networked["Networked<br/>(Peer-to-Peer)"]
+    Q3 -->|Competitive| Adversarial["Adversarial<br/>(Debate)"]
 
     style Hierarchical fill:#87CEEB
     style Networked fill:#90EE90
@@ -414,7 +416,7 @@ mindmap
     Networked
       Peer communication
       Shared context
-      Emergent solutions
+      Ideas build on each other
     Adversarial
       Generator vs Critic
       Iterative improvement
@@ -450,7 +452,7 @@ Implementation tips:
 
 1. `system.add_worker("editor", "Polishing grammar and flow", "You are a copy editor...")` — the supervisor already lists workers dynamically from `self.workers`, so no other change is needed.
 2. After the per-agent loop, call a moderator agent with the recent history and a yes/no prompt; `if "yes" in reply.lower(): break`.
-3. `total = 0` before the run; after each call `total += response.usage.total_tokens`; multiply by the rate (e.g. gpt-4o-mini input $0.15/1M) to estimate dollars.
+3. `total = 0` before the run; after each call `total += response.usage.total_tokens`; multiply by the rate (e.g. gpt-4o-mini input ~$0.15/1M as of 2026-06 — verify current rates at the provider / REFERENCE.md) to estimate dollars.
 4. Hierarchical is overkill; the work is one summarization step — a single agent (or at most adversarial for a quality pass) is the right call. Multi-agent earns its keep only when subtasks are genuinely independent or need distinct viewpoints.
 </details>
 

@@ -27,12 +27,15 @@ sequenceDiagram
 
 ## Step 1: Detect Tool Calls
 
+The model can't run code — when it needs live data it returns a structured request (like an RPC call your service must fulfill): run `get_weather` with `city="Tokyo"`. Your app runs the real function and hands the result back.
+
 When the LLM wants to call a function, it returns a special response:
 
 ```python
 # script_id: day_030_tool_execution_handling_part1/tool_call_flow
 from openai import OpenAI, pydantic_function_tool
 from pydantic import BaseModel, Field
+from typing import Any
 import json
 
 client = OpenAI()
@@ -41,9 +44,13 @@ client = OpenAI()
 class GetWeather(BaseModel):
     """Get current weather for a city."""
     city: str = Field(description="City name")
-    unit: str = Field(default="celsius", description="Temperature unit", json_schema_extra={"enum": ["celsius", "fahrenheit"]})
+    unit: str = Field(description="Temperature unit: celsius or fahrenheit")
 
 tools = [pydantic_function_tool(GetWeather)]
+
+# pydantic_function_tool names the tool after the class, so the model
+# calls it "GetWeather" — that's the key you dispatch on.
+# (You can also constrain a field to fixed choices with an enum — shown later.)
 
 # Make the API call
 response = client.chat.completions.create(
@@ -121,17 +128,12 @@ def get_weather(city: str, unit: str = "celsius") -> dict:
     data["city"] = city
     return data
 
-def search_web(query: str) -> str:
-    """Search the web (mock implementation)."""
-    return f"Search results for: {query}"
-
-# Function registry
+# Function registry — keyed on the schema CLASS name the model sends
 FUNCTIONS = {
-    "get_weather": get_weather,
-    "search_web": search_web
+    "GetWeather": get_weather,
 }
 
-def execute_function(name: str, arguments: dict) -> any:
+def execute_function(name: str, arguments: dict) -> Any:
     """Execute a function by name with given arguments."""
 
     if name not in FUNCTIONS:
@@ -141,7 +143,7 @@ def execute_function(name: str, arguments: dict) -> any:
     return func(**arguments)
 
 # Usage
-result = execute_function("get_weather", {"city": "Tokyo", "unit": "celsius"})
+result = execute_function("GetWeather", {"city": "Tokyo", "unit": "celsius"})
 print(result)  # {"temp": 22, "condition": "sunny", "unit": "celsius", "city": "Tokyo"}
 ```
 
@@ -174,6 +176,7 @@ def complete_tool_call(client, messages: list, tools: list) -> str:
         return message.content
 
     # Step 3: Add assistant message to history
+    # append the model's message object as-is — it carries the tool_calls the API needs to match results to
     messages.append(message)
 
     # Step 4: Execute each tool call and add results
@@ -213,6 +216,8 @@ print(answer)  # "The current weather in Tokyo is 22°C and sunny!"
 
 ## Complete Example: Multi-Tool Agent
 
+Same parse → dispatch → return loop as Steps 1-4, now wrapped in a class that loops until the model stops asking for tools. The schema classes get a `Schema` suffix here only to keep them distinct from the impl functions; the dispatch key is still the class name.
+
 ```python
 # script_id: day_030_tool_execution_handling_part1/multi_tool_agent
 from openai import OpenAI, pydantic_function_tool
@@ -229,7 +234,7 @@ class GetWeatherSchema(BaseModel):
 
 class GetTimeSchema(BaseModel):
     """Get current time in a timezone."""
-    timezone: str = Field(default="UTC", description="Timezone name")
+    timezone: str = Field(description="Timezone name")
 
 class CalculateSchema(BaseModel):
     """Evaluate a mathematical expression."""

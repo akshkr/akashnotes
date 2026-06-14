@@ -32,7 +32,7 @@ The key insight: **tool calls map to UI components**. When your agent calls `get
 
 ## The Vercel AI SDK Pattern
 
-The Vercel AI SDK pioneered this pattern: stream React components from the server alongside text tokens. The server decides what component to render based on the tool call.
+The Vercel AI SDK pioneered this pattern: stream React components from the server alongside text tokens (the small chunks of text the model streams out). The server decides what component to render based on the tool call. The SDK is TypeScript/React, but the pattern is language-agnostic -- below is the Python/FastAPI equivalent so the backend side is clear.
 
 ```mermaid
 sequenceDiagram
@@ -93,11 +93,14 @@ print(f"Streaming component: {component.type} with props: {component.props}")
 
 ---
 
-## Streaming UI Components Over SSE
+## Streaming UI Components Over Server-Sent Events (SSE)
+
+SSE is a one-way HTTP stream from server to browser -- a long-lived response that keeps writing chunks -- which is how the agent pushes each component as its tool finishes.
 
 ```python
 # script_id: day_087_agentic_ui/generative_ui_app
 from openai import OpenAI
+from pydantic import BaseModel
 import json
 
 client = OpenAI()
@@ -161,6 +164,8 @@ async def generative_chat(request: GenerativeChatRequest):
     message = request.message
 
     async def generate():
+        # We use OpenAI here for its tool-calling shape; the same component-mapping
+        # pattern works with any provider that returns tool calls (e.g. Anthropic).
         response = client.chat.completions.create(
             model="gpt-4o",
             messages=[{"role": "user", "content": message}],
@@ -305,11 +310,11 @@ print(f"WeatherCard valid: {validate_component_props('WeatherCard', weather_prop
 
 ## Server-Side Rendering of Tool Results
 
-For SEO and initial load performance, you can render tool results as HTML on the server before hydrating with React on the client.
+For SEO and initial load performance, you can render tool results as HTML on the server before hydrating with React on the client (hydration = the browser takes the static HTML the server sent and wires up the interactive JavaScript on top of it, so the first paint is instant).
 
 ```python
 # script_id: day_087_agentic_ui/server_side_render
-from typing import Optional
+import json
 
 def render_component_html(component_type: str, props: dict) -> str:
     """Server-side render a UI component as HTML."""
@@ -370,11 +375,11 @@ print(html)
 ```mermaid
 flowchart TD
     A["Your Use Case"] --> B{"Does the agent call tools?"}
-    B -->|"No"| C["Traditional Chat\n(text streaming)"]
+    B -->|"No"| C["Traditional Chat<br/>(text streaming)"]
     B -->|"Yes"| D{"Are tool results structured data?"}
     D -->|"No (text only)"| C
-    D -->|"Yes"| E{"Do users need to interact\nwith the results?"}
-    E -->|"No (read-only)"| F["Formatted Markdown\n(tables, code blocks)"]
+    D -->|"Yes"| E{"Do users need to interact<br/>with the results?"}
+    E -->|"No (read-only)"| F["Formatted Markdown<br/>(tables, code blocks)"]
     E -->|"Yes (click, filter, sort)"| G["Generative UI"]
 
     style G fill:#90EE90
@@ -467,10 +472,6 @@ class GenerativeUIHandler:
 
 ---
 
-## Checkpoint
-
-Run the `generative_ui_app` and confirm the agent's response renders as actual UI components (cards, buttons, etc.) rather than a wall of raw JSON. If you see the JSON instead, check that the `server_side_render` step is parsing the model's structured output and mapping each component type to a renderer.
-
 ## Summary
 
 ```mermaid
@@ -504,6 +505,7 @@ mindmap
 
 ```python
 # script_id: day_087_agentic_ui/quick_reference
+# fragment
 # Core pattern: tool name -> UI component
 TOOL_UI_MAP = {
     "get_weather":    "WeatherCard",
@@ -532,6 +534,20 @@ validate_component_props("WeatherCard", {"city": "NYC", "temp": 72, "condition":
 2. **SSE Streaming Demo**: Create a FastAPI endpoint that accepts a user message, calls an LLM with tools, and streams back a mix of text events and UI component events over Server-Sent Events. Test with curl.
 
 3. **Fallback Strategy**: Implement a generative UI handler that gracefully degrades -- if a tool result doesn't match the expected component schema, it falls back to formatted markdown. Test with both valid and invalid tool outputs.
+
+<details><summary>Solutions (approaches)</summary>
+
+1. A dict of `{tool_name: {"component": ..., "required_props": [...]}}` plus a `validate(props)` loop that checks each required prop is present; exercise it on mock tool outputs.
+2. A FastAPI route returning `StreamingResponse(media_type="text/event-stream")` that yields `data: {...}\n\n` for both `text` and `ui_component` events; test with `curl -N`.
+3. Call `validate_component_props`; when it returns `False`, emit a `text` event with the result formatted as markdown instead of a `ui_component`.
+
+</details>
+
+---
+
+## Checkpoint
+
+Run the `generative_ui_app` and confirm each tool call produces a UI component event (component + props) instead of raw JSON text. If you see raw JSON, check that (1) the tool name exists in `TOOL_UI_MAP` so it maps to a real component instead of the `GenericCard` fallback, and (2) `validate_component_props` passed -- a failed validation intentionally falls back to a plain-text JSON dump.
 
 ---
 

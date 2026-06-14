@@ -1,8 +1,8 @@
 # Adversarial Debate: Agents Critiquing Each Other
 
-What if agents argued with each other to find better answers? Adversarial debate uses the power of disagreement to improve quality.
+You met the basic generate/critique loop in Day 50; here we add a Judge and richer debate structures so agents argue toward better answers. Adversarial debate uses the power of disagreement to improve quality.
 
-> **Coming from Software Engineering?** Think of adversarial debate as code review, automated. One agent writes the "PR," another agent reviews it and pushes back, and a third agent merges the best version. You've seen this dynamic in pair programming and design reviews — having a second set of eyes catches errors the author missed. The pattern is the same; you're just automating the reviewer role with a differently-prompted LLM.
+> **Coming from Software Engineering?** Think of adversarial debate as code review, automated. One agent writes the "PR," another agent reviews it and pushes back, and a third agent merges the best version. You've seen this dynamic in pair programming and design reviews — having a second set of eyes catches errors the author missed. The pattern is the same; you're just automating the reviewer role with a differently-prompted LLM. The later patterns are the same instinct in other shapes — red/blue team is a security review pushing on a design doc; consensus building is several reviewers reconciling conflicting PR comments before merge.
 
 ---
 
@@ -52,37 +52,6 @@ Benefits:
 - Forces justification
 - Catches errors
 - Improves reasoning quality
-
-### Choosing the Right Agent Topology
-
-Before diving into code, here's a decision tree for picking the right multi-agent pattern. Refer back to this after you've seen all topologies (Days 50-52):
-
-```mermaid
-flowchart TD
-    A["What's your task?"] --> B{"Need multiple\nperspectives?"}
-    B -->|No| C{"Need pipeline\nprocessing?"}
-    B -->|Yes| D{"Need consensus\nor best-of-N?"}
-
-    C -->|Yes| E["Pipeline Topology\n(sequential handoff)"]
-    C -->|No| F["Single Agent\n(Phase 3 patterns)"]
-
-    D -->|Consensus| G["Adversarial Debate\n(this lesson)"]
-    D -->|Best output| H{"Tasks\ndecomposable?"}
-
-    H -->|Yes| I["Supervisor/Worker\n(Day 51)"]
-    H -->|No| J["Parallel + Judge\n(fan-out, vote)"]
-
-    style G fill:#90EE90
-    style I fill:#87CEEB
-    style E fill:#FFB6C1
-```
-
-| Topology | Best For | Tradeoff |
-|----------|----------|----------|
-| **Pipeline** | Document processing, ETL | Simple but no error correction |
-| **Supervisor/Worker** | Decomposable tasks, research | Flexible but supervisor is bottleneck |
-| **Adversarial Debate** | Accuracy-critical decisions | Better quality but 2-3x cost |
-| **Parallel + Judge** | Creative tasks, brainstorming | Fast but judge adds latency |
 
 ---
 
@@ -197,12 +166,14 @@ def multi_round_debate(question: str, rounds: int = 3) -> str:
     # Initial answer
     current_answer = proposer(question)
     debate_history = [{"role": "proposer", "content": current_answer}]
+    last_critique = None
 
     for round_num in range(rounds):
         print(f"\n--- Round {round_num + 1} ---")
 
         # Critic responds
         critique = critic(question, current_answer)
+        last_critique = critique
         debate_history.append({"role": "critic", "content": critique})
 
         # Proposer defends/improves
@@ -230,7 +201,7 @@ Provide your revised answer."""}
         debate_history.append({"role": "proposer", "content": current_answer})
 
     # Final judgment
-    final = judge(question, current_answer, debate_history[-2]["content"])
+    final = judge(question, current_answer, last_critique)
 
     return final
 
@@ -358,6 +329,8 @@ flowchart TB
 
 ## Socratic Debate
 
+Socratic = improve a claim by asking probing questions rather than asserting counter-arguments (after Socrates' question-driven teaching).
+
 Use questions to improve reasoning:
 
 ```python
@@ -467,6 +440,7 @@ def build_consensus(question: str, num_agents: int = 3, max_rounds: int = 5) -> 
 Return JSON: {"consensus": true/false, "agreements": [...], "disagreements": [...]}"""},
                 {"role": "user", "content": "\n\n".join([f"Agent {i+1}: {o}" for i, o in enumerate(opinions)])}
             ],
+            # JSON mode: forces valid JSON so json.loads() is safe (default replies are free-form prose). Requires the word "json" somewhere in the prompt.
             response_format={"type": "json_object"}
         )
 
@@ -513,6 +487,10 @@ Provide your revised opinion."""}
     )
 
     return final.choices[0].message.content
+
+# Usage
+result = build_consensus("Is nuclear power essential for decarbonization?")
+print(result)
 ```
 
 ---
@@ -520,6 +498,43 @@ Provide your revised opinion."""}
 ## Checkpoint
 
 Run the Basic Debate on a question with a non-obvious answer, e.g. `debate("Should companies adopt a 4-day work week?")`. The returned dict gives you `initial_answer` and `final_answer` side by side — the judge's `final_answer` should incorporate at least one fix the critic raised, not just echo the proposer. If the two are nearly identical, the critic is being too soft; sharpen its system prompt to demand specific factual/logical flaws before the judge will have anything to act on.
+
+## Choosing the Right Agent Topology
+
+Now that you've seen all three topologies (Days 50-52), here's how to choose:
+
+```mermaid
+flowchart TD
+    A["What's your task?"] --> B{"Need multiple\nperspectives?"}
+    B -->|No| C{"Need pipeline\nprocessing?"}
+    B -->|Yes| D{"Need consensus\nor best-of-N?"}
+
+    C -->|Yes| E["Pipeline Topology\n(sequential handoff)"]
+    C -->|No| F["Single Agent\n(Phase 3 patterns)"]
+
+    D -->|Consensus| G["Adversarial Debate\n(this lesson)"]
+    D -->|Best output| H{"Tasks\ndecomposable?"}
+
+    H -->|Yes| I["Supervisor/Worker\n(Day 51)"]
+    H -->|No| J["Parallel + Judge\n(fan-out, vote)"]
+
+    style G fill:#90EE90
+    style I fill:#87CEEB
+    style E fill:#FFB6C1
+```
+
+Plain terms: best-of-N = generate several independent answers and keep the strongest; Parallel + Judge = ask several agents the same question at once, then let a judge pick the winner (a sibling pattern, not built in this lesson).
+
+| Topology | Best For | Tradeoff |
+|----------|----------|----------|
+| **Pipeline** | Document processing, ETL | Simple but no error correction |
+| **Supervisor/Worker** | Decomposable tasks, research | Flexible but supervisor is bottleneck |
+| **Adversarial Debate** | Accuracy-critical decisions | Better quality but 2-3x cost |
+| **Parallel + Judge** | Creative tasks, brainstorming | Fast but judge adds latency |
+
+Each role is a separate API call you pay for, so a 3-role debate costs roughly 3x a single answer, and multi-round/consensus loops multiply that further — the same way an N+1 query problem multiplies DB round-trips.
+
+---
 
 ## Summary
 

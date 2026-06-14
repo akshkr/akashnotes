@@ -73,8 +73,10 @@ Text to analyze:
 from pathlib import Path
 import json
 from string import Template
+from openai import OpenAI
 
 
+client = OpenAI()
 PROMPTS_DIR = Path(__file__).parent / "prompts"
 
 
@@ -140,6 +142,8 @@ def analyze_sentiment(text: str, prompt_version: str = "v1") -> str:
     )
     return response.choices[0].message.content.strip().lower()
 ```
+
+We switch to the cheaper `gpt-4o-mini` for these classification calls; the LLM judge later stays on the stronger `gpt-4o`.
 
 ---
 
@@ -229,6 +233,7 @@ class PromptExperiment:
 
     def select_variant(self) -> str:
         """Select a variant based on traffic percentages."""
+        # Weighted routing — same idea as a feature flag: roll a number 0-100 and pick the bucket it lands in.
         rand = random.uniform(0, 100)
         cumulative = 0
         for variant, percentage in self.variants.items():
@@ -527,25 +532,28 @@ flowchart TD
     A -->|"No — accuracy too low\nor latency too high"| C{"What's the bottleneck?"}
     C -->|"Model doesn't know\ndomain-specific patterns"| D["Try RAG first\n(inject knowledge at runtime)"]
     C -->|"Model knows the info\nbut format/style is wrong"| E["Try few-shot examples\nor structured output"]
-    C -->|"Still not working after\nRAG + few-shot"| F{"Do you have\n500+ labeled examples?"}
+    C -->|"Still not working after\nRAG + few-shot"| F{"Do you have ~1000+\nlabeled examples? (see Day 78)"}
     F -->|Yes| G["Fine-tune"]
     F -->|No| H["Collect more data first\nor use a bigger model"]
 ```
+
+*few-shot = show the model 2-3 worked examples in the prompt (Day 6); RAG = look up relevant info and paste it into the prompt at runtime (Phase 2).*
 
 ### When to Fine-Tune
 
 - **Custom output format** that prompting can't reliably produce
 - **Domain-specific jargon/style** (legal, medical, financial)
 - **Latency-sensitive applications** — a fine-tuned smaller model often beats a prompted larger model
-- **Cost optimization** — fine-tuned gpt-4o-mini may match prompted gpt-4o at 1/10th the cost
+- **Cost optimization** — a fine-tuned smaller model can be much cheaper per call than a prompted larger one (often roughly an order of magnitude — verify current pricing at the provider)
 
 ### Fine-Tuning Options
 
 | Provider | Method | Min Examples | Cost |
 |----------|--------|-------------|------|
 | OpenAI | Fine-tune API | ~50-100 | ~$0.008/1K tokens |
-| Open-source | LoRA/QLoRA | 500+ | GPU time only |
-| Anthropic | Varies — check current docs | N/A | N/A |
+| Open-source | LoRA/QLoRA (lightweight fine-tuning — trains a small add-on instead of the whole model; see Day 78) | hundreds to 1000+ (see Day 78) | GPU time only |
+
+Costs and example minimums are illustrative — as of 2026-06; verify current provider pricing and requirements before planning. Anthropic fine-tuning availability changes — check current docs before planning around it.
 
 ### The 80/20 Rule
 
@@ -568,7 +576,7 @@ In practice, 80% of use cases are solved by better prompting + RAG. Fine-tuning 
 
 ## Checkpoint
 
-Run the `prompt_management_system` and confirm it loads the `sentiment_prompt_template` from its versioned file and renders it with your variables substituted in. If you see literal `{placeholder}` text in the final prompt, check that the template variables match the keys you're passing to the render call.
+Run the `prompt_management_system` and confirm it loads the `sentiment_prompt_template` from its versioned file and renders it with your variables substituted in. If you see literal `{{placeholder}}` text in the final prompt, check that the template variables match the keys you're passing to the render call.
 
 ## Summary
 

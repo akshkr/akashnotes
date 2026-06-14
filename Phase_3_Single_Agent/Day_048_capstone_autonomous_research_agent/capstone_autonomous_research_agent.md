@@ -62,7 +62,7 @@ LangGraph is a state machine. Everything the agent knows lives in the state. Def
 ```python
 # script_id: day_048_capstone_autonomous_research_agent/research_agent
 # state.py
-from typing import TypedDict, List, Optional, Annotated
+from typing import TypedDict, Optional, Annotated
 from langgraph.graph.message import add_messages
 
 
@@ -71,14 +71,9 @@ class ResearchState(TypedDict):
     # The research topic
     topic: str
 
-    # Conversation messages (managed by LangGraph)
+    # Conversation messages (managed by LangGraph). Findings are tracked here in
+    # the message history (tool-result messages), not in a separate field.
     messages: Annotated[list, add_messages]
-
-    # Structured research data
-    search_queries: List[str]        # Queries we've run
-    findings: List[dict]             # Raw findings from searches
-    synthesis: str                   # Running synthesis of findings
-    identified_gaps: List[str]       # Gaps identified in research
 
     # Control flow
     iteration_count: int
@@ -89,6 +84,8 @@ class ResearchState(TypedDict):
     final_report: Optional[str]
     session_id: str
 ```
+
+The `add_messages` annotation tells LangGraph to APPEND new messages to this list instead of replacing it — that is why each node returns `{"messages": [response]}` and the conversation grows across iterations (Days 41-42 covered these state reducers).
 
 ---
 
@@ -210,7 +207,7 @@ from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 from state import ResearchState
 from tools import RESEARCH_TOOLS
 
-llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.3)
+llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.3)  # low = more consistent/factual; research favors reliability over creativity (see Day 4)
 llm_with_tools = llm.bind_tools(RESEARCH_TOOLS)
 
 RESEARCH_SYSTEM_PROMPT = """You are an expert research agent. Your job is to thoroughly research a topic and produce a comprehensive report.
@@ -258,8 +255,8 @@ def should_continue(state: ResearchState) -> Literal["tools", "end"]:
     if isinstance(last_message, AIMessage) and "RESEARCH_COMPLETE" in (last_message.content or ""):
         return "end"
 
-    # Default: ask the agent to continue
-    return "tools"
+    # Plain assistant reply with no tool calls and no COMPLETE signal -> the agent is done; route to the reporter.
+    return "end"
 
 
 def research_node(state: ResearchState) -> dict:
@@ -271,8 +268,7 @@ def research_node(state: ResearchState) -> dict:
 Current research progress:
 - Topic: {state['topic']}
 - Iteration: {iteration + 1}/{state['max_iterations']}
-- Searches completed: {len(state.get('search_queries', []))}
-- Findings collected: {len(state.get('findings', []))}
+- Searches completed: {sum(1 for m in state["messages"] if getattr(m, "type", None) == "tool")}
 
 {'IMPORTANT: You are running low on iterations. If you have enough information, produce the final report now.' if iteration >= state['max_iterations'] - 3 else ''}
 """
@@ -327,7 +323,7 @@ Be thorough but concise. This is the deliverable."""
     }
 
 
-def build_graph() -> StateGraph:
+def build_graph():
     """Assemble the LangGraph state machine."""
     graph = StateGraph(ResearchState)
 
@@ -481,10 +477,6 @@ def run_research(topic: str, max_iterations: int = 15) -> str:
     initial_state: ResearchState = {
         "topic": topic,
         "messages": [HumanMessage(content=f"Please research this topic thoroughly: {topic}")],
-        "search_queries": [],
-        "findings": [],
-        "synthesis": "",
-        "identified_gaps": [],
         "iteration_count": 0,
         "max_iterations": max_iterations,
         "research_complete": False,
@@ -550,9 +542,9 @@ if __name__ == "__main__":
 ```bash
 # requirements.txt
 openai>=1.30.0
-langchain>=0.2.0
-langchain-openai>=0.1.0
-langgraph>=0.2.0
+langchain>=0.3
+langchain-openai>=0.2
+langgraph>=0.3
 ```
 
 ```bash
@@ -661,7 +653,7 @@ mindmap
 | Run tools | `from langgraph.prebuilt import ToolNode` |
 | Route loop | conditional edge on `should_continue` → `"tools"` or `"end"` |
 | Stop signal | `"RESEARCH_COMPLETE"` in the reply, or `iteration_count >= max` |
-| Persist sessions | `SqliteSaver` / SQLite session table |
+| Persist sessions | hand-rolled SQLite sessions/messages tables (`persistence.py`) |
 | Watch progress | `for event in app.stream(state, config): ...` |
 
 ---

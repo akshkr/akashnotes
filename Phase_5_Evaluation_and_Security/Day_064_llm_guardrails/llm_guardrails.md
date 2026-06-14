@@ -21,7 +21,7 @@ flowchart LR
 
 Guardrails provide:
 - **Topic control**: Keep conversations on-topic
-- **Safety filters**: Block harmful or toxic content
+- **Safety filters**: Block harmful or toxic content (hate, harassment, threats, sexual content — the same buckets a content-moderation system uses)
 - **PII protection**: Detect and redact personal information
 - **Format validation**: Ensure structured outputs
 - **Action control**: Limit what agents can do
@@ -41,9 +41,13 @@ guardrails hub install hub://guardrails/detect_pii
 guardrails hub install hub://guardrails/restrict_to_topic
 ```
 
+Each `hub install` downloads that validator plus any model files it needs (think `npm install` for a single plugin), which is why the first run can be slow. If the CLI prompts you to run `guardrails configure` to register a free token, follow that prompt.
+
 ### Core Concept: Guards and Validators
 
 A `Guard` wraps your LLM call and runs validators on input and output. Validators come from the Guardrails Hub — a registry of community and official validators.
+
+Heads-up: some Hub validators (ToxicLanguage, DetectPII, RestrictToTopic) aren't simple if-statements — each runs a small text-classification model that `hub install` downloads. So the first call is slower (it loads a model), and results are probabilistic, not exact — expect the occasional false positive, like a spam filter. The custom validator you write below IS just plain Python rules.
 
 ```mermaid
 flowchart LR
@@ -64,19 +68,18 @@ flowchart LR
 
 ```python
 # script_id: day_064_llm_guardrails/basic_input_output_validation
-import openai
 from guardrails import Guard
 from guardrails.hub import ToxicLanguage, DetectPII, RestrictToTopic
 
 # Input validation guard
-input_guard = Guard().use_many(
+input_guard = Guard().use(
     ToxicLanguage(on_fail="exception"),
     DetectPII(["EMAIL", "PHONE"], on_fail="fix"),
 )
 
-# Use with LLM — the guard wraps the API call
+# Use with LLM — the guard wraps the API call (routed via LiteLLM)
+user_input = "How do I write a Python function?"
 result = input_guard(
-    llm_api=openai.chat.completions.create,
     model="gpt-4o-mini",
     messages=[{"role": "user", "content": user_input}],
 )
@@ -93,6 +96,8 @@ print(result.validated_output)
 | `reask`     | Ask the LLM to regenerate its response    |
 | `noop`      | Log but allow through                     |
 | `filter`    | Remove the failing content                |
+
+*reask and filter mainly apply to validating the LLM's OUTPUT (see Structured Output Validation below); for user input you'll typically use exception or fix.*
 
 ### Structured Output Validation
 
@@ -111,10 +116,9 @@ class ProductReview(BaseModel):
     cons: List[str] = Field(description="List of cons")
     summary: str = Field(max_length=200, description="Brief summary")
 
-guard = Guard.from_pydantic(ProductReview)
+guard = Guard.for_pydantic(ProductReview)
 
 result = guard(
-    llm_api=openai.chat.completions.create,
     model="gpt-4o-mini",
     messages=[{
         "role": "user",
@@ -146,14 +150,15 @@ guard = Guard().use(
 result = guard.validate("How do I implement a binary search tree?")
 
 # This raises an exception
-result = guard.validate("What's your opinion on the election?")
+guard.validate("What's your opinion on the election?")  # raises ValidationError
 ```
 
 ### Custom Validators
 
 ```python
 # script_id: day_064_llm_guardrails/custom_validator
-from guardrails.validators import Validator, register_validator
+from guardrails import Validator, register_validator
+from guardrails.validator_base import PassResult, FailResult
 from typing import Any, Dict, List
 
 @register_validator("no-competitor-mention", data_type="string")
@@ -164,19 +169,20 @@ class NoCompetitorMention(Validator):
         super().__init__(on_fail=on_fail)
         self.competitors = [c.lower() for c in competitors]
 
-    def validate(self, value: Any, metadata: Dict) -> Any:
-        lower_value = value.lower()
+    def validate(self, value: Any, metadata: Dict):
+        # Build the redacted version and check whether anything changed.
+        fixed = value
         for competitor in self.competitors:
-            if competitor in lower_value:
-                raise ValueError(f"Competitor '{competitor}' mentioned in output")
-        return value
+            fixed = fixed.replace(competitor, "[competitor]")
+            fixed = fixed.replace(competitor.title(), "[Competitor]")
 
-    def fix(self, value: Any, metadata: Dict) -> Any:
-        result = value
-        for competitor in self.competitors:
-            result = result.replace(competitor, "[competitor]")
-            result = result.replace(competitor.title(), "[Competitor]")
-        return result
+        if fixed != value:
+            # The framework reads fix_value when on_fail="fix".
+            return FailResult(
+                error_message="Competitor name mentioned in output",
+                fix_value=fixed,
+            )
+        return PassResult()
 
 # Usage
 guard = Guard().use(
@@ -199,7 +205,7 @@ Before reaching for a framework, consider the safety features already built into
 
 ### OpenAI Moderation API
 
-OpenAI provides a free moderation endpoint that classifies text across safety categories:
+You met this endpoint in Day 063 (output sanitization); here it serves as a lightweight pre-check before the framework layer. OpenAI provides a free moderation endpoint that classifies text across safety categories:
 
 ```python
 # script_id: day_064_llm_guardrails/openai_moderation
@@ -249,6 +255,7 @@ from anthropic import Anthropic
 
 client = Anthropic()
 
+user_input = "How do I write a Python function?"
 response = client.messages.create(
     model="claude-sonnet-4-6",
     max_tokens=1024,
@@ -270,7 +277,7 @@ GUARDRAILS:
 |----------|----------|-----------|
 | **System prompt rules** | Simple topic/behavior constraints | No enforcement guarantee; LLM can ignore |
 | **OpenAI Moderation API** | Content safety screening | Limited to safety categories; no custom rules |
-| **Guardrails AI** | Structured validation, PII, custom rules | Extra dependency; adds latency per validator |
+| **Guardrails AI** | Structured validation, PII, custom rules | Extra dependency; each model-backed validator adds an inference pass, so latency stacks up as you chain them |
 
 ---
 
@@ -289,13 +296,13 @@ class GuardedAgent:
         self.client = openai.OpenAI()
 
         # Input: block toxic content, redact PII
-        self.input_guard = Guard().use_many(
+        self.input_guard = Guard().use(
             ToxicLanguage(on_fail="exception"),
             DetectPII(["EMAIL", "PHONE", "SSN"], on_fail="fix"),
         )
 
         # Output: clean PII leaks, enforce length
-        self.output_guard = Guard().use_many(
+        self.output_guard = Guard().use(
             DetectPII(["EMAIL", "PHONE", "SSN"], on_fail="fix"),
             ToxicLanguage(on_fail="fix"),
         )
@@ -336,9 +343,11 @@ NeMo Guardrails was notable for its dialog-flow approach to safety: rather than 
 
 As of 2025, NeMo Guardrails and Colang are in **maintenance mode** and are not recommended for new projects. The ecosystem has moved toward validator-based frameworks like Guardrails AI, which offer a more composable and Pythonic approach. If you encounter NeMo Guardrails in existing codebases, consider migrating to Guardrails AI or built-in provider safety APIs.
 
+---
+
 ## Checkpoint
 
-Run the `NoCompetitorMention` custom-validator example and confirm `result.validated_output` comes back as `"Our product is better than [Competitor]'s solution"` — the competitor name swapped out by the `fix` path. If the original "Microsoft" survives, your `validate`/`fix` casing isn't covering the title-case form; if it raises instead of fixing, you passed `on_fail="exception"` rather than `on_fail="fix"`.
+Run the `NoCompetitorMention` custom-validator example and confirm `result.validated_output` comes back as `"Our product is better than [Competitor]'s solution"` — the competitor name swapped out by the `fix` path. The fix only works because `validate` returns a `FailResult` carrying `fix_value`; that's what the framework substitutes when `on_fail="fix"`. If the original "Microsoft" survives, your `fix_value` isn't covering the title-case form; if it raises instead of fixing, you passed `on_fail="exception"` rather than `on_fail="fix"`.
 
 ---
 
@@ -379,12 +388,12 @@ mindmap
 from guardrails import Guard
 from guardrails.hub import ToxicLanguage, DetectPII
 
-guard = Guard().use_many(ToxicLanguage(on_fail="exception"), DetectPII(on_fail="fix"))
-result = guard(llm_api=openai.chat.completions.create, model="gpt-4o-mini", messages=[...])
+guard = Guard().use(ToxicLanguage(on_fail="exception"), DetectPII(on_fail="fix"))
+result = guard(model="gpt-4o-mini", messages=[...])
 
 # Guardrails AI — structured output
-guard = Guard.from_pydantic(MyModel)
-result = guard(llm_api=..., messages=[...])
+guard = Guard.for_pydantic(MyModel)
+result = guard(model="gpt-4o-mini", messages=[...])
 
 # OpenAI Moderation API
 response = client.moderations.create(input=text)
@@ -411,10 +420,10 @@ response = client.messages.create(model="claude-sonnet-4-6", system="GUARDRAILS:
        def __init__(self, n, on_fail="fix"):
            super().__init__(on_fail=on_fail); self.n = n
        def validate(self, value, metadata):
-           if value.count(".") > self.n: raise ValueError("too long")
-           return value
-       def fix(self, value, metadata):
-           return ".".join(value.split(".")[: self.n]) + "."
+           if value.count(".") > self.n:
+               truncated = ".".join(value.split(".")[: self.n]) + "."
+               return FailResult(error_message="too long", fix_value=truncated)
+           return PassResult()
    ```
 2. Add `RestrictToTopic(valid_topics=["programming"], on_fail="exception")` to `input_guard`; catch the exception in `generate` and return the refusal string.
 3. Feed one toxic sentence to each path; expect Moderation API and `ToxicLanguage` to flag it, while a bare system-prompt rule may or may not, depending on the model.

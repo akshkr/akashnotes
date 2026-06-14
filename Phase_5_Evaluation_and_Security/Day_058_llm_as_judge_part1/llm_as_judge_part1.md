@@ -1,4 +1,4 @@
-# Automated Evaluation: LLM-as-Judge & Ragas
+# LLM-as-Judge — Part 1: Automated Evaluation
 
 How do you know if your agent is actually good? Manual testing doesn't scale. In this guide, you'll learn to use LLMs to automatically evaluate agent responses and RAG systems.
 
@@ -136,6 +136,7 @@ Also include:
 - overall: Overall quality score (1-5)
 - feedback: Brief constructive feedback
 
+Use whole numbers from 1 to 5 for each score.
 Return ONLY valid JSON."""
 
     result = client.chat.completions.create(
@@ -214,9 +215,9 @@ Return JSON with:
 
 # Example
 result = compare_responses(
-    "What is a neural network?",
-    "A neural network is a computer system inspired by the brain.",
-    "A neural network is a machine learning model consisting of layers of interconnected nodes (neurons) that process information. Each connection has a weight that adjusts during training. Neural networks excel at pattern recognition tasks like image classification and natural language processing."
+    "What is a REST API?",
+    "A REST API lets programs talk over HTTP.",
+    "A REST API exposes resources addressed by URLs, which clients act on using standard HTTP verbs (GET, POST, PUT, DELETE). Each request is stateless — it carries everything the server needs — and the server replies with a status code (e.g. 200 OK, 404 Not Found) plus a body, usually JSON."
 )
 
 print(f"Winner: Response {result['winner']}")
@@ -240,60 +241,14 @@ flowchart TB
 
 ## RAG Evaluation with Ragas
 
-Ragas is a framework specifically designed to evaluate RAG pipelines:
+A RAG system has an extra failure mode beyond a plain LLM answer — the retrieval step can fetch the wrong documents — so a RAG eval scores two things: did we fetch the right context, and did the answer use it correctly. The open-source Ragas framework packages these as ready-made metrics (faithfulness, answer relevancy, context precision/recall); we cover it in depth on Day 60. Below we build the judge from scratch to show the mechanics.
 
-```bash
-pip install "ragas>=0.2"
-```
+In plain terms, those four metrics mean:
 
-### Key Ragas Metrics
-
-```python
-# script_id: day_058_llm_as_judge_part1/ragas_basic_eval
-# Ragas 0.2+ API: build an EvaluationDataset from per-sample dicts. The field
-# names changed from the older API — it's now user_input / response /
-# retrieved_contexts / reference (not question / answer / contexts / ground_truth).
-from ragas import evaluate, EvaluationDataset
-from ragas.metrics import (
-    faithfulness,
-    answer_relevancy,
-    context_precision,
-    context_recall
-)
-
-# Prepare evaluation data (one dict per sample)
-samples = [
-    {
-        "user_input": "What is the capital of France?",
-        "response": "The capital of France is Paris.",
-        "retrieved_contexts": ["Paris is the capital and largest city of France."],
-        "reference": "Paris",
-    },
-    {
-        "user_input": "Who wrote Romeo and Juliet?",
-        "response": "Romeo and Juliet was written by William Shakespeare.",
-        "retrieved_contexts": [
-            "William Shakespeare wrote many plays including Romeo and Juliet, Hamlet, and Macbeth."
-        ],
-        "reference": "William Shakespeare",
-    },
-]
-
-dataset = EvaluationDataset.from_list(samples)
-
-# Run evaluation
-results = evaluate(
-    dataset=dataset,
-    metrics=[
-        faithfulness,        # Is the response grounded in the retrieved context?
-        answer_relevancy,    # Is the response relevant to the question?
-        context_precision,   # Are the retrieved contexts relevant?
-        context_recall       # Do the contexts contain the reference answer?
-    ]
-)
-
-print(results)
-```
+- **Faithfulness** — the answer only states things the retrieved docs actually support (no made-up facts, i.e. no hallucination).
+- **Answer relevancy** — does the answer actually address the question.
+- **Context precision** — of the chunks retrieval returned, how many were actually relevant (low = noisy retrieval).
+- **Context recall** — did retrieval pull in everything needed to answer (low = a needed doc was missed).
 
 ### Understanding Ragas Metrics
 
@@ -451,7 +406,7 @@ print(f"Context Quality: {result['context_quality']:.2%}")
 
 ## Checkpoint
 
-Run the `evaluate_with_scores(...)` example and confirm you get back a dict with integer-ish scores from 1 to 5 for `accuracy`, `completeness`, `clarity`, and `overall` — and that the deliberately weak photosynthesis answer scores below 5 on at least one axis. If `json.loads` throws, the judge ignored "Return ONLY valid JSON"; keeping `response_format={"type": "json_object"}` and `temperature=0` is what forces parseable, repeatable output.
+Run the `evaluate_with_scores(...)` example and confirm you get back a dict with whole-number scores from 1 to 5 for `accuracy`, `completeness`, `clarity`, and `overall` — and that the deliberately weak photosynthesis answer scores below 5 on at least one axis. If `json.loads` throws, the judge ignored "Return ONLY valid JSON"; keeping `response_format={"type": "json_object"}` and `temperature=0` is what forces parseable, repeatable output.
 
 ---
 
@@ -468,7 +423,6 @@ mindmap
       Pairwise A vs B
       Often beats absolute scoring
     RAG Evaluation
-      Ragas metrics
       Custom evaluator
       Faithfulness & relevancy
     Mindset
@@ -486,12 +440,12 @@ mindmap
 | Criteria scoring | Free-form quality review | `temperature=0`; ask for score + reasoning |
 | Structured scores | Comparing many responses | `response_format={"type": "json_object"}` |
 | Pairwise comparison | "Which is better, A or B?" | More reliable than absolute scores |
-| Ragas `evaluate()` | RAG pipelines | `EvaluationDataset.from_list([...])` |
-| Custom RAG evaluator | Bespoke metrics | One prompt per dimension, parse JSON |
+| Custom RAG evaluator | Bespoke RAG metrics | One prompt per dimension, parse JSON |
+| Ragas framework | Off-the-shelf RAG metrics | Covered in depth on Day 60 |
 
 Tips:
 - Always set `temperature=0` for the judge so scores are reproducible.
-- Ragas 0.2+ fields are `user_input` / `response` / `retrieved_contexts` / `reference` — not the old `question` / `answer` / `contexts` / `ground_truth`.
+- For an off-the-shelf RAG metric suite, reach for the Ragas framework (Day 60) instead of hand-rolling every dimension.
 - Prefer pairwise comparison when absolute scores feel arbitrary; it's easier for a judge to say "B is better" than "B is a 4.2".
 
 ---

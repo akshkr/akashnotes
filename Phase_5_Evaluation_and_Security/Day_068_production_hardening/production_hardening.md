@@ -2,7 +2,7 @@
 
 You have an AI agent that works in development. It handles the happy path, it gives good answers, your demo goes perfectly. Then you deploy it.
 
-> **Coming from Software Engineering?** This is your home turf. Production hardening for AI systems uses every technique you already know: rate limiting, circuit breakers, graceful degradation, health checks, timeout handling, input validation, and error recovery. The AI-specific additions are token budget enforcement, model fallback chains (like database read replicas), and content safety filters. If you've hardened a production API to handle 10k QPS, you'll apply 90% of the same playbook here.
+> **Coming from Software Engineering?** This is your home turf. Production hardening for AI systems uses every technique you already know: rate limiting, circuit breakers, graceful degradation, health checks, timeout handling, input validation, and error recovery. The AI-specific additions are token budget enforcement, model fallback chains (like a tiered cache or a degraded-service path), and content safety filters. If you've hardened a production API to handle 10k QPS, you'll apply 90% of the same playbook here.
 
 Within 24 hours: an LLM API returns a 503. A user sends a 10,000 word message. The context window fills up. Someone asks it to generate malicious content. A single user makes 500 requests in a minute. Your $50/day budget evaporates by noon.
 
@@ -50,6 +50,7 @@ The LLM API will fail. Rate limits, transient server errors, timeouts — they a
 import asyncio
 import random
 import logging
+import time
 from functools import wraps
 from openai import OpenAI, RateLimitError, APIStatusError, APIConnectionError
 
@@ -87,15 +88,15 @@ def retry_with_backoff(
                         "Attempt %d/%d failed (%s). Retrying in %.1fs...",
                         attempt + 1, max_retries, type(e).__name__, sleep_time
                     )
-                    import time
                     time.sleep(sleep_time)
 
+                # Note: RateLimitError subclasses APIStatusError, so its except clause
+                # MUST stay above this one — do not reorder.
                 except APIStatusError as e:
                     # Only retry on 5xx, not 4xx (client errors are not transient)
                     if e.status_code >= 500 and attempt < max_retries:
                         delay = min(base_delay * (2 ** attempt), max_delay)
                         logger.warning("Server error %d, retrying in %.1fs", e.status_code, delay)
-                        import time
                         time.sleep(delay)
                     else:
                         raise
@@ -273,7 +274,9 @@ def secondary_handler(query: str) -> str:
 
 def cached_handler(query: str) -> str:
     """Return cached response if available."""
-    # Check your semantic cache here
+    # A semantic cache returns a stored answer when a NEW question is close enough
+    # in meaning to an old one (a similarity match, not the exact-key match a normal
+    # cache uses). For now we treat every lookup as a miss.
     raise ValueError("Cache miss")  # Falls through to next handler
 
 
@@ -290,7 +293,7 @@ chain = FallbackChain(
 
 ## Pattern 4: Input Validation
 
-Validate before you spend tokens.
+Validate before you spend tokens — every LLM call is billed by the amount of text in and out (roughly one token per ~4 characters), so a rejected 10,000-character message you never sent saves real money and latency.
 
 ```python
 # script_id: day_068_production_hardening/input_validation
@@ -340,22 +343,22 @@ def validate_request(raw_request: dict) -> ChatRequest | tuple[None, str]:
 
 ## Pattern 5: Output Validation
 
-Never send raw LLM output directly to users without checking it.
+Never send raw LLM output directly to users without checking it. For a deeper treatment of harmful-content and PII redaction, see Day 063 — Output Sanitization.
 
 ```python
 # script_id: day_068_production_hardening/resilient_llm_client
 import re
-from pydantic import BaseModel
 
 
 class OutputValidator:
     """Validate LLM outputs before returning to users."""
 
-    # Patterns to detect and block
+    # Patterns to detect and block.
+    # Secret-scanning regexes need maintenance — provider key formats change over time.
     SENSITIVE_PATTERNS = [
         r'\b\d{3}-\d{2}-\d{4}\b',          # SSN
         r'\b4[0-9]{12}(?:[0-9]{3})?\b',     # Visa card number
-        r'\bsk-[a-zA-Z0-9]{48}\b',          # OpenAI API key
+        r'\bsk-(?:proj-|svcacct-)?[A-Za-z0-9_-]{20,}\b',  # OpenAI API key (legacy + project/service-account)
         r'\bANTHROPIC_API_KEY\b',
     ]
 
@@ -400,6 +403,8 @@ def safe_response(raw_output: str) -> str:
 ## Pattern 6: Rate Limiting with Redis
 
 In-memory rate limiting breaks when you scale to multiple servers. Use Redis.
+
+Trick: store each request as a member of a Redis sorted set with its timestamp as the score. "Requests in the last 60s" then becomes "count members whose score > now-60" — `zremrangebyscore` drops the old ones, `zcard` counts what remains.
 
 ```python
 # script_id: day_068_production_hardening/redis_rate_limiter
@@ -467,6 +472,23 @@ async def check_rate_limit(request: Request, user_id: str):
     return meta
 ```
 
+This is the `402 Budget Exhausted` node in the failure map. Reusing the same Redis client, a per-user daily cost budget is just one more counter — increment the user's running token total and reject once it crosses the cap:
+
+```python
+# script_id: day_068_production_hardening/redis_rate_limiter
+from datetime import date
+
+
+def check_budget(redis_client: redis.Redis, user_id: str, tokens: int, daily_cap: int = 1_000_000):
+    """Raise a 402-style error once a user's daily token total exceeds the cap."""
+    key = f"cost:{user_id}:{date.today().isoformat()}"
+    total = redis_client.incrby(key, tokens)
+    redis_client.expire(key, 86400)  # auto-reset after 24h
+    if total > daily_cap:
+        raise HTTPException(status_code=402, detail="Daily token budget exhausted")
+    return total
+```
+
 ---
 
 ## Pattern 7: Timeout Management
@@ -483,6 +505,7 @@ from contextlib import asynccontextmanager
 async def timeout_context(seconds: float, operation_name: str = "operation"):
     """Context manager that raises TimeoutError after N seconds."""
     try:
+        # asyncio.timeout requires Python 3.11+. On 3.10 or earlier, use asyncio.wait_for(...).
         async with asyncio.timeout(seconds):
             yield
     except asyncio.TimeoutError:
@@ -512,7 +535,9 @@ async def run_agent_with_timeout(agent, task: str, timeout_seconds: float = 30.0
 from fastapi import FastAPI
 from pydantic import BaseModel
 import time
+import logging
 
+logger = logging.getLogger(__name__)
 app = FastAPI()
 
 
@@ -546,7 +571,7 @@ async def readiness_check() -> HealthStatus:
 
     # Test LLM connectivity
     try:
-        client.models.list()  # Lightweight API check
+        client.models.list()  # Lightweight API check; client comes from your resilient_llm_client module
         llm_ok = True
     except Exception as e:
         logger.error("LLM readiness check failed: %s", e)
@@ -577,6 +602,8 @@ async def readiness_check() -> HealthStatus:
 import json
 import logging
 from datetime import datetime, timezone
+
+logger = logging.getLogger(__name__)
 
 
 class JSONFormatter(logging.Formatter):
@@ -681,13 +708,6 @@ def log_llm_call(
 
 ---
 
-## Practice Exercises
-
-1. Add the `retry_with_backoff` decorator to your Day 73 capstone pipeline and verify it retries on 429 errors
-2. Implement `CircuitBreaker` and write a test that opens the circuit after 5 failures
-3. Build a `FallbackChain` that tries GPT-4o, falls back to GPT-4o-mini, then returns a static message
-4. Add structured JSON logging to your capstone project and verify the output in a log viewer
-
 ## Checkpoint
 
 Wrap a function that raises a transient error (e.g. `RateLimitError`) with `@retry_with_backoff` and enable logging — you should see the "Retrying in ..." warnings with the delay roughly doubling each attempt (1s, 2s, 4s) before it finally re-raises. The key thing to confirm: a 4xx client error (like a bad request) is NOT retried, while a 5xx is. If you see it retrying a 4xx, your `APIStatusError` branch is missing the `>= 500` check — retrying a malformed request just burns time and quota.
@@ -744,17 +764,19 @@ Tips:
 
 ## Exercises
 
-1. Wrap `resilient_completion` so it goes through *both* the circuit breaker and the retry decorator. Decide the order (retry inside the breaker, or breaker inside retry) and justify it in a comment.
-2. Extend `OutputValidator.SENSITIVE_PATTERNS` to also redact email addresses, then write a test asserting `foo@bar.com` is replaced with `[REDACTED]`.
-3. Add a per-user *daily cost budget* check: track accumulated `input_tokens + output_tokens` per `user_id` in Redis and raise a `402`-style error when the budget is exceeded.
-4. Make `/ready` return HTTP 503 (not just `status="degraded"`) when the LLM check fails, so Kubernetes actually removes the pod from rotation.
+1. Add the `retry_with_backoff` decorator to any LLM client you have built so far (e.g. your Day 34 RAG chatbot), and verify it retries on 429 errors. When you reach the Day 73 capstone, wire it in there too.
+2. Wrap `resilient_completion` so it goes through *both* the circuit breaker and the retry decorator. Decide the order (retry inside the breaker, or breaker inside retry) and justify it in a comment.
+3. Extend `OutputValidator.SENSITIVE_PATTERNS` to also redact email addresses, then write a test asserting `foo@bar.com` is replaced with `[REDACTED]`.
+4. Add a per-user *daily cost budget* check: track accumulated `input_tokens + output_tokens` per `user_id` in Redis and raise a `402`-style error when the budget is exceeded.
+5. Make `/ready` return HTTP 503 (not just `status="degraded"`) when the LLM check fails, so Kubernetes actually removes the pod from rotation.
 
 <details><summary>Solutions (approaches)</summary>
 
-1. Breaker *outside* retry: the breaker should see one logical attempt, not each retry. `circuit_breaker.call(retry_with_backoff(...)(fn), ...)` — retries exhaust, then the single failure counts toward the breaker.
-2. Add `r'\b[\w.+-]+@[\w-]+\.[\w.-]+\b'` to the list; the existing `re.sub(pattern, "[REDACTED]", output)` loop handles replacement.
-3. `pipe.incrby(f"cost:{user_id}:{date}", tokens)` with `pipe.expire(..., 86400)`; compare the returned total to the budget and `raise HTTPException(status_code=402, ...)`.
-4. In `readiness_check`, `from fastapi import Response`; set `response.status_code = 503` when `not llm_ok`, or return a `JSONResponse(status_code=503, ...)`.
+1. Decorate the client call with `@retry_with_backoff(max_retries=3)`; simulate a 429 by raising `RateLimitError`, and confirm the "Retrying in ..." warnings fire before the call finally succeeds or re-raises.
+2. Breaker *outside* retry: the breaker should see one logical attempt, not each retry. `circuit_breaker.call(retry_with_backoff(...)(fn), ...)` — retries exhaust, then the single failure counts toward the breaker.
+3. Add `r'\b[\w.+-]+@[\w-]+\.[\w.-]+\b'` to the list; the existing `re.sub(pattern, "[REDACTED]", output)` loop handles replacement.
+4. `pipe.incrby(f"cost:{user_id}:{date}", tokens)` with `pipe.expire(..., 86400)`; compare the returned total to the budget and `raise HTTPException(status_code=402, ...)`.
+5. In `readiness_check`, `from fastapi import Response`; set `response.status_code = 503` when `not llm_ok`, or return a `JSONResponse(status_code=503, ...)`.
 </details>
 
 ---

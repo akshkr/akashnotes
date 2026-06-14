@@ -2,7 +2,7 @@
 
 Agents need memory! In this guide, you'll learn to save agent state, implement checkpoints, and store conversation history in databases.
 
-> **Coming from Software Engineering?** Agent checkpoints are like database transactions and savepoints. If you've used database savepoints for rollback, Git commits for version history, or Redux DevTools for time-travel debugging, agent checkpointing is the same concept — save state so you can restore, replay, or debug later.
+> **Coming from Software Engineering?** Agent checkpoints are like database transactions and savepoints. If you've used database savepoints for rollback, Git commits for version history, or Redux DevTools for time-travel debugging, agent checkpointing is the same concept — save state so you can restore, replay, or debug later. And conversation memory is just session state you persist between requests, like a server-side session store.
 
 ---
 
@@ -32,7 +32,7 @@ Types of memory:
 - **Conversation Memory**: Recent messages
 - **Entity Memory**: Facts about people/things
 - **Summary Memory**: Compressed history
-- **Persistent Memory**: Saved across sessions
+- **Persistent storage**: Saved to a database across sessions (Part 2)
 
 ---
 
@@ -153,11 +153,16 @@ LangGraph provides built-in checkpointing:
 ```python
 # script_id: day_044_checkpoints_persistence/langgraph_checkpoints
 from langgraph.graph import StateGraph, END
-from langgraph.checkpoint.memory import MemorySaver  # or: pip install langgraph-checkpoint-sqlite
+from langgraph.checkpoint.memory import MemorySaver
 from typing import TypedDict, Annotated
 from operator import add
 
 # Define state
+# The `Annotated[list, add]` part tells LangGraph how to combine what a node
+# returns with the existing state. For `messages`, `add` means "append to the
+# list" (like list.extend) instead of "replace it" — so each node adds to the
+# running history. A plain field like `step_count` has no combine rule, so a
+# returned value just overwrites the old one (last write wins).
 class AgentState(TypedDict):
     messages: Annotated[list, add]
     step_count: int
@@ -182,6 +187,10 @@ workflow.add_edge("agent", END)
 app = workflow.compile(checkpointer=checkpointer)
 
 # Run with thread ID for persistence
+# The thread_id is the key under which this conversation's state is saved and
+# looked up — think of it as the session/conversation ID (one per user or per
+# chat). It lives under the `configurable` key, which is how LangGraph passes
+# per-run settings.
 config = {"configurable": {"thread_id": "user-123"}}
 
 # First run
@@ -191,21 +200,19 @@ result1 = app.invoke(
 )
 
 # Later - resume from checkpoint!
-result2 = app.invoke(
-    {"messages": ["Continue"], "step_count": 0},
-    config=config
-)
+# We don't re-send step_count — the checkpointer already has it. messages
+# accumulates via its `add` reducer; step_count keeps its saved value and the
+# node increments it.
+result2 = app.invoke({"messages": ["Continue"]}, config=config)
 # result2 will continue from where result1 left off
 ```
+
+`MemorySaver` keeps checkpoints in RAM (lost on restart) — great for trying this out. For durable storage use `SqliteSaver` (`pip install langgraph-checkpoint-sqlite`) or `PostgresSaver`, covered in Part 2.
 
 ### Time-Travel Debugging
 
 ```python
 # script_id: day_044_checkpoints_persistence/langgraph_checkpoints
-from langgraph.checkpoint.memory import MemorySaver  # or: pip install langgraph-checkpoint-sqlite
-
-checkpointer = MemorySaver()  # For production, use PostgresSaver or SqliteSaver
-
 # Get all checkpoints for a thread
 thread_id = "user-123"
 checkpoints = list(app.get_state_history({"configurable": {"thread_id": thread_id}}))
@@ -611,7 +618,8 @@ class PersistentAgent:
         return row[0] if row and row[0] else ""
 
     def _update_entities(self, session_id: str, text: str):
-        # Simple entity extraction (use EntityMemory class for better results)
+        # Stub: integrate EntityMemory.extract_entities here and store the JSON
+        # in the entities table — left as Exercise 1.
         pass
 
 # Usage
@@ -632,7 +640,7 @@ print(agent.chat(session, "Where do I work?"))  # Still remembers!
 
 ## Checkpoint
 
-Run the LangGraph Checkpoints example: compile with `MemorySaver()`, invoke once under `config = {"configurable": {"thread_id": "user-123"}}`, then invoke a second time with the *same* config. The second run should pick up the `step_count` from the first (you'll see it continue, not reset to 0) because state is keyed by `thread_id`. If the second run starts fresh, check that you passed the same `config` to both `invoke` calls and that the checkpointer was actually passed to `workflow.compile(checkpointer=...)`.
+Run the LangGraph Checkpoints example: compile with `MemorySaver()`, invoke once under `config = {"configurable": {"thread_id": "user-123"}}`, then invoke a second time with the *same* config (sending only `{"messages": ["Continue"]}`). Because state is keyed by `thread_id`, the second run picks up where the first left off: `messages` grows across runs (the `add` reducer appends), and `step_count` increments to 2 (the node adds 1 to the saved value of 1). If the second run starts fresh, check that you passed the same `config` to both `invoke` calls and that the checkpointer was actually passed to `workflow.compile(checkpointer=...)`.
 
 ## Summary
 
@@ -680,8 +688,8 @@ mindmap
 
 1. Pass `config={"configurable": {"thread_id": "a"}}` on both calls; the second `invoke` sees the merged state from the first.
 2. Same code, `thread_id="b"`; `get_state` for "a" and "b" return different values — state is keyed by thread.
-3. `SqliteSaver.from_conn_string("checkpoints.db")` writes to disk; a fresh process pointing at the same file recovers the thread.
-4. `for cp in app.get_state_history(config): print(cp.values)` — one checkpoint per super-step, newest first.
+3. Use `with SqliteSaver.from_conn_string("checkpoints.db") as saver:` and compile the graph inside that block; a fresh process pointing at the same file recovers the thread.
+4. `for cp in app.get_state_history(config): print(cp.values)` — one checkpoint per graph step (each time the graph advances after running its node(s)), listed newest first.
 </details>
 
 ---
