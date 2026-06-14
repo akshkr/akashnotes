@@ -481,7 +481,7 @@ for source in sources:
 
 ---
 
-## Summary
+## Part 1 Summary — LlamaIndex
 
 ```mermaid
 mindmap
@@ -505,7 +505,7 @@ mindmap
 
 ---
 
-## Quick Reference
+## LlamaIndex Quick Reference
 
 ```python
 # script_id: day_039_llamaindex_and_framework_comparison/quick_reference

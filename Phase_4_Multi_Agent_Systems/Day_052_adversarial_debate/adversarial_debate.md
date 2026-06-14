@@ -57,6 +57,8 @@ Benefits:
 
 ## Basic Debate Implementation
 
+This lesson uses OpenAI — set `OPENAI_API_KEY` before running (`export OPENAI_API_KEY=...`).
+
 ```python
 # script_id: day_052_adversarial_debate/debate_system
 from openai import OpenAI
