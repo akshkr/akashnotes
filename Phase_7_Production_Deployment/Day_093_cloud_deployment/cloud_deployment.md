@@ -66,6 +66,8 @@ gunicorn>=22.0
 
 ### 3. Dockerfile
 
+This is the short version for context; **Day 89 (Docker Deployment)** covers the image itself in depth (multi-service Compose, non-root user, health probes).
+
 ```dockerfile
 FROM python:3.11-slim
 
