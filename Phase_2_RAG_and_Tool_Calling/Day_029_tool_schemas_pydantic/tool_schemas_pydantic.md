@@ -449,4 +449,4 @@ Run `to_openai` and `to_anthropic` on the same Pydantic model and confirm: both 
 
 ## What's Next?
 
-Now that your tools have proper schemas, let's learn how to **execute tool calls and return results** back to the LLM!
+Now that your tools have proper schemas, let's learn how to **execute tool calls and return results** back to the LLM in Day 30!

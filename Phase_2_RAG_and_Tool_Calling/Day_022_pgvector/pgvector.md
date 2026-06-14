@@ -580,4 +580,4 @@ conn.commit()
 
 ## What's Next?
 
-Now that you can store embeddings, let's learn to **index, query, and search** them effectively!
+You can now store and search embeddings in Postgres. Next, **Day 23: Indexing, Querying, and Updating**, drills into the core operations across vector stores -- batch indexing, filtered search, upserts, deletes, and keeping a vector store fresh as your documents change.

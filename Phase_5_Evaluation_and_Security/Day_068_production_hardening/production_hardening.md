@@ -708,12 +708,6 @@ def log_llm_call(
 
 ---
 
-## Checkpoint
-
-Wrap a function that raises a transient error (e.g. `RateLimitError`) with `@retry_with_backoff` and enable logging — you should see the "Retrying in ..." warnings with the delay roughly doubling each attempt (1s, 2s, 4s) before it finally re-raises. The key thing to confirm: a 4xx client error (like a bad request) is NOT retried, while a 5xx is. If you see it retrying a 4xx, your `APIStatusError` branch is missing the `>= 500` check — retrying a malformed request just burns time and quota.
-
----
-
 ## Summary
 
 ```mermaid
@@ -778,6 +772,12 @@ Tips:
 4. `pipe.incrby(f"cost:{user_id}:{date}", tokens)` with `pipe.expire(..., 86400)`; compare the returned total to the budget and `raise HTTPException(status_code=402, ...)`.
 5. In `readiness_check`, `from fastapi import Response`; set `response.status_code = 503` when `not llm_ok`, or return a `JSONResponse(status_code=503, ...)`.
 </details>
+
+---
+
+## Checkpoint
+
+Wrap a function that raises a transient error (e.g. `RateLimitError`) with `@retry_with_backoff` and enable logging — you should see the "Retrying in ..." warnings with the delay roughly doubling each attempt (1s, 2s, 4s) before it finally re-raises. The key thing to confirm: a 4xx client error (like a bad request) is NOT retried, while a 5xx is. If you see it retrying a 4xx, your `APIStatusError` branch is missing the `>= 500` check — retrying a malformed request just burns time and quota.
 
 ---
 

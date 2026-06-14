@@ -662,4 +662,4 @@ except (TimeoutError, KeyboardInterrupt):
 
 ## What's Next?
 
-Now you've built the core agent loop by hand! Next, let's explore **frameworks like LangChain and LlamaIndex** that provide these features out of the box.
+You've now hand-built the core agent loop primitives — the ReAct loop, conversation history, and stop conditions. Next, see how **frameworks like LangChain and LlamaIndex (Day 38)** give you these features out of the box.

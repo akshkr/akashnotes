@@ -211,44 +211,7 @@ result2 = app.invoke({"messages": ["Continue"]}, config=config)
 
 ### Time-Travel Debugging
 
-```python
-# script_id: day_044_checkpoints_persistence/langgraph_checkpoints
-# Get all checkpoints for a thread
-thread_id = "user-123"
-checkpoints = list(app.get_state_history({"configurable": {"thread_id": thread_id}}))
-
-print(f"Found {len(checkpoints)} checkpoints")
-
-# Get a specific checkpoint
-for cp in checkpoints:
-    print(f"Checkpoint: {cp.config}")
-    print(f"State: {cp.values}")
-
-# Replay from a specific checkpoint
-old_config = checkpoints[2].config  # Go back to checkpoint 2
-result = app.invoke({"messages": ["Retry from here"]}, config=old_config)
-```
-
----
-
-## Quick Recap
-
-| Concept | What It Does | When to Use |
-|---------|-------------|-------------|
-| Conversation Memory | Stores recent messages in a sliding window | Every chatbot — keeps context without unbounded growth |
-| Summary Memory | Compresses old messages into summaries | Long conversations where full history exceeds context window |
-| LangGraph Checkpoints | Saves full graph state at each step | Agents that need to resume, retry, or debug |
-| Time-Travel Debugging | Replays from any previous checkpoint | Debugging agent behavior — "what went wrong at step 3?" |
-
----
-
-## Try It Yourself
-
-1. **Build an entity memory system**: Extend `ConversationMemory` to extract and store facts about entities (people, places, topics) mentioned in conversation. Use an LLM to extract entities from each message.
-
-2. **Implement checkpoint cleanup**: The SQLite checkpointer stores every checkpoint forever. Write a cleanup function that keeps only the last N checkpoints per thread to manage storage.
-
-3. **Compare memory strategies**: Run the same 20-message conversation with sliding window (max 5), sliding window (max 10), and summary memory. Compare the quality of the agent's responses at message 20.
+Because every step is checkpointed, you can also rewind to any past state and replay execution from there — invaluable for debugging "what went wrong at step 3?". That's the full topic of Day 045, so we'll save the walkthrough for then.
 
 ---
 
@@ -638,10 +601,6 @@ print(agent.chat(session, "Where do I work?"))  # Still remembers!
 
 ---
 
-## Checkpoint
-
-Run the LangGraph Checkpoints example: compile with `MemorySaver()`, invoke once under `config = {"configurable": {"thread_id": "user-123"}}`, then invoke a second time with the *same* config (sending only `{"messages": ["Continue"]}`). Because state is keyed by `thread_id`, the second run picks up where the first left off: `messages` grows across runs (the `add` reducer appends), and `step_count` increments to 2 (the node adds 1 to the saved value of 1). If the second run starts fresh, check that you passed the same `config` to both `invoke` calls and that the checkpointer was actually passed to `workflow.compile(checkpointer=...)`.
-
 ## Summary
 
 ```mermaid
@@ -683,6 +642,9 @@ mindmap
 2. Run a second conversation under `thread_id="b"` and verify the two threads are fully isolated.
 3. Swap `MemorySaver` for `SqliteSaver`, restart the process, and prove the thread's state survived by reading it back with `get_state`.
 4. After a multi-step run, call `get_state_history` and print how many checkpoints were recorded and the values at each.
+5. **Build an entity memory system**: Extend `ConversationMemory` to extract and store facts about entities (people, places, topics) mentioned in conversation. Use an LLM to extract entities from each message.
+6. **Implement checkpoint cleanup**: The SQLite checkpointer stores every checkpoint forever. Write a cleanup function that keeps only the last N checkpoints per thread to manage storage.
+7. **Compare memory strategies**: Run the same 20-message conversation with sliding window (max 5), sliding window (max 10), and summary memory. Compare the quality of the agent's responses at message 20.
 
 <details><summary>Solutions (approaches)</summary>
 
@@ -690,7 +652,16 @@ mindmap
 2. Same code, `thread_id="b"`; `get_state` for "a" and "b" return different values — state is keyed by thread.
 3. Use `with SqliteSaver.from_conn_string("checkpoints.db") as saver:` and compile the graph inside that block; a fresh process pointing at the same file recovers the thread.
 4. `for cp in app.get_state_history(config): print(cp.values)` — one checkpoint per graph step (each time the graph advances after running its node(s)), listed newest first.
+5. Reuse `EntityMemory.extract_entities` from this lesson; call it inside `ConversationMemory.add_user_message` and merge results into a `self.entities` dict.
+6. Query the checkpointer's table ordered by step, keep the newest N rows per `thread_id`, and delete the rest.
+7. Drive each memory object through the same 20 messages and compare the final answer quality / token count.
 </details>
+
+---
+
+## Checkpoint
+
+Run the LangGraph Checkpoints example: compile with `MemorySaver()`, invoke once under `config = {"configurable": {"thread_id": "user-123"}}`, then invoke a second time with the *same* config (sending only `{"messages": ["Continue"]}`). Because state is keyed by `thread_id`, the second run picks up where the first left off: `messages` grows across runs (the `add` reducer appends), and `step_count` increments to 2 (the node adds 1 to the saved value of 1). If the second run starts fresh, check that you passed the same `config` to both `invoke` calls and that the checkpointer was actually passed to `workflow.compile(checkpointer=...)`.
 
 ---
 

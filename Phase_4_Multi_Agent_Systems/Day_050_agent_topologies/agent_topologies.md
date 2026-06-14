@@ -100,8 +100,8 @@ class HierarchicalSystem:
 Available workers:
 {worker_descriptions}
 
-Return JSON array of assignments:
-[{{"worker": "name", "task": "specific subtask"}}]"""
+Return a JSON object exactly like:
+{{"assignments": [{{"worker": "name", "task": "specific subtask"}}]}}"""
             }, {
                 "role": "user",
                 "content": f"Task: {task}"
@@ -110,7 +110,7 @@ Return JSON array of assignments:
         )
 
         result = json.loads(response.choices[0].message.content)
-        return result.get("assignments", result)
+        return result.get("assignments", [])
 
     def execute_worker(self, worker_name: str, task: str) -> str:
         """Have a worker execute their task."""

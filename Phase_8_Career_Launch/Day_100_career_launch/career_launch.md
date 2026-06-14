@@ -239,6 +239,33 @@ Here's the honest picture of where AI engineering stands in 2026:
 
 ---
 
+## Summary
+
+```mermaid
+mindmap
+  root((100 Days Done))
+    Capstones
+      D18 Data Extraction Pipeline
+      D34 RAG Chatbot
+      D48 Research Agent
+      D73 Multi-Agent Pipeline
+      D97 Production Deployment
+    Skill Phases
+      LLM Foundations
+      RAG & Tool Calling
+      Single Agents
+      Multi-Agent, Eval & Security
+      Fine-tuning & Optimization
+      Production Deployment
+    Specialization Paths
+      Agent Systems
+      RAG & Retrieval
+      Evaluation & Quality
+      Production Infrastructure
+```
+
+---
+
 ## Quick Reference: Specialization Paths
 
 Pick the one that pulls at you — and name the first thing you'll learn next.

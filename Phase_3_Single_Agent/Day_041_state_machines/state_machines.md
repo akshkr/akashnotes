@@ -1,4 +1,4 @@
-# Stateful Agents with LangGraph
+# State Machines with LangGraph
 
 You've built agents with simple loops. Now let's level up with **LangGraph** - a framework for building agents as **state machines** with explicit control flow.
 

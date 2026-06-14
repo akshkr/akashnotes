@@ -504,6 +504,8 @@ def get_human_review(
 
 ## Step 6: The Pipeline Orchestrator
 
+This capstone deliberately hand-rolls the supervisor loop in plain Python — a class with an explicit `for` loop — so the control flow is right in front of you instead of hidden behind a framework. (We pull in LangGraph only for the `add_messages` helper on the typed state in Step 1.) Once this flow is clear, LangGraph is how you'd later formalize the same researcher → write → judge → revise cycle as a graph.
+
 ```python
 # script_id: day_073_capstone_multi_agent_pipeline/pipeline
 # pipeline.py

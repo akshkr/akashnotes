@@ -664,6 +664,8 @@ railway variables set OPENAI_API_KEY=sk-...
 
 Your service is live. Now you need to know when it breaks.
 
+This extends the `health.py` from Step 1 — add the `/health/detailed` endpoint alongside the existing `/health` and `/` routes (merge it into the one file rather than declaring a second `router`).
+
 ```python
 # script_id: day_097_capstone_deploy_to_production/api_router_health_detailed
 # api/routers/health.py (expanded)
