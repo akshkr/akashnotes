@@ -2,6 +2,24 @@
 
 Notable changes to the course content. Newest first.
 
+## 2026-06 (multi-agent quality review)
+
+- **Multi-agent course-quality review + staged fixes.** Ran a fan-out →
+  adversarial-debate → arc-audit workflow over all 100 lessons (~1,135 gatekept
+  findings, both invariants enforced: simple SWE-migration voice; no-ML-background
+  ceiling). Applied in reviewed batches (checker green, `--strict`):
+  - Batch 1 — corrected stale/wrong "What's Next" footers and premature
+    "course complete" blocks (Days 5, 13, 16, 20, 37, 50, 62, 73, 74, 89, 94, 95).
+  - Batches 2-4 — ~1,090 findings across 96 lessons: stale SDK signatures
+    (PydanticAI, RAGAS, Guardrails, TRL, langchain_chroma), nonexistent Ollama/HF
+    model tags, MCP `AnyUrl` compare + path-traversal guard, missing imports under
+    split `script_id`s, `claude-sonnet-4-5`→`4-6`, one-clause SWE/jargon glosses,
+    corrected Day 2 attention & Day 19 embedding analogies, collapsible solutions,
+    Checkpoint ordering, dated pricing caveats.
+  - Held for author sign-off (CLAUDE.md §7): provider standardization, redundant-day
+    consolidation (089/093, 044/045, 074/075, 051-055), GPU on-ramp for Days 78-79,
+    index.md reranking mismatch.
+
 ## 2026-06
 
 - **Content refinement pass across all 100 lessons.** Fixed runnable-code bugs
