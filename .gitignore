@@ -1,0 +1,9 @@
+# Scratch artifacts from the course-quality-review / apply-findings workflows
+# (regenerable; the human-readable ANALYSIS_REPORT.md is kept)
+.analysis_findings.json
+.apply_findings.json
+.apply_filelist.json
+.batch5_signoff.json
+
+# Machine-specific Claude settings
+.claude/settings.local.json
