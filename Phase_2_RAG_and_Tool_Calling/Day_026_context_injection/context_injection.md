@@ -599,28 +599,7 @@ flowchart TD
 | **Freshness** | Re-send each query | Re-index only changed docs |
 | **Accuracy** | Good for small corpora | Better for large corpora with precise retrieval |
 
-### The Long-Context Approach in Code
-
-```python
-# script_id: day_026_context_injection/long_context_approach
-from openai import OpenAI
-
-client = OpenAI()
-
-# Long-context approach: just load everything
-with open("company_docs.txt") as f:
-    all_docs = f.read()  # Say 50K tokens
-
-response = client.chat.completions.create(
-    model="gpt-4o",
-    messages=[
-        {"role": "system", "content": f"Answer based on these docs:\n\n{all_docs}"},
-        {"role": "user", "content": user_question}
-    ]
-)
-```
-
-Compare that to the RAG system above — no embeddings, no ChromaDB, no chunking logic. If your documents fit, this is dramatically less code to ship and maintain.
+**In code, the long-context approach is trivial:** read the whole corpus and drop it into the system prompt (`{"role": "system", "content": f"Answer based on these docs:\n\n{all_docs}"}`) — no embeddings, no vector DB, no chunking logic. If your documents fit the window, that's dramatically less code to ship and maintain than the RAG system above.
 
 ### The Hybrid Approach
 
