@@ -47,12 +47,20 @@ references). Three invariants must survive every change:
 - **Right-size** the 3 bloated days into a ~400–650-line band (capstones exempt).
 
 ### P1/P2 — Close content gaps via in-place repurposing (no renumber)
-| Repurpose | Into |
+
+> Refined by the 2026-06 curriculum analysis (`CURRICULUM_REPORT.md`). The
+> **Canonical backlog** at the bottom of this file is the authoritative version;
+> the table below is the summary.
+
+| Repurpose (keep number) | Into |
 |---|---|
-| one of 069–071 (HITL ×3) | Retrieval evaluation (precision/recall/NDCG) |
-| 067 (≈066 API keys) | PII & data privacy in RAG/agents |
-| 092 (≈090 circuit breakers) | Reranking & hybrid search depth |
-| 046 (≈044/045 persistence) | Native structured outputs & tool-call reliability |
+| 046 (thin; ≈044/045 persistence) | **Agent memory & context budgeting** |
+| 092 (≈090 circuit breakers) | **Retrieval evaluation + reranking & hybrid search** |
+| 067 (≈066 API keys) | **PII & data privacy in RAG/agents** |
+| 069+070 (HITL overlap) | rewrite-in-place to free a slot (Phase 4 expansion) |
+
+Note: *native structured outputs & tool-call reliability* is no longer a standalone
+repurpose target — fold it into **D029** (tool schemas) / **D064** (guardrails) instead.
 
 ### P2 — Provider & voice consistency
 - Pick a **primary provider**; show the other as a labeled "same in <other>"
@@ -80,34 +88,66 @@ model/price/cross-reference agreeing with `REFERENCE.md`.
 
 ---
 
-## Batch 5 backlog (from the 2026-06 multi-agent review — needs author sign-off)
+## Canonical improvement backlog (2026-06)
 
-The review applied ~1,120 single-file findings in place (see `CHANGELOG.md`).
-These items were held because they touch **content across multiple days**, the
-**day map**, or **provider strategy** — high blast radius per CLAUDE.md §7.
-Rule for all of them: **repurpose in place, keep day numbers, no renumber.**
+Merges the lesson-level multi-agent review (`ANALYSIS_REPORT.md`) and the
+curriculum-level analysis (`CURRICULUM_REPORT.md`). The lesson review applied
+~1,120 single-file findings in place (see `CHANGELOG.md`). What remains below is
+**structural / product-level** work. Standing rule per CLAUDE.md §7: **repurpose
+in place, keep day numbers, no renumber.**
 
-### A — Cross-day consolidation (PROPOSED; awaiting approval)
+### 0 — Done (no further action)
+- **Cross-day de-dup, applied:** D089 Docker ↔ D093 Cloud (D089 now containerizing-
+  only; reliability → D090; reciprocal pointers); D069 feedback section → pointer
+  to D072. D044↔D045 time-travel and D047 re-teach already resolved via Day-45
+  pointers. D083 SSE sections differentiated.
+- **TOC reconciled:** index.md updated for the D089 de-dup and the D034 reranking
+  mismatch.
 
-| # | Overlap | Proposed resolution (no renumber) |
+### 1 — Gap closure via in-place repurpose (HIGH; reviewed + gate-approved)
+| Repurpose (keep number) | Into | Why |
 |---|---|---|
-| A1 | **D089 Docker ↔ D093 Cloud** (substantial duplication; reliability patterns also in D090) | D089 = containerizing only (Dockerfile/Compose/health probes). D093 = deploying that image to cloud (Render/Railway/AWS/GCP, CI/CD, secrets). Move retry/circuit-breaker reliability to live **only in D090**; D089/D093 link to it. |
-| A2 | **D044 Checkpoints ↔ D045 Time-Travel** | D045 stays the canonical time-travel home; D044's subsection already teasered to a pointer. Confirm no remaining code overlap. |
-| A3 | **D069 HITL ↔ D072 Injecting Feedback** (069–071 are HITL×3) | D072 = canonical "inject feedback into agent state"; trim D069's overlapping feedback section to a pointer. Optionally free one of 069–071 for the gap-topic swap below. |
-| A4 | **D047 Debugging re-teaches D045 time-travel** | Trim D047's LangGraph time-travel re-teach to a one-line pointer to D045; keep D047 on logging/tracing/failure modes. |
+| **D046** Database Storage (~310 lines, thin) | **Agent Memory & Context Budgeting** | Only conversation memory is taught; multi-layer memory (window / session facts / persistent profile) + token-budget allocation is daily production work |
+| **D092** Model Fallback (≈D090) | **Retrieval Evaluation & Reranking** | Retrieval metrics scattered across D23/26/60; no unified "is my search or my injection bad?" workflow; reranking only a sidebar |
+| **D067** API Key Security (≈D066) | **PII & Data Privacy in RAG/Agents** | Privacy only handled at output (D63); prevent at ingestion/retrieval — GDPR/HIPAA relevance |
 
-### B — Long-day trims (judgment calls)
-- **D026** context injection (741 lines) and **D044** (692) exceed the 400–650 band. Trim *duplicated/secondary* sections only; do not cut on-topic content.
+Fold *structured-output reliability* into **D029 / D064** (not a standalone day).
 
-### C — Within-day dedup
-- **D083** fastapi two SSE sections — **resolved** in Batches 2-4 (differentiated + `[DONE]` standardized).
+### 2 — Phase balance (HIGH; needs sign-off — may free P5 slots for P4)
+- **P4 Multi-Agent (6 days)** is the thinnest phase for an increasingly central
+  topic; **P5 Eval+Security (18 days)** carries the redundancy. Consolidating a
+  P5 overlap (e.g. rewrite **D069** to cover basic + multi-stage HITL, freeing
+  **D070** conceptually *without* renumbering) could feed a P4 expansion
+  (multi-agent debugging/observability, handoff & cost-aware routing).
 
-### D — Provider standardization
-- Phase 7 (and D052) lean OpenAI while the course centers Anthropic. The review
-  only fixed internal contradictions + added setup notes; a full standardization
-  pass (pick one primary provider, show the other as a labeled aside) remains a
-  product decision. Pairs with the long-standing open item in §"P2".
+### 3 — Currency additions (MEDIUM; all in-place, with "as of <date>, verify" caveats)
+- **D091** add native prompt caching (Anthropic `cache_control`, OpenAI prompt
+  caching) as the primary pattern; semantic caching second.
+- **D029/D064** native structured outputs (json_schema / output_config) + retry-
+  on-parse-fail + first-try-parse reliability metric.
+- **D094** adaptive thinking: when to enable, cost/latency trade-off, route by complexity.
+- **D087** reframe agentic UI as the default (tool call → component), Streamlit/Gradio to a sidebar.
+- **D032** video-frame inputs for agents (frame sampling + cost).
+- **D047** failure-mode diagnosis section (loops, hallucinated tool calls, context overflow).
+- Positioning caveats: **D017 DSPy** ("advanced/optional, not core"), **D053 CrewAI**
+  ("prototyping; LangGraph for production"), **D095 MCP** ("emerging standard as of 2026").
+  *Currency adoption figures in `CURRICULUM_REPORT.md` are agent web-estimates — verify before quoting.*
 
-### Related existing swap-map (P1/P2 above, still open)
-069–071 → retrieval eval · 067 → PII/privacy · 092 → reranking depth · 046 →
-structured outputs. A3's freed HITL slot could feed the retrieval-eval swap.
+### 4 — Within-day trims (LOW; recount first — D044/D089 changed since the line counts were taken)
+- **D026** context injection and **D044** checkpoints exceed the 400–650 band. Trim
+  *duplicated/secondary* sections only; do not cut on-topic content. Re-measure first.
+
+### 5 — Provider standardization (product decision; still open)
+- Phase 7 (and D052) lean OpenAI while the course centers Anthropic. The reviews
+  only fixed internal contradictions + added setup notes. A full pass (pick one
+  primary provider, show the other as a labeled "same in <other>" aside) remains
+  open. Pairs with §P2 above.
+
+### 6 — Capstone enhancements (LOW; optional, in-place)
+- Make portfolio reuse code-visible: D34 note on reusing D18 extraction; D48 commented
+  import of the D34 RAG chatbot; D99 "wiring your 5 projects together" section.
+
+### Ordering fixes (LOW; in-place callouts — partly done)
+- SDK setup (D10–11) lands after live code (D4–9): D4 setup callout already added;
+  D9 still uses live client code that could carry the same callout. "agent" used on
+  D30/D32 before its formal D35 intro — add a one-line "formal agent loop arrives D35".
