@@ -324,6 +324,10 @@ except CircuitBreakerOpen:
 
 ---
 
+## Provider Fallback
+
+The resilience patterns above protect a *single* provider. For an outage, the next layer is a **fallback chain**: catch a provider-level failure (or open circuit) and retry the request on a different provider or model, degrading to a cheaper/static response only as a last resort. It's the circuit breaker above plus a `try-the-next-one` loop — keep a small ordered list of providers and walk it on failure, tracking health so you don't keep hammering a dead one.
+
 ## Combined Resilience
 
 Put it all together:

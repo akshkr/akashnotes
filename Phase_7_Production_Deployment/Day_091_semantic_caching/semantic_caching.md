@@ -532,4 +532,4 @@ return resp
 
 ## What's Next?
 
-Caching saves money when the same provider is up. But what happens when it goes down? Next, we'll build **model fallback strategies** — routing between providers for reliability and cost optimization.
+Caching cuts cost and latency on the generation side. Next we turn to the *retrieval* side: **Retrieval Evaluation & Reranking** — measuring whether your search is actually returning the right context, and the highest-ROI fix when it isn't.

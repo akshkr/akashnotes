@@ -309,8 +309,8 @@ Retry with exponential backoff and jitter, token bucket rate limiting, circuit b
 **Day 091: Semantic Caching**
 Exact-match caching with Redis, semantic caching using embeddings for fuzzy matching, similarity threshold tuning, cache invalidation, native prompt caching (OpenAI/Anthropic), and cost analysis.
 
-**Day 092: Model Fallback Strategies**
-Simple fallback chains, health checking with latency tracking, cost-aware routing by query complexity, circuit breaker per provider, and degraded mode with static responses.
+**Day 092: Retrieval Evaluation & Reranking**
+A test suite for search: precision@k, recall@k, MRR, and NDCG against a labeled answer key; diagnosing whether bad answers are a retrieval, ranking, or generation problem; cross-encoder and managed reranking; and a hybrid-search decision tree.
 
 **Day 093: Cloud Deployment**
 Deployment to Render, Railway, AWS (App Runner/ECS/Lambda), GCP (Cloud Run/GKE), environment config, structured logging, CI/CD with GitHub Actions, and observability integration.
