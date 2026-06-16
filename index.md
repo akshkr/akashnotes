@@ -116,7 +116,7 @@ Vision models (GPT-4o, Claude) for analyzing screenshots, charts, and documents.
 Token pricing across providers, counting tokens with tiktoken, model routing by query complexity, exact-match and semantic caching, Anthropic prompt caching, OpenAI Batch API (50% savings), and per-user cost tracking.
 
 **Day 034: Capstone — RAG Chatbot**
-Building a complete RAG chatbot: document ingestion, pgvector store, retrieval with reranking, conversation history, tool calling for citations, cost tracking, and evaluation.
+Building a complete RAG chatbot: document ingestion, pgvector store, semantic retrieval, conversation history, tool calling for citations, cost tracking, and evaluation.
 
 ---
 
@@ -301,7 +301,7 @@ Streaming React components from agent tool calls (Vercel AI SDK pattern), dynami
 Markdown rendering, interactive tables with progress columns, expandable reasoning steps, timeline views, code display with syntax highlighting, and streaming content.
 
 **Day 089: Docker Deployment**
-Dockerfile configuration, Docker Compose for multi-service setup, rate limit handling with backoff, circuit breaker pattern, and deployment checklist with health/readiness probes.
+Dockerfile configuration, Docker Compose for multi-service setup, non-root images, and a deployment checklist with health/readiness probes. Points to Day 90 for resilience (retry/backoff, circuit breaker) and Day 93 for cloud platforms.
 
 **Day 090: Rate Limits and Backoffs**
 Retry with exponential backoff and jitter, token bucket rate limiting, circuit breaker state machine (closed/open/half-open), tenacity library, and per-user token budget management.
