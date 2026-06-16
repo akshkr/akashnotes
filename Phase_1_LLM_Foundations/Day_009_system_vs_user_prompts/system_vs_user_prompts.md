@@ -62,6 +62,8 @@ flowchart LR
 
 ### Basic System Prompt Example
 
+> **Setup note:** installing the SDKs and setting your API key is covered on Day 10. For now: `pip install openai` and `export OPENAI_API_KEY=...` is enough to run the examples below.
+
 ```python
 # script_id: day_009_system_vs_user_prompts/basic_system_prompt
 from openai import OpenAI

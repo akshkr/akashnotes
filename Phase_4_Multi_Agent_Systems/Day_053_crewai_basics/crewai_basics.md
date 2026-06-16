@@ -4,6 +4,8 @@ CrewAI is a framework for orchestrating **role-playing AI agents**. Think of it 
 
 > **Coming from Software Engineering?** CrewAI is a workflow/job orchestrator for LLM agents — think Airflow, Celery, or a CI pipeline. You declare workers (agents) by giving each a job description, and tasks that can depend on earlier tasks' output (`context=[...]` is like a CI step's `needs:`). You declare the pieces and their dependencies; the framework runs them in order.
 
+> **CrewAI vs LangGraph (as of 2026 — verify):** CrewAI abstracts orchestration so you prototype fast; LangGraph (Days 41–43) makes state explicit, which is better for production debugging and control. Reach for CrewAI on demos and role-focused prototypes, LangGraph for production systems. Both are valid — choose by use case.
+
 ---
 
 ## What is CrewAI?

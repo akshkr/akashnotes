@@ -4,6 +4,8 @@ Picture this: you want to give Claude access to your company's internal database
 
 > **Coming from Software Engineering?** MCP is a standardized interface protocol — like ODBC/JDBC for databases, or LSP (Language Server Protocol) for code editors. Instead of every AI app building custom integrations for every tool, MCP defines a universal protocol that any tool can implement and any AI client can consume. If you've built or consumed REST APIs following OpenAPI/Swagger specs, or implemented LSP for an editor plugin, you already understand the value of standardized interfaces.
 
+> **Where this fits (as of 2026 — verify):** MCP is an emerging standard with growing adoption (Claude Desktop, several IDEs), not yet universal. Decide by use case — a single tool is fine with a plain schema (Day 29); a multi-tool ecosystem, or anything targeting Claude Desktop, is where MCP pays off.
+
 Now multiply that by every AI assistant, every model provider, every application framework. You get a combinatorial explosion of custom integrations. Every tool needs to know about every AI system.
 
 MCP solves this by being the USB-C of AI tool integrations.

@@ -4,6 +4,8 @@ Manual prompt engineering is fragile, tedious, and doesn't scale. Every time you
 
 > **Coming from Software Engineering?** DSPy is like a compiler for prompts -- you write the spec, it generates the optimized implementation. Think of it as the difference between writing assembly by hand vs. writing C and letting GCC optimize. You declare intent with type signatures, compose modules like functions, and the compiler (optimizer) searches for the best few-shot examples and instructions. If you've used SQLAlchemy (declare schema, engine generates SQL), DSPy follows the same philosophy.
 
+> **Where this fits (as of 2026 — verify):** DSPy shines when few-shot selection is manual or you're optimizing prompts at scale. Modern models handle a lot of that natively, so for most apps, careful prompting (Day 94) plus A/B testing (Day 58) are enough. Treat DSPy as an advanced power tool, not a prerequisite for the rest of the course.
+
 ---
 
 ## Why DSPy?

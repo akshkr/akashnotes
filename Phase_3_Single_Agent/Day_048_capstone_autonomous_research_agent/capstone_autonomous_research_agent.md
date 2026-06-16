@@ -101,6 +101,15 @@ import random
 from datetime import datetime
 from langchain_core.tools import tool
 
+# Portfolio reuse: in the full system you'd expose your Day 34 RAG chatbot as a tool here —
+#   from day_034_capstone_rag_chatbot.chatbot import RAGChatbot
+#   rag = RAGChatbot()
+#   @tool
+#   def search_knowledge_base(query: str) -> str:
+#       """Answer from the ingested document knowledge base."""
+#       return rag.answer(query)
+# The web_search / lookup tools below are self-contained stand-ins so this lesson runs on its own.
+
 
 @tool
 def web_search(query: str, num_results: int = 5) -> str:

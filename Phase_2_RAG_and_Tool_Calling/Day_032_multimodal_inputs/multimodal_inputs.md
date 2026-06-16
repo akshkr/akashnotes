@@ -1,6 +1,6 @@
 # Multimodal Agent Inputs: Vision and Audio
 
-So far, every agent we have built processes text. The user types a question, the LLM reads it, and text comes back. But the real world is not text-only. Users want to upload a photo of a receipt and ask "how much did I spend on food?", or dictate a voice memo and have an agent summarize it. Multimodal inputs unlock these workflows by letting your agent see images and hear audio alongside text.
+So far, everything we have built processes text. (We use "agent" loosely until **Day 35**, where the formal agent loop is introduced.) The user types a question, the LLM reads it, and text comes back. But the real world is not text-only. Users want to upload a photo of a receipt and ask "how much did I spend on food?", or dictate a voice memo and have an agent summarize it. Multimodal inputs unlock these workflows by letting your agent see images and hear audio alongside text.
 
 > **Coming from Software Engineering?** Multimodal inputs are like adding file upload support to your API — same endpoint, richer payload types. If you have built a REST endpoint that accepts `multipart/form-data` with both JSON fields and file attachments, you already understand the pattern. The LLM API works the same way: instead of a plain text message, you send a content array containing text blocks, image blocks, and audio blocks. The model processes them all in a single request.
 

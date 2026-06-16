@@ -52,6 +52,8 @@ You built these. Now make them findable and understandable.
 
 Each project should have its own repository (or a clear subdirectory in a monorepo) with a README that a hiring manager can understand in 3 minutes.
 
+> **Show they connect.** The five aren't isolated demos — they're one pipeline: your Day 18 extractor feeds the Day 34 RAG ingestion; the Day 34 chatbot becomes a tool the Day 48 agent calls; Day 73 orchestrates specialists like it; Day 97 deploys the whole thing. A short diagram or paragraph showing this flow turns "five projects" into "one coherent system" — a strong signal to hiring managers.
+
 ---
 
 ## GitHub: Structure and Presentation

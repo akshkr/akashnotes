@@ -60,6 +60,8 @@ rag_chatbot/
 
 ## Step 1: Document Ingestion
 
+> **Portfolio reuse:** in the full system, you'd normalize raw documents into clean Pydantic records with your **Day 18** extraction pipeline *before* embedding them. Here we keep ingestion self-contained so this capstone runs on its own.
+
 ```python
 # script_id: day_034_capstone_rag_chatbot/ingest
 # ingest.py
