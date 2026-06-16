@@ -2,6 +2,28 @@
 
 Notable changes to the course content. Newest first.
 
+## 2026-06 (curriculum analysis + execution)
+
+- **Curriculum-level analysis** (`CURRICULUM_REPORT.md`, multi-agent workflow over
+  the TOC) → reconciled into the `IMPROVEMENT_PLAN.md` canonical backlog. Verified
+  many "missing" items were already implemented by the earlier passes (D091 native
+  prompt caching, D029 native structured outputs, D047 failure-mode diagnosis).
+- **Executed the in-place tracks** (all keep the 100-day numbering; checker `--strict`
+  0/0 throughout):
+  - Ordering callouts (D9 SDK-setup, D32 "agent" forward-ref); currency positioning
+    (D17 DSPy, D53 CrewAI, D95 MCP); capstone reuse made code-visible (D34/D48/D99);
+    D94 adaptive-thinking section (verified `thinking`/`effort` API); D26 trimmed.
+  - **Three in-place repurposes** (deleted the redundant lesson, authored a new one,
+    renamed folder/file, updated index + neighbour footers):
+    - **D046** Database Storage → **Agent Memory & Context Budgeting** (overlapped
+      D044 persistence).
+    - **D092** Model Fallback → **Retrieval Evaluation & Reranking** (overlapped D090;
+      provider-fallback note moved to D090).
+    - **D067** API Key Security → **PII & Data Privacy in RAG/Agents** (secrets stay
+      in D066).
+- **Still held for sign-off:** phase rebalancing (P4 thin / P5 heavy) and provider
+  standardization — see `IMPROVEMENT_PLAN.md` §2 and §5.
+
 ## 2026-06 (multi-agent quality review)
 
 - **Multi-agent course-quality review + staged fixes.** Ran a fan-out →

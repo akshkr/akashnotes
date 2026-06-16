@@ -104,14 +104,15 @@ in place, keep day numbers, no renumber.**
 - **TOC reconciled:** index.md updated for the D089 de-dup and the D034 reranking
   mismatch.
 
-### 1 — Gap closure via in-place repurpose (HIGH; reviewed + gate-approved)
-| Repurpose (keep number) | Into | Why |
+### 1 — Gap closure via in-place repurpose (DONE — 2026-06)
+All three authored in place (kept day numbers; folders/files renamed; index + neighbour footers updated; checker `--strict` 0/0):
+| Repurpose (kept number) | Into | Status |
 |---|---|---|
-| **D046** Database Storage (~310 lines, thin) | **Agent Memory & Context Budgeting** | Only conversation memory is taught; multi-layer memory (window / session facts / persistent profile) + token-budget allocation is daily production work |
-| **D092** Model Fallback (≈D090) | **Retrieval Evaluation & Reranking** | Retrieval metrics scattered across D23/26/60; no unified "is my search or my injection bad?" workflow; reranking only a sidebar |
-| **D067** API Key Security (≈D066) | **PII & Data Privacy in RAG/Agents** | Privacy only handled at output (D63); prevent at ingestion/retrieval — GDPR/HIPAA relevance |
+| **D046** Database Storage | **Agent Memory & Context Budgeting** | ✅ done (overlapped D044 persistence, which stays canonical) |
+| **D092** Model Fallback | **Retrieval Evaluation & Reranking** | ✅ done (fallback note moved to D090; D026 reranking can now point here) |
+| **D067** API Key Security | **PII & Data Privacy in RAG/Agents** | ✅ done (secrets coverage stays in D066) |
 
-Fold *structured-output reliability* into **D029 / D064** (not a standalone day).
+*Structured-output reliability* was already covered (D029 strict tools + `output_config.format`); no standalone day needed.
 
 ### 2 — Phase balance (HIGH; needs sign-off — may free P5 slots for P4)
 - **P4 Multi-Agent (6 days)** is the thinnest phase for an increasingly central
