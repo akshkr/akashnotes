@@ -505,6 +505,33 @@ Prioritize accuracy over brevity."""
 
 ---
 
+## Adaptive Thinking: A Knob, Not a Prompt
+
+Sometimes the lever isn't the prompt text at all — it's *how hard the model thinks* before answering. Recent Claude models (Opus 4.x, Sonnet 4.6) expose this directly:
+
+```python
+# script_id: day_094_prompt_engineering_discipline/adaptive_thinking
+import anthropic
+
+client = anthropic.Anthropic()
+
+response = client.messages.create(
+    model="claude-opus-4-8",
+    max_tokens=4096,
+    thinking={"type": "adaptive"},      # the model decides how much to reason per request
+    output_config={"effort": "high"},   # low | medium | high | max — depth/cost dial
+    messages=[{"role": "user", "content": "Work through this multi-step problem..."}],
+)
+```
+
+> **Coming from Software Engineering?** `effort` is a performance/cost knob like a thread-pool size or a query timeout — turn it up for hard, correctness-sensitive work; turn it down for cheap, latency-sensitive calls.
+
+**When to reach for it:** complex reasoning, multi-step math, code generation, agentic planning. **When not to:** simple classification or extraction, where it just adds latency and cost. Route by complexity — a cheap model/low effort for easy queries, high effort only where it pays off (the same routing idea from Day 82).
+
+> As of 2026, this is Anthropic's interface (`thinking` + `output_config.effort`); a fixed `budget_tokens` is deprecated. Other providers expose reasoning effort differently — verify the current parameter for your provider/model.
+
+---
+
 ## SWE to AI Engineering Bridge
 
 | Software Engineering | Prompt Engineering |
