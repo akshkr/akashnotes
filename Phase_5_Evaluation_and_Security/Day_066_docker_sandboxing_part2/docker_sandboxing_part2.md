@@ -559,4 +559,4 @@ Before deploying sandboxed execution:
 
 ## What's Next?
 
-You've locked down code execution and secrets. Next up (Day 67): **API Key Security in Agent Workflows** — key rotation, scoping to least privilege, usage monitoring, and catching key leakage in agent output.
+You've locked down code execution and secrets (never hardcode keys — use environment variables or a secrets manager, rotate regularly, and scope to least privilege). Next up (Day 67): **PII & Data Privacy in RAG/Agents** — keeping users' personal data out of your chunks, embeddings, prompts, and logs, and being able to delete it on request.

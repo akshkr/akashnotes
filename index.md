@@ -226,8 +226,8 @@ Running agent-generated code safely in isolated Docker containers with resource 
 **Day 066: Docker Sandboxing Part 2**
 Securing API keys using environment variables and secrets managers, injecting them safely into containers without exposing credentials in logs or code.
 
-**Day 067: API Key Security**
-Never hardcode keys, use environment variables or secrets managers, rotate regularly, mask in logs/monitoring, and implement key scoping with least-privilege access.
+**Day 067: PII & Data Privacy in RAG/Agents**
+Where PII enters the pipeline (chunks, embeddings, prompt, logs), detecting it with Presidio, pre-embedding masking vs post-retrieval filtering, authorization-scoped retrieval, and right-to-erasure deletion across docs/embeddings/caches/logs. (API-key/secrets handling is covered on Day 66.)
 
 **Day 068: Production Hardening**
 Production resilience patterns: retry with exponential backoff, circuit breakers, graceful degradation, rate limiting, timeouts, and structured logging for observability.
