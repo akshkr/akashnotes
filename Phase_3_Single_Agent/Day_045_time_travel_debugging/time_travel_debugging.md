@@ -556,4 +556,4 @@ new_result = app.invoke(new_state, config=resume_config)
 
 ## What's Next?
 
-Now let's learn how to **store conversation threads in databases** for long-term persistence!
+Now let's look at **agent memory and context budgeting** — the three tiers of memory an agent keeps, and how to spend a fixed token window deliberately. (Durable database persistence itself is covered on Day 44.)

@@ -155,8 +155,8 @@ Conversation memory patterns, summary memory for long contexts, LangGraph checkp
 **Day 045: Time-Travel Debugging**
 Recording checkpoints with thread IDs, listing and rewinding to previous states, replaying execution with modified inputs, and an interactive TimeTraceDebugger class.
 
-**Day 046: Database Storage**
-Storing conversations in SQLite for development or PostgreSQL for production, with complete persistence patterns for multi-process safe agent conversation history.
+**Day 046: Agent Memory & Context Budgeting**
+Three-tier memory (short-term window, working session facts, long-term persistent store), allocating the token window across zones with an output reserve, trimming vs summarizing history, and where each tier lives in production (Redis, SQLite/pgvector).
 
 **Day 047: Debugging AI Agents**
 Structured logging with AgentStep/AgentTrace dataclasses, LangGraph state inspection, automated debugging checklists, and common failure modes (infinite loops, hallucinations, context overflow).
