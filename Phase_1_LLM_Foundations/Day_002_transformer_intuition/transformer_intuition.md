@@ -311,6 +311,9 @@ mindmap
       Why transformers scaled
 ```
 
+Here is a video to understand it better
+https://www.youtube.com/watch?v=4Bdc55j80l8&t=598s
+
 ## Quick Reference
 
 | Concept | One-liner | SWE analogy |
