@@ -1,0 +1,1002 @@
+[
+ {
+  "day": 1,
+  "title": "The AI Engineer: Role, Skills & How to Use This Course",
+  "phase": 0,
+  "phase_dir": "Phase_0_Start_Here",
+  "slug": "ai_engineer_role",
+  "folder": "Day_001_ai_engineer_role",
+  "path": "Phase_0_Start_Here/Day_001_ai_engineer_role/ai_engineer_role.md",
+  "script_id_prefix": "day_001_ai_engineer_role/"
+ },
+ {
+  "day": 2,
+  "title": "Setup & Your First LLM Call",
+  "phase": 0,
+  "phase_dir": "Phase_0_Start_Here",
+  "slug": "setup_first_call",
+  "folder": "Day_002_setup_first_call",
+  "path": "Phase_0_Start_Here/Day_002_setup_first_call/setup_first_call.md",
+  "script_id_prefix": "day_002_setup_first_call/"
+ },
+ {
+  "day": 3,
+  "title": "What an LLM Is (and Isn't)",
+  "phase": 1,
+  "phase_dir": "Phase_1_How_LLMs_Work",
+  "slug": "what_is_an_llm",
+  "folder": "Day_003_what_is_an_llm",
+  "path": "Phase_1_How_LLMs_Work/Day_003_what_is_an_llm/what_is_an_llm.md",
+  "script_id_prefix": "day_003_what_is_an_llm/"
+ },
+ {
+  "day": 4,
+  "title": "Tokens: How Models Read Text",
+  "phase": 1,
+  "phase_dir": "Phase_1_How_LLMs_Work",
+  "slug": "tokens",
+  "folder": "Day_004_tokens",
+  "path": "Phase_1_How_LLMs_Work/Day_004_tokens/tokens.md",
+  "script_id_prefix": "day_004_tokens/"
+ },
+ {
+  "day": 5,
+  "title": "Inside the Transformer: Attention & Context Windows",
+  "phase": 1,
+  "phase_dir": "Phase_1_How_LLMs_Work",
+  "slug": "transformers_attention",
+  "folder": "Day_005_transformers_attention",
+  "path": "Phase_1_How_LLMs_Work/Day_005_transformers_attention/transformers_attention.md",
+  "script_id_prefix": "day_005_transformers_attention/"
+ },
+ {
+  "day": 6,
+  "title": "Controlling Generation: Sampling & Reasoning Effort",
+  "phase": 1,
+  "phase_dir": "Phase_1_How_LLMs_Work",
+  "slug": "sampling_reasoning_effort",
+  "folder": "Day_006_sampling_reasoning_effort",
+  "path": "Phase_1_How_LLMs_Work/Day_006_sampling_reasoning_effort/sampling_reasoning_effort.md",
+  "script_id_prefix": "day_006_sampling_reasoning_effort/"
+ },
+ {
+  "day": 7,
+  "title": "Choosing a Model: Capability, Cost, Latency & Lifecycle",
+  "phase": 1,
+  "phase_dir": "Phase_1_How_LLMs_Work",
+  "slug": "choosing_a_model",
+  "folder": "Day_007_choosing_a_model",
+  "path": "Phase_1_How_LLMs_Work/Day_007_choosing_a_model/choosing_a_model.md",
+  "script_id_prefix": "day_007_choosing_a_model/"
+ },
+ {
+  "day": 8,
+  "title": "Messages, Roles & Conversation State",
+  "phase": 2,
+  "phase_dir": "Phase_2_Building_with_LLM_APIs",
+  "slug": "messages_and_state",
+  "folder": "Day_008_messages_and_state",
+  "path": "Phase_2_Building_with_LLM_APIs/Day_008_messages_and_state/messages_and_state.md",
+  "script_id_prefix": "day_008_messages_and_state/"
+ },
+ {
+  "day": 9,
+  "title": "Writing Effective Prompts",
+  "phase": 2,
+  "phase_dir": "Phase_2_Building_with_LLM_APIs",
+  "slug": "effective_prompts",
+  "folder": "Day_009_effective_prompts",
+  "path": "Phase_2_Building_with_LLM_APIs/Day_009_effective_prompts/effective_prompts.md",
+  "script_id_prefix": "day_009_effective_prompts/"
+ },
+ {
+  "day": 10,
+  "title": "Few-Shot Prompting",
+  "phase": 2,
+  "phase_dir": "Phase_2_Building_with_LLM_APIs",
+  "slug": "few_shot_prompting",
+  "folder": "Day_010_few_shot_prompting",
+  "path": "Phase_2_Building_with_LLM_APIs/Day_010_few_shot_prompting/few_shot_prompting.md",
+  "script_id_prefix": "day_010_few_shot_prompting/"
+ },
+ {
+  "day": 11,
+  "title": "Reasoning: Chain-of-Thought & Reasoning Models",
+  "phase": 2,
+  "phase_dir": "Phase_2_Building_with_LLM_APIs",
+  "slug": "reasoning_cot",
+  "folder": "Day_011_reasoning_cot",
+  "path": "Phase_2_Building_with_LLM_APIs/Day_011_reasoning_cot/reasoning_cot.md",
+  "script_id_prefix": "day_011_reasoning_cot/"
+ },
+ {
+  "day": 12,
+  "title": "The OpenAI SDK in Production Code",
+  "phase": 2,
+  "phase_dir": "Phase_2_Building_with_LLM_APIs",
+  "slug": "openai_sdk_production",
+  "folder": "Day_012_openai_sdk_production",
+  "path": "Phase_2_Building_with_LLM_APIs/Day_012_openai_sdk_production/openai_sdk_production.md",
+  "script_id_prefix": "day_012_openai_sdk_production/"
+ },
+ {
+  "day": 13,
+  "title": "Streaming Responses",
+  "phase": 2,
+  "phase_dir": "Phase_2_Building_with_LLM_APIs",
+  "slug": "streaming",
+  "folder": "Day_013_streaming",
+  "path": "Phase_2_Building_with_LLM_APIs/Day_013_streaming/streaming.md",
+  "script_id_prefix": "day_013_streaming/"
+ },
+ {
+  "day": 14,
+  "title": "Multimodal Inputs: Images, Files & Audio",
+  "phase": 2,
+  "phase_dir": "Phase_2_Building_with_LLM_APIs",
+  "slug": "multimodal_inputs",
+  "folder": "Day_014_multimodal_inputs",
+  "path": "Phase_2_Building_with_LLM_APIs/Day_014_multimodal_inputs/multimodal_inputs.md",
+  "script_id_prefix": "day_014_multimodal_inputs/"
+ },
+ {
+  "day": 15,
+  "title": "Pydantic for LLM Apps",
+  "phase": 2,
+  "phase_dir": "Phase_2_Building_with_LLM_APIs",
+  "slug": "pydantic_for_llms",
+  "folder": "Day_015_pydantic_for_llms",
+  "path": "Phase_2_Building_with_LLM_APIs/Day_015_pydantic_for_llms/pydantic_for_llms.md",
+  "script_id_prefix": "day_015_pydantic_for_llms/"
+ },
+ {
+  "day": 16,
+  "title": "Structured Outputs: Native JSON Schema & Extraction",
+  "phase": 2,
+  "phase_dir": "Phase_2_Building_with_LLM_APIs",
+  "slug": "structured_outputs",
+  "folder": "Day_016_structured_outputs",
+  "path": "Phase_2_Building_with_LLM_APIs/Day_016_structured_outputs/structured_outputs.md",
+  "script_id_prefix": "day_016_structured_outputs/"
+ },
+ {
+  "day": 17,
+  "title": "Handling Semantic Failures: Validate, Re-ask, Bound",
+  "phase": 2,
+  "phase_dir": "Phase_2_Building_with_LLM_APIs",
+  "slug": "semantic_failures",
+  "folder": "Day_017_semantic_failures",
+  "path": "Phase_2_Building_with_LLM_APIs/Day_017_semantic_failures/semantic_failures.md",
+  "script_id_prefix": "day_017_semantic_failures/"
+ },
+ {
+  "day": 18,
+  "title": "Cost & Latency Engineering: Caching, Batch & Budgets",
+  "phase": 2,
+  "phase_dir": "Phase_2_Building_with_LLM_APIs",
+  "slug": "cost_latency_caching",
+  "folder": "Day_018_cost_latency_caching",
+  "path": "Phase_2_Building_with_LLM_APIs/Day_018_cost_latency_caching/cost_latency_caching.md",
+  "script_id_prefix": "day_018_cost_latency_caching/"
+ },
+ {
+  "day": 19,
+  "title": "Testing LLM Code",
+  "phase": 2,
+  "phase_dir": "Phase_2_Building_with_LLM_APIs",
+  "slug": "testing_llm_code",
+  "folder": "Day_019_testing_llm_code",
+  "path": "Phase_2_Building_with_LLM_APIs/Day_019_testing_llm_code/testing_llm_code.md",
+  "script_id_prefix": "day_019_testing_llm_code/"
+ },
+ {
+  "day": 20,
+  "title": "Your First Eval Set",
+  "phase": 2,
+  "phase_dir": "Phase_2_Building_with_LLM_APIs",
+  "slug": "first_eval_set",
+  "folder": "Day_020_first_eval_set",
+  "path": "Phase_2_Building_with_LLM_APIs/Day_020_first_eval_set/first_eval_set.md",
+  "script_id_prefix": "day_020_first_eval_set/"
+ },
+ {
+  "day": 21,
+  "title": "Prompts as Code & Model Migrations",
+  "phase": 2,
+  "phase_dir": "Phase_2_Building_with_LLM_APIs",
+  "slug": "prompts_as_code",
+  "folder": "Day_021_prompts_as_code",
+  "path": "Phase_2_Building_with_LLM_APIs/Day_021_prompts_as_code/prompts_as_code.md",
+  "script_id_prefix": "day_021_prompts_as_code/"
+ },
+ {
+  "day": 22,
+  "title": "Capstone R1: The Extractor",
+  "phase": 2,
+  "phase_dir": "Phase_2_Building_with_LLM_APIs",
+  "slug": "capstone_r1_extractor",
+  "folder": "Day_022_capstone_r1_extractor",
+  "path": "Phase_2_Building_with_LLM_APIs/Day_022_capstone_r1_extractor/capstone_r1_extractor.md",
+  "script_id_prefix": "day_022_capstone_r1_extractor/"
+ },
+ {
+  "day": 23,
+  "title": "Embeddings & Semantic Similarity",
+  "phase": 3,
+  "phase_dir": "Phase_3_RAG",
+  "slug": "embeddings",
+  "folder": "Day_023_embeddings",
+  "path": "Phase_3_RAG/Day_023_embeddings/embeddings.md",
+  "script_id_prefix": "day_023_embeddings/"
+ },
+ {
+  "day": 24,
+  "title": "Ingesting Documents: Parsing PDFs, HTML & More",
+  "phase": 3,
+  "phase_dir": "Phase_3_RAG",
+  "slug": "document_ingestion",
+  "folder": "Day_024_document_ingestion",
+  "path": "Phase_3_RAG/Day_024_document_ingestion/document_ingestion.md",
+  "script_id_prefix": "day_024_document_ingestion/"
+ },
+ {
+  "day": 25,
+  "title": "Chunking Strategies",
+  "phase": 3,
+  "phase_dir": "Phase_3_RAG",
+  "slug": "chunking",
+  "folder": "Day_025_chunking",
+  "path": "Phase_3_RAG/Day_025_chunking/chunking.md",
+  "script_id_prefix": "day_025_chunking/"
+ },
+ {
+  "day": 26,
+  "title": "Vector Search with pgvector",
+  "phase": 3,
+  "phase_dir": "Phase_3_RAG",
+  "slug": "pgvector_search",
+  "folder": "Day_026_pgvector_search",
+  "path": "Phase_3_RAG/Day_026_pgvector_search/pgvector_search.md",
+  "script_id_prefix": "day_026_pgvector_search/"
+ },
+ {
+  "day": 27,
+  "title": "Hybrid Search: Keywords + Vectors",
+  "phase": 3,
+  "phase_dir": "Phase_3_RAG",
+  "slug": "hybrid_search",
+  "folder": "Day_027_hybrid_search",
+  "path": "Phase_3_RAG/Day_027_hybrid_search/hybrid_search.md",
+  "script_id_prefix": "day_027_hybrid_search/"
+ },
+ {
+  "day": 28,
+  "title": "Building the RAG Pipeline: Grounded Answers with Citations",
+  "phase": 3,
+  "phase_dir": "Phase_3_RAG",
+  "slug": "rag_pipeline",
+  "folder": "Day_028_rag_pipeline",
+  "path": "Phase_3_RAG/Day_028_rag_pipeline/rag_pipeline.md",
+  "script_id_prefix": "day_028_rag_pipeline/"
+ },
+ {
+  "day": 29,
+  "title": "Evaluating Retrieval",
+  "phase": 3,
+  "phase_dir": "Phase_3_RAG",
+  "slug": "retrieval_evaluation",
+  "folder": "Day_029_retrieval_evaluation",
+  "path": "Phase_3_RAG/Day_029_retrieval_evaluation/retrieval_evaluation.md",
+  "script_id_prefix": "day_029_retrieval_evaluation/"
+ },
+ {
+  "day": 30,
+  "title": "Evaluating RAG Answers",
+  "phase": 3,
+  "phase_dir": "Phase_3_RAG",
+  "slug": "answer_evaluation",
+  "folder": "Day_030_answer_evaluation",
+  "path": "Phase_3_RAG/Day_030_answer_evaluation/answer_evaluation.md",
+  "script_id_prefix": "day_030_answer_evaluation/"
+ },
+ {
+  "day": 31,
+  "title": "Improving Retrieval: Reranking & Contextual Retrieval",
+  "phase": 3,
+  "phase_dir": "Phase_3_RAG",
+  "slug": "reranking_contextual_retrieval",
+  "folder": "Day_031_reranking_contextual_retrieval",
+  "path": "Phase_3_RAG/Day_031_reranking_contextual_retrieval/reranking_contextual_retrieval.md",
+  "script_id_prefix": "day_031_reranking_contextual_retrieval/"
+ },
+ {
+  "day": 32,
+  "title": "Long Context vs RAG & Managed Retrieval",
+  "phase": 3,
+  "phase_dir": "Phase_3_RAG",
+  "slug": "long_context_vs_rag",
+  "folder": "Day_032_long_context_vs_rag",
+  "path": "Phase_3_RAG/Day_032_long_context_vs_rag/long_context_vs_rag.md",
+  "script_id_prefix": "day_032_long_context_vs_rag/"
+ },
+ {
+  "day": 33,
+  "title": "RAG over Structured Data: Text-to-SQL, Tables & Graphs",
+  "phase": 3,
+  "phase_dir": "Phase_3_RAG",
+  "slug": "text_to_sql",
+  "folder": "Day_033_text_to_sql",
+  "path": "Phase_3_RAG/Day_033_text_to_sql/text_to_sql.md",
+  "script_id_prefix": "day_033_text_to_sql/"
+ },
+ {
+  "day": 34,
+  "title": "Capstone R2: Ask, a RAG Assistant with a UI",
+  "phase": 3,
+  "phase_dir": "Phase_3_RAG",
+  "slug": "capstone_r2_ask",
+  "folder": "Day_034_capstone_r2_ask",
+  "path": "Phase_3_RAG/Day_034_capstone_r2_ask/capstone_r2_ask.md",
+  "script_id_prefix": "day_034_capstone_r2_ask/"
+ },
+ {
+  "day": 35,
+  "title": "Function Calling: The Tool Loop",
+  "phase": 4,
+  "phase_dir": "Phase_4_Tools_and_MCP",
+  "slug": "function_calling",
+  "folder": "Day_035_function_calling",
+  "path": "Phase_4_Tools_and_MCP/Day_035_function_calling/function_calling.md",
+  "script_id_prefix": "day_035_function_calling/"
+ },
+ {
+  "day": 36,
+  "title": "Designing Tools: Schemas, Strict Mode & Descriptions",
+  "phase": 4,
+  "phase_dir": "Phase_4_Tools_and_MCP",
+  "slug": "tool_design",
+  "folder": "Day_036_tool_design",
+  "path": "Phase_4_Tools_and_MCP/Day_036_tool_design/tool_design.md",
+  "script_id_prefix": "day_036_tool_design/"
+ },
+ {
+  "day": 37,
+  "title": "Robust Tool Execution: Parallel Calls, Errors & Approvals",
+  "phase": 4,
+  "phase_dir": "Phase_4_Tools_and_MCP",
+  "slug": "robust_tool_execution",
+  "folder": "Day_037_robust_tool_execution",
+  "path": "Phase_4_Tools_and_MCP/Day_037_robust_tool_execution/robust_tool_execution.md",
+  "script_id_prefix": "day_037_robust_tool_execution/"
+ },
+ {
+  "day": 38,
+  "title": "Built-in Tools: Web Search & Code Interpreter",
+  "phase": 4,
+  "phase_dir": "Phase_4_Tools_and_MCP",
+  "slug": "built_in_tools",
+  "folder": "Day_038_built_in_tools",
+  "path": "Phase_4_Tools_and_MCP/Day_038_built_in_tools/built_in_tools.md",
+  "script_id_prefix": "day_038_built_in_tools/"
+ },
+ {
+  "day": 39,
+  "title": "MCP: Connecting to Tool Servers",
+  "phase": 4,
+  "phase_dir": "Phase_4_Tools_and_MCP",
+  "slug": "mcp_clients",
+  "folder": "Day_039_mcp_clients",
+  "path": "Phase_4_Tools_and_MCP/Day_039_mcp_clients/mcp_clients.md",
+  "script_id_prefix": "day_039_mcp_clients/"
+ },
+ {
+  "day": 40,
+  "title": "Building an MCP Server",
+  "phase": 4,
+  "phase_dir": "Phase_4_Tools_and_MCP",
+  "slug": "mcp_servers",
+  "folder": "Day_040_mcp_servers",
+  "path": "Phase_4_Tools_and_MCP/Day_040_mcp_servers/mcp_servers.md",
+  "script_id_prefix": "day_040_mcp_servers/"
+ },
+ {
+  "day": 41,
+  "title": "Workflow Patterns: Chaining, Routing & Parallelization",
+  "phase": 4,
+  "phase_dir": "Phase_4_Tools_and_MCP",
+  "slug": "workflow_patterns",
+  "folder": "Day_041_workflow_patterns",
+  "path": "Phase_4_Tools_and_MCP/Day_041_workflow_patterns/workflow_patterns.md",
+  "script_id_prefix": "day_041_workflow_patterns/"
+ },
+ {
+  "day": 42,
+  "title": "Tracing & Observability in Depth",
+  "phase": 5,
+  "phase_dir": "Phase_5_Evaluation_and_Observability",
+  "slug": "tracing_observability",
+  "folder": "Day_042_tracing_observability",
+  "path": "Phase_5_Evaluation_and_Observability/Day_042_tracing_observability/tracing_observability.md",
+  "script_id_prefix": "day_042_tracing_observability/"
+ },
+ {
+  "day": 43,
+  "title": "Building Eval Datasets: Golden, Synthetic & Production",
+  "phase": 5,
+  "phase_dir": "Phase_5_Evaluation_and_Observability",
+  "slug": "eval_datasets",
+  "folder": "Day_043_eval_datasets",
+  "path": "Phase_5_Evaluation_and_Observability/Day_043_eval_datasets/eval_datasets.md",
+  "script_id_prefix": "day_043_eval_datasets/"
+ },
+ {
+  "day": 44,
+  "title": "Error Analysis: From Traces to Failure Modes",
+  "phase": 5,
+  "phase_dir": "Phase_5_Evaluation_and_Observability",
+  "slug": "error_analysis",
+  "folder": "Day_044_error_analysis",
+  "path": "Phase_5_Evaluation_and_Observability/Day_044_error_analysis/error_analysis.md",
+  "script_id_prefix": "day_044_error_analysis/"
+ },
+ {
+  "day": 45,
+  "title": "LLM-as-Judge",
+  "phase": 5,
+  "phase_dir": "Phase_5_Evaluation_and_Observability",
+  "slug": "llm_as_judge",
+  "folder": "Day_045_llm_as_judge",
+  "path": "Phase_5_Evaluation_and_Observability/Day_045_llm_as_judge/llm_as_judge.md",
+  "script_id_prefix": "day_045_llm_as_judge/"
+ },
+ {
+  "day": 46,
+  "title": "Trusting Your Judge",
+  "phase": 5,
+  "phase_dir": "Phase_5_Evaluation_and_Observability",
+  "slug": "judge_validation",
+  "folder": "Day_046_judge_validation",
+  "path": "Phase_5_Evaluation_and_Observability/Day_046_judge_validation/judge_validation.md",
+  "script_id_prefix": "day_046_judge_validation/"
+ },
+ {
+  "day": 47,
+  "title": "Evals in CI: Regression Gates at Scale",
+  "phase": 5,
+  "phase_dir": "Phase_5_Evaluation_and_Observability",
+  "slug": "evals_in_ci",
+  "folder": "Day_047_evals_in_ci",
+  "path": "Phase_5_Evaluation_and_Observability/Day_047_evals_in_ci/evals_in_ci.md",
+  "script_id_prefix": "day_047_evals_in_ci/"
+ },
+ {
+  "day": 48,
+  "title": "Your First Agent: The Loop, Stop Conditions & Budgets",
+  "phase": 6,
+  "phase_dir": "Phase_6_Agents",
+  "slug": "first_agent",
+  "folder": "Day_048_first_agent",
+  "path": "Phase_6_Agents/Day_048_first_agent/first_agent.md",
+  "script_id_prefix": "day_048_first_agent/"
+ },
+ {
+  "day": 49,
+  "title": "Context Engineering",
+  "phase": 6,
+  "phase_dir": "Phase_6_Agents",
+  "slug": "context_engineering",
+  "folder": "Day_049_context_engineering",
+  "path": "Phase_6_Agents/Day_049_context_engineering/context_engineering.md",
+  "script_id_prefix": "day_049_context_engineering/"
+ },
+ {
+  "day": 50,
+  "title": "Memory for Agents",
+  "phase": 6,
+  "phase_dir": "Phase_6_Agents",
+  "slug": "agent_memory",
+  "folder": "Day_050_agent_memory",
+  "path": "Phase_6_Agents/Day_050_agent_memory/agent_memory.md",
+  "script_id_prefix": "day_050_agent_memory/"
+ },
+ {
+  "day": 51,
+  "title": "Planning & Re-planning",
+  "phase": 6,
+  "phase_dir": "Phase_6_Agents",
+  "slug": "planning_replanning",
+  "folder": "Day_051_planning_replanning",
+  "path": "Phase_6_Agents/Day_051_planning_replanning/planning_replanning.md",
+  "script_id_prefix": "day_051_planning_replanning/"
+ },
+ {
+  "day": 52,
+  "title": "Agentic RAG: Search as a Tool",
+  "phase": 6,
+  "phase_dir": "Phase_6_Agents",
+  "slug": "agentic_rag",
+  "folder": "Day_052_agentic_rag",
+  "path": "Phase_6_Agents/Day_052_agentic_rag/agentic_rag.md",
+  "script_id_prefix": "day_052_agentic_rag/"
+ },
+ {
+  "day": 53,
+  "title": "LangGraph I: Graphs, State & Routing",
+  "phase": 6,
+  "phase_dir": "Phase_6_Agents",
+  "slug": "langgraph_graphs",
+  "folder": "Day_053_langgraph_graphs",
+  "path": "Phase_6_Agents/Day_053_langgraph_graphs/langgraph_graphs.md",
+  "script_id_prefix": "day_053_langgraph_graphs/"
+ },
+ {
+  "day": 54,
+  "title": "LangGraph II: Durable Execution, Checkpoints & Time Travel",
+  "phase": 6,
+  "phase_dir": "Phase_6_Agents",
+  "slug": "langgraph_durability",
+  "folder": "Day_054_langgraph_durability",
+  "path": "Phase_6_Agents/Day_054_langgraph_durability/langgraph_durability.md",
+  "script_id_prefix": "day_054_langgraph_durability/"
+ },
+ {
+  "day": 55,
+  "title": "Human-in-the-Loop: Approvals, Edits & Feedback",
+  "phase": 6,
+  "phase_dir": "Phase_6_Agents",
+  "slug": "human_in_the_loop",
+  "folder": "Day_055_human_in_the_loop",
+  "path": "Phase_6_Agents/Day_055_human_in_the_loop/human_in_the_loop.md",
+  "script_id_prefix": "day_055_human_in_the_loop/"
+ },
+ {
+  "day": 56,
+  "title": "The OpenAI Agents SDK",
+  "phase": 6,
+  "phase_dir": "Phase_6_Agents",
+  "slug": "openai_agents_sdk",
+  "folder": "Day_056_openai_agents_sdk",
+  "path": "Phase_6_Agents/Day_056_openai_agents_sdk/openai_agents_sdk.md",
+  "script_id_prefix": "day_056_openai_agents_sdk/"
+ },
+ {
+  "day": 57,
+  "title": "The Agent Framework Landscape",
+  "phase": 6,
+  "phase_dir": "Phase_6_Agents",
+  "slug": "agent_frameworks",
+  "folder": "Day_057_agent_frameworks",
+  "path": "Phase_6_Agents/Day_057_agent_frameworks/agent_frameworks.md",
+  "script_id_prefix": "day_057_agent_frameworks/"
+ },
+ {
+  "day": 58,
+  "title": "Debugging Agents",
+  "phase": 6,
+  "phase_dir": "Phase_6_Agents",
+  "slug": "debugging_agents",
+  "folder": "Day_058_debugging_agents",
+  "path": "Phase_6_Agents/Day_058_debugging_agents/debugging_agents.md",
+  "script_id_prefix": "day_058_debugging_agents/"
+ },
+ {
+  "day": 59,
+  "title": "Evaluating Agents",
+  "phase": 6,
+  "phase_dir": "Phase_6_Agents",
+  "slug": "evaluating_agents",
+  "folder": "Day_059_evaluating_agents",
+  "path": "Phase_6_Agents/Day_059_evaluating_agents/evaluating_agents.md",
+  "script_id_prefix": "day_059_evaluating_agents/"
+ },
+ {
+  "day": 60,
+  "title": "Coding Agents & Agent Skills",
+  "phase": 6,
+  "phase_dir": "Phase_6_Agents",
+  "slug": "coding_agents_skills",
+  "folder": "Day_060_coding_agents_skills",
+  "path": "Phase_6_Agents/Day_060_coding_agents_skills/coding_agents_skills.md",
+  "script_id_prefix": "day_060_coding_agents_skills/"
+ },
+ {
+  "day": 61,
+  "title": "Capstone R3, Part 1: The Atlas Issue Investigator",
+  "phase": 6,
+  "phase_dir": "Phase_6_Agents",
+  "slug": "capstone_r3_investigator",
+  "folder": "Day_061_capstone_r3_investigator",
+  "path": "Phase_6_Agents/Day_061_capstone_r3_investigator/capstone_r3_investigator.md",
+  "script_id_prefix": "day_061_capstone_r3_investigator/"
+ },
+ {
+  "day": 62,
+  "title": "Capstone R3, Part 2: Durable, Evaluated, Shippable",
+  "phase": 6,
+  "phase_dir": "Phase_6_Agents",
+  "slug": "capstone_r3_ship",
+  "folder": "Day_062_capstone_r3_ship",
+  "path": "Phase_6_Agents/Day_062_capstone_r3_ship/capstone_r3_ship.md",
+  "script_id_prefix": "day_062_capstone_r3_ship/"
+ },
+ {
+  "day": 63,
+  "title": "Career Checkpoint",
+  "phase": 6,
+  "phase_dir": "Phase_6_Agents",
+  "slug": "career_checkpoint",
+  "folder": "Day_063_career_checkpoint",
+  "path": "Phase_6_Agents/Day_063_career_checkpoint/career_checkpoint.md",
+  "script_id_prefix": "day_063_career_checkpoint/"
+ },
+ {
+  "day": 64,
+  "title": "Multi-Agent Systems: When (Not) to Use Them",
+  "phase": 7,
+  "phase_dir": "Phase_7_Multi_Agent_Systems",
+  "slug": "multi_agent_when",
+  "folder": "Day_064_multi_agent_when",
+  "path": "Phase_7_Multi_Agent_Systems/Day_064_multi_agent_when/multi_agent_when.md",
+  "script_id_prefix": "day_064_multi_agent_when/"
+ },
+ {
+  "day": 65,
+  "title": "Handoffs & Agents-as-Tools",
+  "phase": 7,
+  "phase_dir": "Phase_7_Multi_Agent_Systems",
+  "slug": "handoffs_agents_as_tools",
+  "folder": "Day_065_handoffs_agents_as_tools",
+  "path": "Phase_7_Multi_Agent_Systems/Day_065_handoffs_agents_as_tools/handoffs_agents_as_tools.md",
+  "script_id_prefix": "day_065_handoffs_agents_as_tools/"
+ },
+ {
+  "day": 66,
+  "title": "Supervisor & Parallel Workers with LangGraph",
+  "phase": 7,
+  "phase_dir": "Phase_7_Multi_Agent_Systems",
+  "slug": "supervisor_parallel_workers",
+  "folder": "Day_066_supervisor_parallel_workers",
+  "path": "Phase_7_Multi_Agent_Systems/Day_066_supervisor_parallel_workers/supervisor_parallel_workers.md",
+  "script_id_prefix": "day_066_supervisor_parallel_workers/"
+ },
+ {
+  "day": 67,
+  "title": "Debate, Consensus & Multi-Agent Operations",
+  "phase": 7,
+  "phase_dir": "Phase_7_Multi_Agent_Systems",
+  "slug": "debate_multi_agent_ops",
+  "folder": "Day_067_debate_multi_agent_ops",
+  "path": "Phase_7_Multi_Agent_Systems/Day_067_debate_multi_agent_ops/debate_multi_agent_ops.md",
+  "script_id_prefix": "day_067_debate_multi_agent_ops/"
+ },
+ {
+  "day": 68,
+  "title": "Threat Modeling LLM Applications",
+  "phase": 8,
+  "phase_dir": "Phase_8_Safety_and_Security",
+  "slug": "threat_modeling",
+  "folder": "Day_068_threat_modeling",
+  "path": "Phase_8_Safety_and_Security/Day_068_threat_modeling/threat_modeling.md",
+  "script_id_prefix": "day_068_threat_modeling/"
+ },
+ {
+  "day": 69,
+  "title": "Prompt Injection: Attacks & Defenses by Design",
+  "phase": 8,
+  "phase_dir": "Phase_8_Safety_and_Security",
+  "slug": "prompt_injection",
+  "folder": "Day_069_prompt_injection",
+  "path": "Phase_8_Safety_and_Security/Day_069_prompt_injection/prompt_injection.md",
+  "script_id_prefix": "day_069_prompt_injection/"
+ },
+ {
+  "day": 70,
+  "title": "Guardrails & Moderation",
+  "phase": 8,
+  "phase_dir": "Phase_8_Safety_and_Security",
+  "slug": "guardrails_moderation",
+  "folder": "Day_070_guardrails_moderation",
+  "path": "Phase_8_Safety_and_Security/Day_070_guardrails_moderation/guardrails_moderation.md",
+  "script_id_prefix": "day_070_guardrails_moderation/"
+ },
+ {
+  "day": 71,
+  "title": "Safe Output Handling",
+  "phase": 8,
+  "phase_dir": "Phase_8_Safety_and_Security",
+  "slug": "safe_output_handling",
+  "folder": "Day_071_safe_output_handling",
+  "path": "Phase_8_Safety_and_Security/Day_071_safe_output_handling/safe_output_handling.md",
+  "script_id_prefix": "day_071_safe_output_handling/"
+ },
+ {
+  "day": 72,
+  "title": "Sandboxing Code & Computer-Use Agents",
+  "phase": 8,
+  "phase_dir": "Phase_8_Safety_and_Security",
+  "slug": "sandboxing_computer_use",
+  "folder": "Day_072_sandboxing_computer_use",
+  "path": "Phase_8_Safety_and_Security/Day_072_sandboxing_computer_use/sandboxing_computer_use.md",
+  "script_id_prefix": "day_072_sandboxing_computer_use/"
+ },
+ {
+  "day": 73,
+  "title": "Privacy & PII",
+  "phase": 8,
+  "phase_dir": "Phase_8_Safety_and_Security",
+  "slug": "privacy_pii",
+  "folder": "Day_073_privacy_pii",
+  "path": "Phase_8_Safety_and_Security/Day_073_privacy_pii/privacy_pii.md",
+  "script_id_prefix": "day_073_privacy_pii/"
+ },
+ {
+  "day": 74,
+  "title": "Least Privilege, Secrets & Securing MCP",
+  "phase": 8,
+  "phase_dir": "Phase_8_Safety_and_Security",
+  "slug": "least_privilege_mcp_security",
+  "folder": "Day_074_least_privilege_mcp_security",
+  "path": "Phase_8_Safety_and_Security/Day_074_least_privilege_mcp_security/least_privilege_mcp_security.md",
+  "script_id_prefix": "day_074_least_privilege_mcp_security/"
+ },
+ {
+  "day": 75,
+  "title": "Red-Teaming & Security Tests in CI",
+  "phase": 8,
+  "phase_dir": "Phase_8_Safety_and_Security",
+  "slug": "red_teaming_ci",
+  "folder": "Day_075_red_teaming_ci",
+  "path": "Phase_8_Safety_and_Security/Day_075_red_teaming_ci/red_teaming_ci.md",
+  "script_id_prefix": "day_075_red_teaming_ci/"
+ },
+ {
+  "day": 76,
+  "title": "Capstone R4: The Atlas Triage Pipeline",
+  "phase": 8,
+  "phase_dir": "Phase_8_Safety_and_Security",
+  "slug": "capstone_r4_triage",
+  "folder": "Day_076_capstone_r4_triage",
+  "path": "Phase_8_Safety_and_Security/Day_076_capstone_r4_triage/capstone_r4_triage.md",
+  "script_id_prefix": "day_076_capstone_r4_triage/"
+ },
+ {
+  "day": 77,
+  "title": "Serving LLM Apps with FastAPI",
+  "phase": 9,
+  "phase_dir": "Phase_9_Production",
+  "slug": "fastapi_serving",
+  "folder": "Day_077_fastapi_serving",
+  "path": "Phase_9_Production/Day_077_fastapi_serving/fastapi_serving.md",
+  "script_id_prefix": "day_077_fastapi_serving/"
+ },
+ {
+  "day": 78,
+  "title": "Async Jobs & Long-Running Work",
+  "phase": 9,
+  "phase_dir": "Phase_9_Production",
+  "slug": "async_jobs",
+  "folder": "Day_078_async_jobs",
+  "path": "Phase_9_Production/Day_078_async_jobs/async_jobs.md",
+  "script_id_prefix": "day_078_async_jobs/"
+ },
+ {
+  "day": 79,
+  "title": "Chat UIs & Streaming Transports",
+  "phase": 9,
+  "phase_dir": "Phase_9_Production",
+  "slug": "chat_uis_streaming",
+  "folder": "Day_079_chat_uis_streaming",
+  "path": "Phase_9_Production/Day_079_chat_uis_streaming/chat_uis_streaming.md",
+  "script_id_prefix": "day_079_chat_uis_streaming/"
+ },
+ {
+  "day": 80,
+  "title": "Generative UI",
+  "phase": 9,
+  "phase_dir": "Phase_9_Production",
+  "slug": "generative_ui",
+  "folder": "Day_080_generative_ui",
+  "path": "Phase_9_Production/Day_080_generative_ui/generative_ui.md",
+  "script_id_prefix": "day_080_generative_ui/"
+ },
+ {
+  "day": 81,
+  "title": "Voice & Realtime Agents",
+  "phase": 9,
+  "phase_dir": "Phase_9_Production",
+  "slug": "voice_realtime",
+  "folder": "Day_081_voice_realtime",
+  "path": "Phase_9_Production/Day_081_voice_realtime/voice_realtime.md",
+  "script_id_prefix": "day_081_voice_realtime/"
+ },
+ {
+  "day": 82,
+  "title": "Containerize & Deploy with CI/CD",
+  "phase": 9,
+  "phase_dir": "Phase_9_Production",
+  "slug": "containerize_deploy",
+  "folder": "Day_082_containerize_deploy",
+  "path": "Phase_9_Production/Day_082_containerize_deploy/containerize_deploy.md",
+  "script_id_prefix": "day_082_containerize_deploy/"
+ },
+ {
+  "day": 83,
+  "title": "Auth, Multi-Tenancy & Usage Quotas",
+  "phase": 9,
+  "phase_dir": "Phase_9_Production",
+  "slug": "auth_multitenancy_quotas",
+  "folder": "Day_083_auth_multitenancy_quotas",
+  "path": "Phase_9_Production/Day_083_auth_multitenancy_quotas/auth_multitenancy_quotas.md",
+  "script_id_prefix": "day_083_auth_multitenancy_quotas/"
+ },
+ {
+  "day": 84,
+  "title": "Reliability: Backoff, Fallbacks & LLM Gateways",
+  "phase": 9,
+  "phase_dir": "Phase_9_Production",
+  "slug": "reliability_fallbacks",
+  "folder": "Day_084_reliability_fallbacks",
+  "path": "Phase_9_Production/Day_084_reliability_fallbacks/reliability_fallbacks.md",
+  "script_id_prefix": "day_084_reliability_fallbacks/"
+ },
+ {
+  "day": 85,
+  "title": "Caching & Cost Optimization at Scale",
+  "phase": 9,
+  "phase_dir": "Phase_9_Production",
+  "slug": "caching_cost_scale",
+  "folder": "Day_085_caching_cost_scale",
+  "path": "Phase_9_Production/Day_085_caching_cost_scale/caching_cost_scale.md",
+  "script_id_prefix": "day_085_caching_cost_scale/"
+ },
+ {
+  "day": 86,
+  "title": "Monitoring, Online Evals & Feedback Loops",
+  "phase": 9,
+  "phase_dir": "Phase_9_Production",
+  "slug": "monitoring_feedback",
+  "folder": "Day_086_monitoring_feedback",
+  "path": "Phase_9_Production/Day_086_monitoring_feedback/monitoring_feedback.md",
+  "script_id_prefix": "day_086_monitoring_feedback/"
+ },
+ {
+  "day": 87,
+  "title": "Shipping Changes Safely",
+  "phase": 9,
+  "phase_dir": "Phase_9_Production",
+  "slug": "shipping_changes_safely",
+  "folder": "Day_087_shipping_changes_safely",
+  "path": "Phase_9_Production/Day_087_shipping_changes_safely/shipping_changes_safely.md",
+  "script_id_prefix": "day_087_shipping_changes_safely/"
+ },
+ {
+  "day": 88,
+  "title": "Operating AI Systems: Incidents, Runbooks & Migrations",
+  "phase": 9,
+  "phase_dir": "Phase_9_Production",
+  "slug": "operating_ai_systems",
+  "folder": "Day_088_operating_ai_systems",
+  "path": "Phase_9_Production/Day_088_operating_ai_systems/operating_ai_systems.md",
+  "script_id_prefix": "day_088_operating_ai_systems/"
+ },
+ {
+  "day": 89,
+  "title": "Capstone R5, Part 1: Integrate & Harden",
+  "phase": 9,
+  "phase_dir": "Phase_9_Production",
+  "slug": "capstone_r5_integrate",
+  "folder": "Day_089_capstone_r5_integrate",
+  "path": "Phase_9_Production/Day_089_capstone_r5_integrate/capstone_r5_integrate.md",
+  "script_id_prefix": "day_089_capstone_r5_integrate/"
+ },
+ {
+  "day": 90,
+  "title": "Capstone R5, Part 2: Launch & Prove It",
+  "phase": 9,
+  "phase_dir": "Phase_9_Production",
+  "slug": "capstone_r5_launch",
+  "folder": "Day_090_capstone_r5_launch",
+  "path": "Phase_9_Production/Day_090_capstone_r5_launch/capstone_r5_launch.md",
+  "script_id_prefix": "day_090_capstone_r5_launch/"
+ },
+ {
+  "day": 91,
+  "title": "Open-Weight Models & Local Inference",
+  "phase": 10,
+  "phase_dir": "Phase_10_Open_Models_and_Fine_Tuning",
+  "slug": "open_weight_local",
+  "folder": "Day_091_open_weight_local",
+  "path": "Phase_10_Open_Models_and_Fine_Tuning/Day_091_open_weight_local/open_weight_local.md",
+  "script_id_prefix": "day_091_open_weight_local/"
+ },
+ {
+  "day": 92,
+  "title": "Quantization & Hardware Sizing",
+  "phase": 10,
+  "phase_dir": "Phase_10_Open_Models_and_Fine_Tuning",
+  "slug": "quantization_hardware",
+  "folder": "Day_092_quantization_hardware",
+  "path": "Phase_10_Open_Models_and_Fine_Tuning/Day_092_quantization_hardware/quantization_hardware.md",
+  "script_id_prefix": "day_092_quantization_hardware/"
+ },
+ {
+  "day": 93,
+  "title": "Serving Open Models with vLLM (elective)",
+  "phase": 10,
+  "phase_dir": "Phase_10_Open_Models_and_Fine_Tuning",
+  "slug": "vllm_serving",
+  "folder": "Day_093_vllm_serving",
+  "path": "Phase_10_Open_Models_and_Fine_Tuning/Day_093_vllm_serving/vllm_serving.md",
+  "script_id_prefix": "day_093_vllm_serving/"
+ },
+ {
+  "day": 94,
+  "title": "Should You Fine-Tune? Decision & Data",
+  "phase": 10,
+  "phase_dir": "Phase_10_Open_Models_and_Fine_Tuning",
+  "slug": "should_you_finetune",
+  "folder": "Day_094_should_you_finetune",
+  "path": "Phase_10_Open_Models_and_Fine_Tuning/Day_094_should_you_finetune/should_you_finetune.md",
+  "script_id_prefix": "day_094_should_you_finetune/"
+ },
+ {
+  "day": 95,
+  "title": "Hands-On LoRA Fine-Tuning",
+  "phase": 10,
+  "phase_dir": "Phase_10_Open_Models_and_Fine_Tuning",
+  "slug": "lora_finetuning",
+  "folder": "Day_095_lora_finetuning",
+  "path": "Phase_10_Open_Models_and_Fine_Tuning/Day_095_lora_finetuning/lora_finetuning.md",
+  "script_id_prefix": "day_095_lora_finetuning/"
+ },
+ {
+  "day": 96,
+  "title": "Evaluating, Shipping & Distilling Small Models",
+  "phase": 10,
+  "phase_dir": "Phase_10_Open_Models_and_Fine_Tuning",
+  "slug": "evaluating_distilling_small_models",
+  "folder": "Day_096_evaluating_distilling_small_models",
+  "path": "Phase_10_Open_Models_and_Fine_Tuning/Day_096_evaluating_distilling_small_models/evaluating_distilling_small_models.md",
+  "script_id_prefix": "day_096_evaluating_distilling_small_models/"
+ },
+ {
+  "day": 97,
+  "title": "AI System Design Interviews",
+  "phase": 11,
+  "phase_dir": "Phase_11_Career_Launch",
+  "slug": "system_design_interviews",
+  "folder": "Day_097_system_design_interviews",
+  "path": "Phase_11_Career_Launch/Day_097_system_design_interviews/system_design_interviews.md",
+  "script_id_prefix": "day_097_system_design_interviews/"
+ },
+ {
+  "day": 98,
+  "title": "Practical Interviews: Coding, Take-Homes & DSA",
+  "phase": 11,
+  "phase_dir": "Phase_11_Career_Launch",
+  "slug": "practical_interviews",
+  "folder": "Day_098_practical_interviews",
+  "path": "Phase_11_Career_Launch/Day_098_practical_interviews/practical_interviews.md",
+  "script_id_prefix": "day_098_practical_interviews/"
+ },
+ {
+  "day": 99,
+  "title": "Building Your Portfolio",
+  "phase": 11,
+  "phase_dir": "Phase_11_Career_Launch",
+  "slug": "portfolio",
+  "folder": "Day_099_portfolio",
+  "path": "Phase_11_Career_Launch/Day_099_portfolio/portfolio.md",
+  "script_id_prefix": "day_099_portfolio/"
+ },
+ {
+  "day": 100,
+  "title": "Launch: Your Next 90 Days",
+  "phase": 11,
+  "phase_dir": "Phase_11_Career_Launch",
+  "slug": "next_90_days",
+  "folder": "Day_100_next_90_days",
+  "path": "Phase_11_Career_Launch/Day_100_next_90_days/next_90_days.md",
+  "script_id_prefix": "day_100_next_90_days/"
+ }
+]

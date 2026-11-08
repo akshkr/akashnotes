@@ -1,0 +1,40 @@
+{"id": "rq-001", "query": "ORB-1101", "relevant_doc_ids": ["error-codes", "leases-and-heartbeats", "troubleshooting-duplicates"], "kind": "exact_term"}
+{"id": "rq-002", "query": "what does ORB-1702 OIDCMisconfigured mean", "relevant_doc_ids": ["error-codes", "dashboard-auth-oidc"], "kind": "exact_term"}
+{"id": "rq-003", "query": "ORB-1901 BrokerRateLimited on a .fifo queue", "relevant_doc_ids": ["broker-sqs", "troubleshooting-broker", "error-codes"], "kind": "exact_term"}
+{"id": "rq-004", "query": "heartbeat_seconds", "relevant_doc_ids": ["leases-and-heartbeats", "configuration-reference"], "kind": "exact_term"}
+{"id": "rq-005", "query": "max_payload_kb", "relevant_doc_ids": ["configuration-reference", "concepts-jobs", "flows-steps-and-state"], "kind": "exact_term"}
+{"id": "rq-006", "query": "ORB-1503 FlowStateCorrupt", "relevant_doc_ids": ["error-codes", "flows-steps-and-state", "flows-error-handling"], "kind": "exact_term"}
+{"id": "rq-007", "query": "ORBIT_LEASE", "relevant_doc_ids": ["environment-variables-2x", "leases-and-heartbeats", "migrating-2-to-3"], "kind": "exact_term"}
+{"id": "rq-008", "query": "orbit migrate-config orbit.ini", "relevant_doc_ids": ["migrating-2-to-3", "cli-reference"], "kind": "exact_term"}
+{"id": "rq-009", "query": "ORB-2101 WorkerOOM", "relevant_doc_ids": ["troubleshooting-memory", "error-codes"], "kind": "exact_term"}
+{"id": "rq-010", "query": "oidc_issuer trailing slash", "relevant_doc_ids": ["dashboard-auth-oidc"], "kind": "exact_term"}
+{"id": "rq-011", "query": "ORB-1402 ScheduleDrift", "relevant_doc_ids": ["scheduling-cron", "error-codes"], "kind": "exact_term"}
+{"id": "rq-012", "query": "[results] ttl_days", "relevant_doc_ids": ["results-backend", "configuration-reference"], "kind": "exact_term"}
+{"id": "rq-013", "query": "ORB-2001 IdempotencyConflict", "relevant_doc_ids": ["idempotency", "error-codes"], "kind": "exact_term"}
+{"id": "rq-014", "query": "X-Forwarded-Proto", "relevant_doc_ids": ["dashboard-auth-oidc", "deployment-kubernetes"], "kind": "exact_term"}
+{"id": "rq-015", "query": "ORB-1802 UnknownConfigKey", "relevant_doc_ids": ["configuration-reference", "error-codes"], "kind": "exact_term"}
+{"id": "rq-016", "query": "orbit dlq replay <job_id>", "relevant_doc_ids": ["dead-letter-queue", "cli-reference"], "kind": "exact_term"}
+{"id": "rq-017", "query": "why did my job run twice", "relevant_doc_ids": ["troubleshooting-duplicates", "leases-and-heartbeats", "idempotency"], "kind": "semantic"}
+{"id": "rq-018", "query": "how do I configure Redis so it behaves like a queue and doesn't lose jobs on restart or under memory pressure", "relevant_doc_ids": ["broker-redis"], "kind": "semantic"}
+{"id": "rq-019", "query": "which broker should we pick if we already run Postgres and only have a few hundred jobs per second", "relevant_doc_ids": ["concepts-brokers", "broker-postgres"], "kind": "semantic"}
+{"id": "rq-020", "query": "how long does Orbit keep a job's return value", "relevant_doc_ids": ["results-backend"], "kind": "semantic"}
+{"id": "rq-021", "query": "low priority jobs never get picked up while there is a flood of urgent work", "relevant_doc_ids": ["concepts-queues-priorities", "faq", "scaling-workers"], "kind": "semantic"}
+{"id": "rq-022", "query": "how can I get Orbit metrics into Prometheus", "relevant_doc_ids": ["observability-metrics"], "kind": "semantic"}
+{"id": "rq-023", "query": "does the order of queue names on the worker command line change which queue is served first", "relevant_doc_ids": ["concepts-queues-priorities"], "kind": "semantic"}
+{"id": "rq-024", "query": "what happens to a scheduled run if no worker was up at that minute", "relevant_doc_ids": ["scheduling-cron"], "kind": "semantic"}
+{"id": "rq-025", "query": "how do I shut down a worker without losing the jobs it is running", "relevant_doc_ids": ["concepts-workers", "cli-reference"], "kind": "semantic"}
+{"id": "rq-026", "query": "can I run Orbit on the newest Python release", "relevant_doc_ids": ["installation", "faq"], "kind": "semantic"}
+{"id": "rq-027", "query": "how does one step of a workflow get the output of an earlier step", "relevant_doc_ids": ["flows-steps-and-state"], "kind": "semantic"}
+{"id": "rq-028", "query": "where do I report a security vulnerability in Orbit", "relevant_doc_ids": ["security"], "kind": "semantic"}
+{"id": "rq-029", "query": "see the web request and the background job in the same trace", "relevant_doc_ids": ["observability-tracing"], "kind": "semantic"}
+{"id": "rq-030", "query": "how many concurrent slots do I need for 40 jobs per second that each take about 2 seconds", "relevant_doc_ids": ["scaling-workers"], "kind": "semantic"}
+{"id": "rq-031", "query": "we migrated our 2.x config on 3.0.1 and now failing jobs reach the DLQ after fewer retries than before, why and how do we fix it", "relevant_doc_ids": ["migrating-2-to-3", "retries-and-backoff", "changelog"], "kind": "multi_hop"}
+{"id": "rq-032", "query": "workers on 3.1.0 with Redis Sentinel pinned Redis CPU at 100% after a failover; what happened and which release fixes it", "relevant_doc_ids": ["broker-redis", "troubleshooting-broker", "changelog"], "kind": "multi_hop"}
+{"id": "rq-033", "query": "our broker is SQS; can we use Flows and what should [results] backend be set to", "relevant_doc_ids": ["broker-sqs", "results-backend", "flows-overview"], "kind": "multi_hop"}
+{"id": "rq-034", "query": "we had ORBIT_LEASE=900 on 2.9 and after upgrading to 3.x long jobs started running twice; which setting did we lose", "relevant_doc_ids": ["migrating-2-to-3", "environment-variables-2x", "leases-and-heartbeats"], "kind": "multi_hop"}
+{"id": "rq-035", "query": "dashboard on Kubernetes behind a cloud load balancer and ingress-nginx loops forever after OIDC login on 3.2.0; what header is missing and where is it configured", "relevant_doc_ids": ["dashboard-auth-oidc", "deployment-kubernetes"], "kind": "multi_hop"}
+{"id": "rq-036", "query": "a long job keeps landing in the dead-letter queue even though it never raises an exception", "relevant_doc_ids": ["retries-and-backoff", "leases-and-heartbeats", "dead-letter-queue"], "kind": "multi_hop"}
+{"id": "rq-037", "query": "pods running 3.2.1 with prefetch = 500 keep getting OOMKilled; what is the cause and what prefetch should we use", "relevant_doc_ids": ["troubleshooting-memory", "deployment-kubernetes", "concepts-workers"], "kind": "multi_hop"}
+{"id": "rq-038", "query": "a flow step that returns a big query result fails after finishing its work; which error is it and what should the step return instead", "relevant_doc_ids": ["flows-steps-and-state", "api-reference-flow", "error-codes"], "kind": "multi_hop"}
+{"id": "rq-039", "query": "how do I resume a failed flow run from the DLQ and will steps that already succeeded run again", "relevant_doc_ids": ["flows-error-handling", "dead-letter-queue"], "kind": "multi_hop"}
+{"id": "rq-040", "query": "on an SQS FIFO queue, does idempotency_key stop a duplicate enqueue that arrives 10 minutes after the first one", "relevant_doc_ids": ["broker-sqs", "idempotency", "faq"], "kind": "multi_hop"}

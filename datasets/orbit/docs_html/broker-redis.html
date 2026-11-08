@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en" class="no-js" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Redis broker | Orbit 3.2.1 docs</title>
+<meta name="description" content="Configure Orbit's Redis broker: connection URLs, key layout, persistence and eviction settings, failover and the 3.1.0 reconnect storm.">
+<meta name="docsearch:version" content="3.2">
+<meta name="orbit:doc-id" content="broker-redis">
+<meta name="orbit:applies-to" content="3.x">
+<meta property="og:title" content="Redis broker">
+<meta property="og:site_name" content="Orbit docs">
+<link rel="canonical" href="https://docs.orbit.example.com/en/stable/broker-redis.html">
+<link rel="icon" type="image/svg+xml" href="/_static/orbit-favicon.svg">
+<link rel="stylesheet" href="/_static/theme.8c1f3e.css?v=3.2.1">
+<link rel="stylesheet" href="/_static/pygments.css">
+<script>document.documentElement.className=document.documentElement.className.replace("no-js","js");</script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function oa(){ dataLayer.push(arguments); }
+  oa("init", "OA-000000-FAKE", { anonymize_ip: true });
+  oa("page", { doc_id: "broker-redis", section: "Brokers", version: "3.2.1" });
+</script>
+<script async src="https://analytics.example.com/oa.js"></script>
+<script async src="https://ads.example.net/docs-ethical.js" data-publisher="orbit-docs"></script>
+<style>
+  .layout{display:flex;max-width:1400px;margin:0 auto}
+  .sidebar{width:250px;flex-shrink:0}
+  .content{flex:1;min-width:0;padding:0 28px}
+  .admonition{border-left:4px solid #3b82f6;background:#eff6ff;padding:8px 14px;margin:1.2em 0}
+  .admonition-title{font-weight:600;margin:0 0 4px}
+  table.docutils{border-collapse:collapse;width:100%}
+  table.docutils td,table.docutils th{border:1px solid #e5e7eb;padding:6px 8px;vertical-align:top}
+  .sponsor{border:1px dashed #cbd5e1;padding:10px;font-size:13px;margin:14px 0;background:#f8fafc}
+  #cookie-consent{position:fixed;bottom:16px;left:16px;max-width:380px;background:#fff;border:1px solid #d1d5db;box-shadow:0 8px 24px rgba(0,0,0,.15);padding:16px;z-index:10000}
+</style>
+</head>
+<body class="page-broker-redis section-brokers">
+<!-- build 2026-07-15T16:02:10Z commit a71d0be theme orbit-docs-theme 1.13.2 -->
+<div id="cookie-consent" role="dialog" aria-modal="false" aria-labelledby="cc-title">
+  <p id="cc-title"><strong>Cookies on docs.orbit.example.com</strong></p>
+  <p>We use essential cookies to make this site work, and optional analytics cookies to see which pages need improving.</p>
+  <button type="button" class="cc-btn cc-accept" onclick="ccSet('all')">Accept analytics</button>
+  <button type="button" class="cc-btn cc-deny" onclick="ccSet('essential')">Essential only</button>
+  <a href="/privacy.html#cookies">Learn more</a>
+</div>
+
+<header class="site-header">
+  <nav class="topnav" aria-label="Main">
+    <a class="brand" href="/en/stable/index.html"><img src="/_static/orbit-logo.svg" alt="Orbit logo" width="28" height="28"> Orbit</a>
+    <ul class="topnav-links">
+      <li class="active"><a href="/en/stable/index.html">Docs</a></li>
+      <li><a href="/en/stable/api-reference-orbit.html">API</a></li>
+      <li><a href="/en/stable/changelog.html">Changelog</a></li>
+      <li><a href="https://git.example.com/orbit/orbit">Source</a></li>
+    </ul>
+    <select id="version-select" aria-label="Version" onchange="location.href=this.value">
+      <option value="/en/stable/broker-redis.html" selected>3.2.1 (stable)</option>
+      <option value="/en/3.1/broker-redis.html">3.1.2</option>
+      <option value="/en/2.9/broker-redis.html">2.9.0</option>
+    </select>
+    <form class="search" action="/en/stable/search.html"><input type="search" name="q" placeholder="Search&hellip;" aria-label="Search"></form>
+  </nav>
+</header>
+
+<div class="layout">
+<aside class="sidebar" aria-label="Section navigation">
+  <details><summary>Getting started</summary><ul>
+    <li><a href="/en/stable/index.html">Overview</a></li><li><a href="/en/stable/quickstart.html">Quickstart</a></li>
+    <li><a href="/en/stable/installation.html">Installation</a></li><li><a href="/en/stable/migrating-2-to-3.html">Migrating from 2.x to 3.x</a></li></ul></details>
+  <details><summary>Core concepts</summary><ul>
+    <li><a href="/en/stable/concepts-jobs.html">Jobs</a></li><li><a href="/en/stable/concepts-workers.html">Workers</a></li>
+    <li><a href="/en/stable/concepts-queues-priorities.html">Queues and priorities</a></li><li><a href="/en/stable/concepts-brokers.html">Brokers</a></li>
+    <li><a href="/en/stable/glossary.html">Glossary</a></li></ul></details>
+  <details open><summary>Brokers</summary><ul>
+    <li class="current"><a href="/en/stable/broker-redis.html" aria-current="page">Redis</a>
+      <ul class="local-toc">
+        <li><a href="#connection-url">Connection URL</a></li>
+        <li><a href="#how-orbit-uses-redis">How Orbit uses Redis</a></li>
+        <li><a href="#required-redis-settings">Required Redis settings</a></li>
+        <li><a href="#failover-and-high-availability">Failover and high availability</a></li>
+        <li><a href="#sizing-and-performance">Sizing and performance</a></li>
+        <li><a href="#troubleshooting">Troubleshooting</a></li>
+      </ul></li>
+    <li><a href="/en/stable/broker-postgres.html">Postgres</a></li><li><a href="/en/stable/broker-sqs.html">Amazon SQS</a></li></ul></details>
+  <details><summary>Reliability</summary><ul>
+    <li><a href="/en/stable/retries-and-backoff.html">Retries and backoff</a></li><li><a href="/en/stable/dead-letter-queue.html">Dead-letter queue</a></li>
+    <li><a href="/en/stable/idempotency.html">Idempotency</a></li><li><a href="/en/stable/leases-and-heartbeats.html">Leases and heartbeats</a></li></ul></details>
+  <details><summary>Scheduling</summary><ul>
+    <li><a href="/en/stable/scheduling-cron.html">Cron schedules</a></li><li><a href="/en/stable/scheduling-delays.html">Delays</a></li></ul></details>
+  <details><summary>Flows (3.x)</summary><ul>
+    <li><a href="/en/stable/flows-overview.html">Overview</a></li><li><a href="/en/stable/flows-steps-and-state.html">Steps and state</a></li>
+    <li><a href="/en/stable/flows-error-handling.html">Error handling</a></li></ul></details>
+  <details><summary>Results, config &amp; CLI</summary><ul>
+    <li><a href="/en/stable/results-backend.html">Result backend</a></li><li><a href="/en/stable/configuration-reference.html">orbit.toml reference</a></li>
+    <li><a href="/en/stable/environment-variables-2x.html">Environment variables (2.x)</a></li><li><a href="/en/stable/cli-reference.html">CLI reference</a></li></ul></details>
+  <details><summary>Dashboard &amp; observability</summary><ul>
+    <li><a href="/en/stable/dashboard.html">Dashboard</a></li><li><a href="/en/stable/dashboard-auth-oidc.html">OIDC sign-in</a></li>
+    <li><a href="/en/stable/observability-metrics.html">Metrics</a></li><li><a href="/en/stable/observability-tracing.html">Tracing</a></li></ul></details>
+  <details><summary>Deployment &amp; operations</summary><ul>
+    <li><a href="/en/stable/deployment-docker.html">Docker</a></li><li><a href="/en/stable/deployment-kubernetes.html">Kubernetes</a></li>
+    <li><a href="/en/stable/deployment-systemd.html">systemd</a></li><li><a href="/en/stable/scaling-workers.html">Scaling workers</a></li>
+    <li><a href="/en/stable/performance-tuning.html">Performance tuning</a></li><li><a href="/en/stable/security.html">Security</a></li></ul></details>
+  <details><summary>Troubleshooting</summary><ul>
+    <li><a href="/en/stable/error-codes.html">Error codes</a></li><li><a href="/en/stable/troubleshooting-broker.html">Broker problems</a></li>
+    <li><a href="/en/stable/troubleshooting-duplicates.html">Jobs running twice</a></li><li><a href="/en/stable/troubleshooting-memory.html">Memory growth</a></li>
+    <li><a href="/en/stable/faq.html">FAQ</a></li></ul></details>
+  <details><summary>Reference</summary><ul>
+    <li><a href="/en/stable/api-reference-orbit.html">Orbit</a></li><li><a href="/en/stable/api-reference-job.html">Jobs</a></li>
+    <li><a href="/en/stable/api-reference-flow.html">Flow and step</a></li><li><a href="/en/stable/changelog.html">Changelog</a></li>
+    <li><a href="/en/stable/contributing.html">Contributing</a></li></ul></details>
+
+  <div class="sponsor" id="sidebar-sponsor" data-ad-slot="docs-sidebar-1">
+    <span class="sponsor-label">Sponsored</span><br>
+    <a href="https://ads.example.net/click?c=redis-hosting-fake" rel="sponsored nofollow">ExampleCloud Managed Redis &mdash; persistence on by default, 99.95% SLA. Try it free.</a>
+  </div>
+</aside>
+
+<main class="content" id="main" role="main">
+  <div class="breadcrumbs"><a href="/en/stable/index.html">Docs</a> / <a href="/en/stable/concepts-brokers.html">Brokers</a> / Redis broker</div>
+  <div class="document" role="article">
+  <div class="section" id="redis-broker">
+    <h1>Redis broker<a class="headerlink" href="#redis-broker" title="Permalink">#</a></h1>
+    <p class="meta"><span class="badge badge-version">applies to 3.x</span> <span class="updated">Last updated: 15 July 2026</span></p>
+
+    <p>Redis is the most widely used Orbit broker. It has the lowest pickup latency and highest
+    throughput, and it is what the maintainers run in the main integration suite. Install it with
+    the <code class="literal">redis</code> extra:</p>
+    <div class="highlight-bash"><div class="highlight"><pre><span></span>pip install <span class="s2">"orbit[redis]"</span>
+</pre></div></div>
+    <p>Redis <strong>6.2 or newer</strong> is required. 7.x is recommended.</p>
+
+    <div class="section" id="connection-url">
+    <h2>Connection URL<a class="headerlink" href="#connection-url" title="Permalink">#</a></h2>
+    <div class="highlight-toml"><div class="highlight"><pre><span></span><span class="k">[broker]</span>
+<span class="n">url</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"redis://localhost:6379/0"</span>
+</pre></div></div>
+    <table class="docutils align-default">
+      <thead><tr class="row-odd"><th class="head"><p>Form</p></th><th class="head"><p>Example</p></th></tr></thead>
+      <tbody>
+        <tr class="row-even"><td><p>Plain TCP, database 0</p></td><td><p><code>redis://localhost:6379/0</code></p></td></tr>
+        <tr class="row-odd"><td><p>Password (Redis <code>requirepass</code>)</p></td><td><p><code>redis://:s3cret@redis.internal.example.com:6379/0</code></p></td></tr>
+        <tr class="row-even"><td><p>ACL user and password</p></td><td><p><code>redis://orbit:s3cret@redis.internal.example.com:6379/0</code></p></td></tr>
+        <tr class="row-odd"><td><p>TLS</p></td><td><p><code>rediss://redis.internal.example.com:6380/0</code></p></td></tr>
+      </tbody>
+    </table>
+    <p>The number at the end selects the Redis logical database. The
+    <a class="reference internal" href="/en/stable/results-backend.html">result backend</a> has no connection settings of its own. With
+    <code>backend = "redis"</code> it stores results in the <strong>same database</strong> as the broker, under
+    <code>orbit:result:*</code> keys. Never run <code>FLUSHDB</code> on that database to clear old results, because it
+    also deletes every queued job. Let <code>ttl_days</code> expire them.</p>
+    <p>Since 3.1.0, Orbit also works with Redis Sentinel and with managed failover endpoints. See
+    <a class="reference internal" href="/en/stable/troubleshooting-broker.html">Broker problems</a> for failover behaviour.</p>
+    <div class="highlight-toml"><div class="highlight"><pre><span></span><span class="k">[broker]</span>
+<span class="n">url</span> <span class="o">=</span> <span class="s2">"redis://localhost:6379/0"</span>
+
+<span class="k">[results]</span>
+<span class="n">backend</span> <span class="o">=</span> <span class="s2">"redis"</span>
+<span class="n">ttl_days</span> <span class="o">=</span> <span class="mi">7</span>
+</pre></div></div>
+    </div>
+
+    <div class="section" id="how-orbit-uses-redis">
+    <h2>How Orbit uses Redis<a class="headerlink" href="#how-orbit-uses-redis" title="Permalink">#</a></h2>
+    <p>All keys are prefixed with <code>orbit:</code>. You should never need to modify them by hand. Knowing
+    the layout helps when you are debugging with <code>redis-cli</code>:</p>
+    <table class="docutils align-default">
+      <thead><tr><th>Key</th><th>Type</th><th>Holds</th></tr></thead>
+      <tbody>
+        <tr><td><code>orbit:q:&lt;queue&gt;:&lt;priority&gt;</code></td><td>list</td><td>Ready jobs, one list per priority (<code>high</code>, <code>normal</code>, <code>low</code>)</td></tr>
+        <tr><td><code>orbit:scheduled</code></td><td>sorted set</td><td>Delayed and retrying jobs, scored by due time</td></tr>
+        <tr><td><code>orbit:leases</code></td><td>sorted set</td><td>Running job IDs, scored by lease deadline</td></tr>
+        <tr><td><code>orbit:job:&lt;job_id&gt;</code></td><td>hash</td><td>Payload, attempt count, metadata</td></tr>
+        <tr><td><code>orbit:dlq:&lt;queue&gt;</code></td><td>list</td><td>Dead-lettered job IDs</td></tr>
+        <tr><td><code>orbit:workers</code></td><td>hash</td><td>Worker IDs and last heartbeat time</td></tr>
+        <tr><td><code>orbit:lock:scheduler</code></td><td>string</td><td>Cron scheduler lock holder</td></tr>
+        <tr><td><code>orbit:result:&lt;job_id&gt;</code></td><td>string</td><td>Job result (result backend, expires after <code>ttl_days</code>)</td></tr>
+        <tr><td><code>orbit:flowrun:&lt;run_id&gt;</code></td><td>string</td><td>Flow run state (result backend)</td></tr>
+      </tbody>
+    </table>
+    <p>Workers claim jobs with a blocking pop, so an idle worker picks up a new job within
+    milliseconds. Heartbeats rewrite each running job&#8217;s score in <code>orbit:leases</code>. A background
+    sweep returns jobs whose deadline has passed to their queue. That sweep is the source of
+    <strong>ORB-1101 LeaseExpired</strong> (see <a class="reference internal" href="/en/stable/leases-and-heartbeats.html">Leases and heartbeats</a>).</p>
+    </div>
+
+    <div class="section" id="required-redis-settings">
+    <h2>Required Redis settings<a class="headerlink" href="#required-redis-settings" title="Permalink">#</a></h2>
+    <p>Redis defaults are tuned for caching, not for queues. Two settings matter:</p>
+    <div class="highlight-conf"><div class="highlight"><pre><span></span><span class="c1"># redis.conf</span>
+appendonly yes
+appendfsync everysec
+maxmemory-policy noeviction
+</pre></div></div>
+    <ul class="simple">
+      <li><p><strong>Persistence.</strong> Without AOF (or at least RDB snapshots), a Redis restart <strong>loses every
+      queued job</strong>. <code>appendfsync everysec</code> can lose up to a second of enqueues on a crash, which
+      is acceptable for most workloads.</p></li>
+      <li><p><strong>No eviction.</strong> With an <code>allkeys-*</code> or <code>volatile-*</code> policy, Redis silently deletes job
+      hashes under memory pressure. Jobs then vanish without a trace. With <code>noeviction</code>, enqueues
+      fail loudly instead.</p></li>
+    </ul>
+    <div class="admonition note">
+      <p class="admonition-title">Note</p>
+      <p>Managed Redis services often default to an eviction policy such as
+      <code>volatile-lru</code>. Check it explicitly. <code>orbit doctor</code> warns if <code>maxmemory-policy</code> is anything
+      other than <code>noeviction</code>.</p>
+    </div>
+    </div>
+
+    <div class="sponsor inline" data-ad-slot="docs-inline-2"><span class="sponsor-label">Ad</span> &middot; <a href="https://ads.example.net/click?c=queue-monitoring-fake" rel="sponsored nofollow">QueueWatch: alert on DLQ depth in 5 minutes</a></div>
+
+    <div class="section" id="failover-and-high-availability">
+    <h2>Failover and high availability<a class="headerlink" href="#failover-and-high-availability" title="Permalink">#</a></h2>
+    <p>Orbit works with a primary&ndash;replica setup behind a failover endpoint (a managed service
+    endpoint or a proxy). During failover, clients see a few seconds of <strong>ORB-1001
+    BrokerConnectionError</strong>. Workers reconnect with jittered backoff and carry on. In-flight jobs
+    whose heartbeats were missed during failover may be redelivered.</p>
+    <p>Orbit does not support Redis Cluster (sharded) mode. Its claim operations use multi-key
+    scripts that must run on a single node.</p>
+
+    <div class="section" id="known-issue-reconnect-storm-after-failover-310">
+    <h3>Known issue: reconnect storm after failover (3.1.0)<a class="headerlink" href="#known-issue-reconnect-storm-after-failover-310" title="Permalink">#</a></h3>
+    <p>In <strong>3.1.0</strong>, workers reconnected after a failover <strong>without jitter and without a connection
+    cap</strong>. With many workers this produced a reconnect storm: thousands of simultaneous
+    connections, Redis CPU pinned at 100%, and a cascade of ORB-1001 errors that could last
+    minutes after the new primary was healthy.</p>
+    <p>This was <strong>fixed in 3.1.2</strong> (2026-07-08). Reconnects now use jittered exponential backoff,
+    and each worker process makes one shared reconnect attempt instead of one per slot.</p>
+    <p>If you are on 3.1.0, upgrade:</p>
+    <div class="highlight-bash"><div class="highlight"><pre><span></span>pip install <span class="s2">"orbit[redis]&gt;=3.1.2"</span>
+</pre></div></div>
+    <p>If you can&#8217;t upgrade straight away, stagger restarts of your worker fleet after a failover,
+    and lower <code>--concurrency</code> temporarily. Fewer slots means fewer pooled connections per worker.</p>
+    </div>
+    </div>
+
+    <div class="section" id="sizing-and-performance">
+    <h2>Sizing and performance<a class="headerlink" href="#sizing-and-performance" title="Permalink">#</a></h2>
+    <ul class="simple">
+      <li><p>Each worker process holds roughly <code>concurrency + 2</code> connections: one per slot for acks, plus
+      the blocking claim and the heartbeat connection. Check Redis <code>maxclients</code> against
+      <code>workers &times; (concurrency + 2)</code> plus your producers.</p></li>
+      <li><p>A job&#8217;s memory footprint in Redis is approximately its serialized payload plus ~300 bytes.
+      A backlog of a million 2&nbsp;KB jobs needs around 2.3&nbsp;GB.</p></li>
+      <li><p>Keep payloads small (pass IDs). <code>[limits] max_payload_kb</code> (default 512) is a hard cap, and
+      oversized jobs fail with <strong>ORB-1202 PayloadTooLarge</strong>.</p></li>
+    </ul>
+    </div>
+
+    <div class="section" id="troubleshooting">
+    <h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permalink">#</a></h2>
+    <table class="docutils align-default">
+      <thead><tr><th>Symptom</th><th>Likely cause</th><th>See</th></tr></thead>
+      <tbody>
+        <tr><td>ORB-1001 bursts after a failover, Redis CPU at 100%</td><td>Reconnect storm on 3.1.0</td><td>Upgrade to &ge; 3.1.2</td></tr>
+        <tr><td>ORB-1002 on startup</td><td>Wrong password or ACL user lacks <code>+@all</code> on <code>orbit:*</code> keys</td><td><a href="/en/stable/security.html">Security</a></td></tr>
+        <tr><td>Jobs disappear without reaching the DLQ</td><td>Eviction policy is not <code>noeviction</code></td><td>Above</td></tr>
+        <tr><td>Jobs run twice after a Redis restart</td><td>AOF disabled; lease state lost</td><td><a href="/en/stable/troubleshooting-duplicates.html">Duplicate execution</a></td></tr>
+      </tbody>
+    </table>
+    <p>For general broker diagnosis see <a class="reference internal" href="/en/stable/troubleshooting-broker.html">Broker problems</a>.</p>
+    </div>
+  </div>
+  </div>
+
+  <div class="rating" id="page-rating">
+    <form onsubmit="return false">
+      <fieldset><legend>Rate this page</legend>
+        <label><input type="radio" name="r" value="1"> &#9733;</label>
+        <label><input type="radio" name="r" value="2"> &#9733;&#9733;</label>
+        <label><input type="radio" name="r" value="3"> &#9733;&#9733;&#9733;</label>
+        <label><input type="radio" name="r" value="4"> &#9733;&#9733;&#9733;&#9733;</label>
+        <label><input type="radio" name="r" value="5"> &#9733;&#9733;&#9733;&#9733;&#9733;</label>
+      </fieldset>
+      <textarea name="comment" placeholder="What could be better? (optional)"></textarea>
+      <button type="submit" onclick="oa('rating',{doc:'broker-redis'});">Send</button>
+    </form>
+  </div>
+
+  <div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+    <a href="/en/stable/concepts-brokers.html" class="btn btn-neutral float-left" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Brokers</a>
+    <a href="/en/stable/broker-postgres.html" class="btn btn-neutral float-right" rel="next">Postgres broker <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+  </div>
+</main>
+</div>
+
+<footer>
+  <table class="footer-layout" role="presentation" width="100%" cellpadding="0" cellspacing="0">
+    <tr>
+      <td valign="top"><b>Orbit</b><br>Background jobs and workflows for Python.<br><a href="https://git.example.com/orbit/orbit">git.example.com/orbit/orbit</a></td>
+      <td valign="top"><a href="/en/stable/index.html">Docs home</a><br><a href="/en/stable/changelog.html">Changelog</a><br><a href="/en/stable/security.html">Report a vulnerability</a></td>
+      <td valign="top" align="right">&copy; 2026 The Orbit maintainers.<br>Docs: CC0-1.0 &middot; <a href="/privacy.html">Privacy</a><br><small>Hosted on docs.orbit.example.com</small></td>
+    </tr>
+  </table>
+</footer>
+
+<script>
+function ccSet(level){
+  document.cookie = "orbit_cc=" + level + "; max-age=31536000; path=/; SameSite=Lax";
+  document.getElementById("cookie-consent").remove();
+  if (level === "all") { oa("consent", "granted"); }
+}
+if (document.cookie.indexOf("orbit_cc=") !== -1) {
+  var cc = document.getElementById("cookie-consent"); if (cc) cc.parentNode.removeChild(cc);
+}
+// open the sidebar group for deep links like #troubleshooting
+window.addEventListener("hashchange", function(){ oa("anchor", location.hash); });
+</script>
+<script>
+  /* legacy: keep old anchors working after the 3.1 docs reorg */
+  (function(){
+    var map = {"#reconnect-storm": "#known-issue-reconnect-storm-after-failover-310", "#key-layout": "#how-orbit-uses-redis"};
+    if (map[location.hash]) { location.replace(map[location.hash]); }
+  })();
+</script>
+</body>
+</html>

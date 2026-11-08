@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="en" dir="ltr" class="docs-wrapper plugin-docs docs-version-3.2 docs-doc-page docs-doc-id-retries-and-backoff" data-has-hydrated="false">
+<head>
+<meta charset="UTF-8">
+<meta name="generator" content="orbit-docs-next (build 412)">
+<title data-rh="true">Retries and backoff | Orbit</title>
+<meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1">
+<meta data-rh="true" name="description" content="How Orbit retries failed jobs: the [retries] section, per-job retries=, exponential/linear/fixed backoff, jitter, and what counts as an attempt.">
+<meta data-rh="true" name="docusaurus_version" content="3.2">
+<meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-3.2">
+<meta data-rh="true" property="og:title" content="Retries and backoff | Orbit">
+<link data-rh="true" rel="canonical" href="https://docs.orbit.example.com/en/stable/retries-and-backoff.html">
+<link data-rh="true" rel="alternate" href="https://docs.orbit.example.com/en/2.9/retries-and-backoff.html" hreflang="x-default">
+<link rel="stylesheet" href="/assets/css/styles.4f2a91c7.css">
+<script src="/assets/js/runtime~main.9b1e0a.js" defer="defer"></script>
+<script src="/assets/js/main.c3d771.js" defer="defer"></script>
+<script>
+!function(){function t(t){document.documentElement.setAttribute("data-theme",t)}var e=function(){try{return new URLSearchParams(window.location.search).get("docusaurus-theme")}catch(t){}}()||function(){try{return localStorage.getItem("theme")}catch(t){}}();t(null!==e?e:"light")}();
+</script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function oa(){ dataLayer.push(arguments); }
+  oa("init", "OA-000000-FAKE");
+  oa("page", { doc_id: "retries-and-backoff", section: "Reliability", version: "3.2.1" });
+</script>
+<script async src="https://analytics.example.com/oa.js"></script>
+<style>
+  .tabs-container [role=tabpanel][hidden]{display:none}
+  .theme-admonition{border-left:5px solid;border-radius:6px;padding:10px 16px;margin-bottom:1em}
+  .theme-admonition-note{border-color:#4cb3d4;background:#eef9fd}
+  .theme-admonition-warning{border-color:#e6a700;background:#fff8e6}
+  .cookie-notice{position:fixed;inset:auto 0 0 0;background:#24292f;color:#fff;padding:12px 20px;display:flex;gap:12px;align-items:center;z-index:500}
+</style>
+</head>
+<body class="navigation-with-keyboard">
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none"><defs><symbol id="theme-svg-external-link" viewBox="0 0 24 24"><path fill="currentColor" d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"/></symbol></defs></svg>
+<div id="__docusaurus">
+<div role="region" aria-label="Skip to main content"><a class="skipToContent_fXgn" href="#__docusaurus_skipToContent_fallback">Skip to main content</a></div>
+
+<nav aria-label="Main" class="navbar navbar--fixed-top">
+  <div class="navbar__inner">
+    <div class="navbar__items">
+      <button aria-label="Toggle navigation bar" aria-expanded="false" class="navbar__toggle clean-btn" type="button"><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><path stroke="currentColor" stroke-linecap="round" stroke-miterlimit="10" stroke-width="2" d="M4 7h22M4 15h22M4 23h22"></path></svg></button>
+      <a class="navbar__brand" href="/en/stable/index.html"><div class="navbar__logo"><img src="/img/orbit-logo.svg" alt="Orbit" class="themedComponent_mlkZ themedComponent--light_NVdE"></div><b class="navbar__title text--truncate">Orbit</b></a>
+      <a aria-current="page" class="navbar__item navbar__link navbar__link--active" href="/en/stable/index.html">Docs</a>
+      <a class="navbar__item navbar__link" href="/en/stable/api-reference-orbit.html">API</a>
+      <a class="navbar__item navbar__link" href="/en/stable/changelog.html">Changelog</a>
+    </div>
+    <div class="navbar__items navbar__items--right">
+      <div class="navbar__item dropdown dropdown--hoverable dropdown--right"><a href="#" aria-haspopup="true" aria-expanded="false" role="button" class="navbar__link">3.2.1</a>
+        <ul class="dropdown__menu">
+          <li><a class="dropdown__link dropdown__link--active" href="/en/stable/retries-and-backoff.html">3.2.1</a></li>
+          <li><a class="dropdown__link" href="/en/3.1/retries-and-backoff.html">3.1.2</a></li>
+          <li><a class="dropdown__link" href="/en/2.9/retries-and-backoff.html">2.9.0</a></li>
+        </ul></div>
+      <a href="https://git.example.com/orbit/orbit" target="_blank" rel="noopener noreferrer" class="navbar__item navbar__link header-git-link" aria-label="Source repository">Source<svg width="13.5" height="13.5" aria-hidden="true"><use href="#theme-svg-external-link"></use></svg></a>
+      <div class="navbarSearchContainer_Bca1"><button type="button" class="DocSearch DocSearch-Button" aria-label="Search (Ctrl+K)"><span class="DocSearch-Button-Placeholder">Search</span><span class="DocSearch-Button-Keys"><kbd>Ctrl</kbd><kbd>K</kbd></span></button></div>
+    </div>
+  </div>
+  <div role="presentation" class="navbar-sidebar__backdrop"></div>
+</nav>
+
+<div id="__docusaurus_skipToContent_fallback" class="main-wrapper mainWrapper_z2l0">
+<div class="docsWrapper_hBAB">
+<div class="docRoot_UBD9">
+<aside class="theme-doc-sidebar-container docSidebarContainer_YfHR">
+  <div class="sidebarViewport_aRkj"><div class="sidebar_njMd">
+  <nav aria-label="Docs sidebar" class="menu thin-scrollbar menu_SIkG">
+  <ul class="theme-doc-sidebar-menu menu__list">
+    <li class="theme-doc-sidebar-item-category menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist" href="/en/stable/quickstart.html">Getting started</a></div></li>
+    <li class="theme-doc-sidebar-item-category menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist" href="/en/stable/concepts-jobs.html">Core concepts</a></div></li>
+    <li class="theme-doc-sidebar-item-category menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist" href="/en/stable/broker-redis.html">Brokers</a></div></li>
+    <li class="theme-doc-sidebar-item-category menu__list-item"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist menu__link--active" href="/en/stable/retries-and-backoff.html">Reliability</a></div>
+      <ul style="display:block;overflow:visible;height:auto" class="menu__list">
+        <li class="theme-doc-sidebar-item-link menu__list-item"><a class="menu__link menu__link--active" aria-current="page" href="/en/stable/retries-and-backoff.html">Retries and backoff</a></li>
+        <li class="theme-doc-sidebar-item-link menu__list-item"><a class="menu__link" href="/en/stable/dead-letter-queue.html">Dead-letter queue</a></li>
+        <li class="theme-doc-sidebar-item-link menu__list-item"><a class="menu__link" href="/en/stable/idempotency.html">Idempotency</a></li>
+        <li class="theme-doc-sidebar-item-link menu__list-item"><a class="menu__link" href="/en/stable/leases-and-heartbeats.html">Leases and heartbeats</a></li>
+      </ul></li>
+    <li class="theme-doc-sidebar-item-category menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist" href="/en/stable/scheduling-cron.html">Scheduling</a></div></li>
+    <li class="theme-doc-sidebar-item-category menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist" href="/en/stable/flows-overview.html">Flows</a></div></li>
+    <li class="theme-doc-sidebar-item-category menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist" href="/en/stable/configuration-reference.html">Results, config &amp; CLI</a></div></li>
+    <li class="theme-doc-sidebar-item-category menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist" href="/en/stable/dashboard.html">Dashboard &amp; observability</a></div></li>
+    <li class="theme-doc-sidebar-item-category menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist" href="/en/stable/deployment-docker.html">Deployment &amp; operations</a></div></li>
+    <li class="theme-doc-sidebar-item-category menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist" href="/en/stable/error-codes.html">Troubleshooting</a></div></li>
+    <li class="theme-doc-sidebar-item-category menu__list-item menu__list-item--collapsed"><div class="menu__list-item-collapsible"><a class="menu__link menu__link--sublist" href="/en/stable/api-reference-orbit.html">Reference</a></div></li>
+  </ul></nav></div></div>
+</aside>
+
+<main class="docMainContainer_TBSr">
+<div class="container padding-top--md padding-bottom--lg">
+<div class="row">
+<div class="col docItemCol_VOVn">
+<div class="docItemContainer_Djhp">
+<article>
+  <nav class="theme-doc-breadcrumbs breadcrumbsContainer_Z_bl" aria-label="Breadcrumbs">
+    <ul class="breadcrumbs" itemscope itemtype="https://schema.org/BreadcrumbList">
+      <li class="breadcrumbs__item"><a aria-label="Home page" class="breadcrumbs__link" href="/en/stable/index.html">&#8962;</a></li>
+      <li class="breadcrumbs__item"><span class="breadcrumbs__link">Reliability</span></li>
+      <li itemscope itemprop="itemListElement" itemtype="https://schema.org/ListItem" class="breadcrumbs__item breadcrumbs__item--active"><span class="breadcrumbs__link" itemprop="name">Retries and backoff</span><meta itemprop="position" content="2"></li>
+    </ul>
+  </nav>
+  <span class="theme-doc-version-badge badge badge--secondary">Version: 3.2.1</span>
+  <span class="badge badge--info" title="applies_to">3.x</span>
+
+  <div class="theme-doc-markdown markdown">
+  <header><h1>Retries and backoff</h1></header>
+  <p>When a job attempt fails, Orbit schedules another attempt after a <strong>backoff</strong> delay. It keeps
+  doing so until the job succeeds or runs out of attempts. A job that runs out is moved to the
+  <a href="/en/stable/dead-letter-queue.html">dead-letter queue</a> with <strong>ORB-1301 RetryExhausted</strong>.</p>
+
+  <h2 class="anchor anchorWithStickyNavbar_LWe7" id="global-policy-retries">Global policy: <code>[retries]</code><a href="#global-policy-retries" class="hash-link" aria-label="Direct link to Global policy" title="Direct link to Global policy">&#8203;</a></h2>
+  <p>The <code>[retries]</code> section of <code>orbit.toml</code> sets the default for every job:</p>
+  <div class="language-toml codeBlockContainer_Ckt0 theme-code-block"><div class="codeBlockContent_biex"><pre tabindex="0" class="prism-code language-toml codeBlock_bY9V thin-scrollbar"><code class="codeBlockLines_e6Vv"><span class="token-line"><span class="token table class-name">[retries]</span></span>
+<span class="token-line"><span class="token key property">max_attempts</span> <span class="token punctuation">=</span> <span class="token number">3</span>            <span class="token comment"># total attempts, including the first</span></span>
+<span class="token-line"><span class="token key property">backoff</span> <span class="token punctuation">=</span> <span class="token string">"exponential"</span>     <span class="token comment"># "exponential" | "linear" | "fixed"</span></span>
+<span class="token-line"><span class="token key property">max_delay_seconds</span> <span class="token punctuation">=</span> <span class="token number">600</span>     <span class="token comment"># cap on any single backoff delay</span></span></code></pre><div class="buttonGroup__atx"><button type="button" aria-label="Copy code to clipboard" title="Copy" class="clean-btn">Copy</button></div></div></div>
+  <p>These are also the built-in defaults, so a project with no <code>[retries]</code> section behaves
+  exactly as shown.</p>
+
+  <h2 class="anchor anchorWithStickyNavbar_LWe7" id="per-job-policy-appjobretries">Per-job policy: <code>@app.job(retries=...)</code><a href="#per-job-policy-appjobretries" class="hash-link" aria-label="Direct link" title="Direct link">&#8203;</a></h2>
+  <p>Override the policy for one job on its decorator:</p>
+  <div class="language-python codeBlockContainer_Ckt0 theme-code-block"><div class="codeBlockContent_biex"><pre tabindex="0" class="prism-code language-python codeBlock_bY9V thin-scrollbar"><code class="codeBlockLines_e6Vv"><span class="token-line"><span class="token decorator annotation punctuation">@app</span><span class="token punctuation">.</span><span class="token plain">job</span><span class="token punctuation">(</span><span class="token plain">retries</span><span class="token operator">=</span><span class="token number">5</span><span class="token punctuation">,</span><span class="token plain"> backoff</span><span class="token operator">=</span><span class="token string">"exponential"</span><span class="token punctuation">,</span><span class="token plain"> timeout</span><span class="token operator">=</span><span class="token string">"30s"</span><span class="token punctuation">)</span></span>
+<span class="token-line"><span class="token keyword">def</span> <span class="token function">charge_card</span><span class="token punctuation">(</span><span class="token plain">payment_id</span><span class="token punctuation">:</span> <span class="token builtin">str</span><span class="token punctuation">)</span><span class="token punctuation">:</span> <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span></span>
+<span class="token-line"></span>
+<span class="token-line"><span class="token decorator annotation punctuation">@app</span><span class="token punctuation">.</span><span class="token plain">job</span><span class="token punctuation">(</span><span class="token plain">retries</span><span class="token operator">=</span><span class="token number">2</span><span class="token punctuation">,</span><span class="token plain"> backoff</span><span class="token operator">=</span><span class="token string">"fixed"</span><span class="token punctuation">)</span></span>
+<span class="token-line"><span class="token keyword">def</span> <span class="token function">refresh_avatar</span><span class="token punctuation">(</span><span class="token plain">user_id</span><span class="token punctuation">:</span> <span class="token builtin">str</span><span class="token punctuation">)</span><span class="token punctuation">:</span> <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span></span></code></pre><div class="buttonGroup__atx"><button type="button" aria-label="Copy code to clipboard" title="Copy" class="clean-btn">Copy</button></div></div></div>
+  <p><code>retries</code> is the job&#8217;s <strong>maximum number of attempts</strong> and replaces <code>max_attempts</code> for that
+  job. Both count the first attempt. <code>retries=5</code> means at most five runs: the first plus four
+  retries.</p>
+  <p>Precedence: decorator arguments override <code>orbit.toml</code>, which overrides the built-in defaults.
+  <code>backoff</code> and <code>retries</code> can be overridden independently. <code>max_delay_seconds</code> is global only.</p>
+
+  <h2 class="anchor anchorWithStickyNavbar_LWe7" id="backoff-strategies">Backoff strategies<a href="#backoff-strategies" class="hash-link" aria-label="Direct link to Backoff strategies" title="Direct link to Backoff strategies">&#8203;</a></h2>
+  <p>Let <em>n</em> be the retry number (1 for the first retry). Before jitter, the delay is:</p>
+  <table>
+    <thead><tr><th><code>backoff</code></th><th>Delay before retry <em>n</em></th><th>Retries 1&ndash;5</th></tr></thead>
+    <tbody>
+      <tr><td><code>"exponential"</code> (default)</td><td>2<sup><em>n</em></sup> seconds</td><td>2&nbsp;s, 4&nbsp;s, 8&nbsp;s, 16&nbsp;s, 32&nbsp;s</td></tr>
+      <tr><td><code>"linear"</code></td><td>10 &times; <em>n</em> seconds</td><td>10&nbsp;s, 20&nbsp;s, 30&nbsp;s, 40&nbsp;s, 50&nbsp;s</td></tr>
+      <tr><td><code>"fixed"</code></td><td>10 seconds</td><td>10&nbsp;s, 10&nbsp;s, 10&nbsp;s, 10&nbsp;s, 10&nbsp;s</td></tr>
+    </tbody>
+  </table>
+  <p>Every delay is capped at <code>max_delay_seconds</code> (600&nbsp;s by default). With exponential backoff the
+  cap kicks in at the tenth retry (2<sup>10</sup> = 1024&nbsp;s &rarr; 600&nbsp;s).</p>
+  <p><strong>Jitter.</strong> Orbit then picks the actual delay uniformly between 50% and 100% of the computed
+  value. A retry scheduled for &ldquo;8&nbsp;s&rdquo; runs somewhere between 4 and 8 seconds later. Jitter stops
+  a burst of jobs that failed together (say, during a database blip) from all retrying at the
+  same instant. You can&#8217;t turn it off.</p>
+  <div class="theme-admonition theme-admonition-note admonition_xJq3 alert alert--secondary"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37">&#8505;&#65039;</span>note</div><div class="admonitionContent_BuS1">
+    <p>The defaults are tuned for brief, transient failures: two retries within about
+    six seconds. For flaky third-party APIs that go down for minutes at a time, raise the
+    attempts (for example <code>retries=10</code>, which spreads nine retries over up to about 17 minutes)
+    rather than the delay cap.</p></div></div>
+
+  <h2 class="anchor anchorWithStickyNavbar_LWe7" id="what-counts-as-a-failed-attempt">What counts as a failed attempt<a href="#what-counts-as-a-failed-attempt" class="hash-link" aria-label="Direct link" title="Direct link">&#8203;</a></h2>
+  <table>
+    <thead><tr><th>Event</th><th>Counts as an attempt?</th><th>Logged as</th></tr></thead>
+    <tbody>
+      <tr><td>The job raises any exception</td><td>Yes</td><td>the exception</td></tr>
+      <tr><td>The attempt exceeds <code>timeout</code></td><td>Yes</td><td><code>TimeoutError</code></td></tr>
+      <tr><td>The lease expired and the job was redelivered</td><td><strong>Yes</strong></td><td><strong>ORB-1101 LeaseExpired</strong></td></tr>
+      <tr><td>The worker was killed for memory while running it</td><td>Yes</td><td><strong>ORB-2101 WorkerOOM</strong></td></tr>
+      <tr><td>Graceful shutdown handed the job back unstarted</td><td>No</td><td>n/a</td></tr>
+    </tbody>
+  </table>
+  <p>The lease row deserves attention. A job that regularly <strong>outlives its lease</strong> never raises,
+  yet each redelivery burns an attempt. With the default policy it lands in the DLQ after its
+  third delivery, even though the code may have succeeded every time. If you see ORB-1301
+  preceded by ORB-1101, the fix is lease sizing, not retry tuning. See
+  <a href="/en/stable/leases-and-heartbeats.html">Leases and heartbeats</a>.</p>
+  <p>Errors raised at <strong>enqueue</strong> time, such as <strong>ORB-1201 SerializationError</strong>, <strong>ORB-1202
+  PayloadTooLarge</strong> and <strong>ORB-2001 IdempotencyConflict</strong>, never reach the retry machinery.
+  They are raised to the caller.</p>
+
+  <h2 class="anchor anchorWithStickyNavbar_LWe7" id="permanent-errors">Permanent errors<a href="#permanent-errors" class="hash-link" aria-label="Direct link" title="Direct link">&#8203;</a></h2>
+  <p>Orbit retries every exception. If an error can never succeed on retry (the record was
+  deleted, the input is invalid), catch it in the job and return. Otherwise each such job
+  burns its attempts and clutters the DLQ:</p>
+  <div class="language-python codeBlockContainer_Ckt0 theme-code-block"><div class="codeBlockContent_biex"><pre tabindex="0" class="prism-code language-python codeBlock_bY9V thin-scrollbar"><code class="codeBlockLines_e6Vv">@app.job(retries=4)
+def sync_invoice(invoice_id: str):
+    try:
+        invoice = billing.get_invoice(invoice_id)
+    except billing.NotFound:
+        log.info("invoice %s deleted before sync; skipping", invoice_id)
+        return  # success: nothing left to do
+    push_to_ledger(invoice)</code></pre><div class="buttonGroup__atx"><button type="button" aria-label="Copy code to clipboard" title="Copy" class="clean-btn">Copy</button></div></div></div>
+
+  <h2 class="anchor anchorWithStickyNavbar_LWe7" id="what-it-looks-like-in-the-logs">What it looks like in the logs<a href="#what-it-looks-like-in-the-logs" class="hash-link" aria-label="Direct link" title="Direct link">&#8203;</a></h2>
+  <div class="language-text codeBlockContainer_Ckt0 theme-code-block"><div class="codeBlockContent_biex"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar"><code class="codeBlockLines_e6Vv">WARN  orbit.worker  job j_61c0aa charge_card attempt 1/5 failed:
+      ConnectionResetError; retrying in 1.6s
+WARN  orbit.worker  job j_61c0aa charge_card attempt 2/5 failed:
+      ConnectionResetError; retrying in 3.1s
+...
+ERROR orbit.worker  [ORB-1301] RetryExhausted: job j_61c0aa charge_card
+      failed 5/5 attempts; moved to DLQ (queue=default)</code></pre></div></div>
+  <p>Attempt numbers count total attempts, so <code>retries=5</code> shows <code>/5</code>.</p>
+
+  <h2 class="anchor anchorWithStickyNavbar_LWe7" id="coming-from-2x">Coming from 2.x<a href="#coming-from-2x" class="hash-link" aria-label="Direct link" title="Direct link">&#8203;</a></h2>
+  <p>In 2.x the global policy lived in the <code>[retries]</code> section of <code>orbit.ini</code>. Decorator
+  arguments behave the same in both lines. <code>orbit migrate-config orbit.ini</code> converts the
+  section to <code>orbit.toml</code>.</p>
+  <div class="tabs-container tabList__CuJ">
+    <ul role="tablist" aria-orientation="horizontal" class="tabs">
+      <li role="tab" tabindex="0" aria-selected="true" class="tabs__item tabItem_LNqP tabs__item--active" data-tab="toml">3.x: orbit.toml</li>
+      <li role="tab" tabindex="-1" aria-selected="false" class="tabs__item tabItem_LNqP" data-tab="ini">2.x: orbit.ini</li>
+    </ul>
+    <div class="margin-top--md">
+      <div role="tabpanel" class="tabItem_Ymn6" data-tab="toml"><pre class="prism-code language-toml"><code>[retries]
+max_attempts = 3
+backoff = "exponential"
+max_delay_seconds = 600</code></pre></div>
+      <div role="tabpanel" class="tabItem_Ymn6" data-tab="ini" hidden><pre class="prism-code language-ini"><code>[retries]
+max_attempts = 3
+backoff = exponential
+max_delay_seconds = 600</code></pre></div>
+    </div>
+  </div>
+  <div class="theme-admonition theme-admonition-warning admonition_xJq3 alert alert--warning"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37">&#9888;&#65039;</span>warning</div><div class="admonitionContent_BuS1">
+    <p><code>orbit migrate-config</code> in <strong>3.0.1</strong> silently <strong>dropped the <code>[retries]</code>
+    section</strong>. Migrated projects fell back to the built-in defaults. This was fixed in
+    <strong>3.0.3</strong>. If you migrated with 3.0.1, open your <code>orbit.toml</code> and confirm <code>[retries]</code> is
+    there. Re-running <code>orbit migrate-config</code> on 3.0.3 or later regenerates it.</p></div></div>
+
+  <h2 class="anchor anchorWithStickyNavbar_LWe7" id="see-also">See also<a href="#see-also" class="hash-link" aria-label="Direct link" title="Direct link">&#8203;</a></h2>
+  <ul>
+    <li><a href="/en/stable/dead-letter-queue.html">Dead-letter queue</a></li>
+    <li><a href="/en/stable/flows-error-handling.html">Error handling in flows</a>: retries for individual flow steps</li>
+    <li><a href="/en/stable/configuration-reference.html">Configuration reference</a></li>
+  </ul>
+  </div>
+
+  <footer class="theme-doc-footer docusaurus-mt-lg">
+    <div class="theme-doc-footer-edit-meta-row row">
+      <div class="col"><a href="https://git.example.com/orbit/orbit/edit/main/docs/retries-and-backoff.md" target="_blank" rel="noopener noreferrer" class="theme-edit-this-page">Edit this page</a></div>
+      <div class="col lastUpdated_JAkA"><span class="theme-last-updated">Last updated on <b><time datetime="2026-09-22T00:00:00.000Z" itemprop="dateModified">Sep 22, 2026</time></b> by <b>devon-li</b></span></div>
+    </div>
+  </footer>
+</article>
+
+<nav class="pagination-nav docusaurus-mt-lg" aria-label="Docs pages">
+  <a class="pagination-nav__link pagination-nav__link--prev" href="/en/stable/broker-sqs.html"><div class="pagination-nav__sublabel">Previous</div><div class="pagination-nav__label">Amazon SQS broker</div></a>
+  <a class="pagination-nav__link pagination-nav__link--next" href="/en/stable/dead-letter-queue.html"><div class="pagination-nav__sublabel">Next</div><div class="pagination-nav__label">Dead-letter queue</div></a>
+</nav>
+
+<section class="comments" id="comments">
+  <h3>Comments</h3>
+  <p class="comments-note">Comments are loaded from the community forum. <a href="https://forum.example.com/t/docs-retries-and-backoff/3127">View the thread</a>.</p>
+  <iframe title="Discussion" data-src="https://forum.example.com/embed/comments?topic=3127" width="100%" height="0" loading="lazy" style="border:0"></iframe>
+</section>
+</div>
+</div>
+<div class="col col--3">
+  <div class="tableOfContents_bqdL thin-scrollbar theme-doc-toc-desktop">
+  <ul class="table-of-contents table-of-contents__left-border">
+    <li><a href="#global-policy-retries" class="table-of-contents__link toc-highlight">Global policy: <code>[retries]</code></a></li>
+    <li><a href="#per-job-policy-appjobretries" class="table-of-contents__link toc-highlight">Per-job policy</a></li>
+    <li><a href="#backoff-strategies" class="table-of-contents__link toc-highlight">Backoff strategies</a></li>
+    <li><a href="#what-counts-as-a-failed-attempt" class="table-of-contents__link toc-highlight">What counts as a failed attempt</a></li>
+    <li><a href="#permanent-errors" class="table-of-contents__link toc-highlight">Permanent errors</a></li>
+    <li><a href="#what-it-looks-like-in-the-logs" class="table-of-contents__link toc-highlight">What it looks like in the logs</a></li>
+    <li><a href="#coming-from-2x" class="table-of-contents__link toc-highlight">Coming from 2.x</a></li>
+    <li><a href="#see-also" class="table-of-contents__link toc-highlight">See also</a></li>
+  </ul></div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</div>
+</div>
+
+<footer class="footer footer--dark">
+  <div class="container container-fluid">
+    <div class="row footer__links">
+      <div class="col footer__col"><div class="footer__title">Docs</div><ul class="footer__items clean-list"><li class="footer__item"><a class="footer__link-item" href="/en/stable/quickstart.html">Quickstart</a></li><li class="footer__item"><a class="footer__link-item" href="/en/stable/error-codes.html">Error codes</a></li></ul></div>
+      <div class="col footer__col"><div class="footer__title">Community</div><ul class="footer__items clean-list"><li class="footer__item"><a class="footer__link-item" href="https://forum.example.com/c/orbit">Forum</a></li><li class="footer__item"><a class="footer__link-item" href="https://chat.example.com/orbit">Chat</a></li></ul></div>
+      <div class="col footer__col"><div class="footer__title">More</div><ul class="footer__items clean-list"><li class="footer__item"><a class="footer__link-item" href="/en/stable/changelog.html">Changelog</a></li><li class="footer__item"><a class="footer__link-item" href="https://git.example.com/orbit/orbit">Source</a></li></ul></div>
+    </div>
+    <div class="footer__bottom text--center"><div class="footer__copyright">Copyright &copy; 2026 The Orbit maintainers. Docs are CC0-1.0. Built with orbit-docs-next.</div></div>
+  </div>
+</footer>
+
+<div class="cookie-notice" id="cookie-notice" role="alertdialog" aria-label="Cookie notice" hidden>
+  <span>This site uses cookies for analytics and to remember your preferences. By clicking &ldquo;OK&rdquo; you agree to our <a href="/privacy.html" style="color:#8ab4f8">cookie policy</a>.</span>
+  <button type="button" id="cookie-ok">OK</button>
+  <button type="button" id="cookie-no">No thanks</button>
+</div>
+
+<script>
+  (function(){
+    var n = document.getElementById("cookie-notice");
+    if (!/(^|; )orbit_cookie_ok=/.test(document.cookie)) n.hidden = false;
+    function set(v){ document.cookie = "orbit_cookie_ok=" + v + ";path=/;max-age=15552000"; n.hidden = true; }
+    document.getElementById("cookie-ok").onclick = function(){ set(1); oa("consent","granted"); };
+    document.getElementById("cookie-no").onclick = function(){ set(0); };
+    document.querySelectorAll("[role=tab]").forEach(function(tab){
+      tab.addEventListener("click", function(){
+        var box = tab.closest(".tabs-container");
+        box.querySelectorAll("[role=tab]").forEach(function(t){ t.setAttribute("aria-selected", t === tab); t.classList.toggle("tabs__item--active", t === tab); });
+        box.querySelectorAll("[role=tabpanel]").forEach(function(p){ p.hidden = p.dataset.tab !== tab.dataset.tab; });
+      });
+    });
+  })();
+</script>
+<script id="__ORBIT_DOCS_DATA__" type="application/json">{"docId":"retries-and-backoff","version":"3.2","title":"Retries and backoff","frontMatter":{"id":"retries-and-backoff","section":"Reliability","applies_to":"3.x","updated":"2026-09-22"},"toc":[{"id":"global-policy-retries","level":2},{"id":"per-job-policy-appjobretries","level":2},{"id":"backoff-strategies","level":2},{"id":"what-counts-as-a-failed-attempt","level":2},{"id":"permanent-errors","level":2},{"id":"what-it-looks-like-in-the-logs","level":2},{"id":"coming-from-2x","level":2},{"id":"see-also","level":2}],"excerpt":"When a job attempt fails, Orbit schedules another attempt after a backoff delay.","sidebar":"docs","previous":"broker-sqs","next":"dead-letter-queue"}</script>
+</body>
+</html>

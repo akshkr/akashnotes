@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en" class="no-js" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quickstart &mdash; Orbit 3.2.1 documentation</title>
+<meta name="description" content="Install Orbit, write orbit.toml, run a worker and enqueue your first job in about ten minutes.">
+<meta name="docsearch:version" content="3.2">
+<meta name="docsearch:section" content="Getting started">
+<meta name="orbit:doc-id" content="quickstart">
+<meta name="orbit:applies-to" content="3.x">
+<meta property="og:title" content="Quickstart">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Orbit docs">
+<meta property="og:image" content="https://docs.orbit.example.com/_static/og-default.png">
+<link rel="canonical" href="https://docs.orbit.example.com/en/stable/quickstart.html">
+<link rel="icon" type="image/svg+xml" href="/_static/orbit-favicon.svg">
+<link rel="stylesheet" href="/_static/theme.8c1f3e.css?v=3.2.1">
+<link rel="stylesheet" href="/_static/pygments.css">
+<link rel="preload" href="/_static/fonts/inter-var.woff2" as="font" type="font/woff2" crossorigin>
+<script>document.documentElement.className=document.documentElement.className.replace("no-js","js");</script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function oa(){ dataLayer.push(arguments); }
+  oa("init", "OA-000000-FAKE", { anonymize_ip: true });
+  oa("page", { doc_id: "quickstart", section: "Getting started", version: "3.2.1" });
+</script>
+<script async src="https://analytics.example.com/oa.js"></script>
+<style>
+  body{font-family:Inter,system-ui,sans-serif;margin:0}
+  .announce{background:#4338ca;color:#fff;text-align:center;padding:6px 40px;font-size:14px;position:relative}
+  .announce a{color:#fde68a}
+  .announce-close{position:absolute;right:10px;top:4px;background:none;border:0;color:#fff;font-size:18px;cursor:pointer}
+  .layout{display:flex;max-width:1400px;margin:0 auto}
+  .sidebar{width:260px;flex-shrink:0;font-size:14px}
+  .content{flex:1;min-width:0;padding:0 32px}
+  .toc{width:220px;font-size:13px}
+  .admonition{border-left:4px solid #3b82f6;background:#eff6ff;padding:8px 14px;margin:1.2em 0}
+  pre{position:relative;background:#0f172a;color:#e2e8f0;padding:12px;overflow:auto}
+  .copybtn{position:absolute;top:6px;right:6px;font-size:11px;opacity:.7}
+  .cookie-banner{position:fixed;left:0;right:0;bottom:0;background:#111827;color:#f9fafb;padding:14px 24px;font-size:14px;z-index:9999;display:none}
+  .js .cookie-banner{display:block}
+  .modal[hidden]{display:none}
+</style>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[
+ {"@type":"ListItem","position":1,"name":"Docs","item":"https://docs.orbit.example.com/en/stable/index.html"},
+ {"@type":"ListItem","position":2,"name":"Getting started"},
+ {"@type":"ListItem","position":3,"name":"Quickstart","item":"https://docs.orbit.example.com/en/stable/quickstart.html"}]}
+</script>
+</head>
+<body class="page-quickstart section-getting-started" data-doc-id="quickstart">
+<!-- build 2026-10-21T09:14:52Z commit 3f9c2a1 theme orbit-docs-theme 1.14.0 -->
+<a class="skip-link" href="#main-content">Skip to content</a>
+
+<div class="announce" id="announce-bar" role="region" aria-label="Announcement">
+  Orbit 2.x reaches end of life on <b>2026-12-31</b>. <a href="/en/stable/migrating-2-to-3.html">Plan your migration &rarr;</a>
+  <button class="announce-close" aria-label="Dismiss" onclick="this.parentNode.style.display='none';try{localStorage.setItem('announce-2x-eol','1')}catch(e){}">&times;</button>
+</div>
+
+<header class="site-header">
+  <nav class="topnav" aria-label="Main">
+    <a class="brand" href="/en/stable/index.html"><img src="/_static/orbit-logo.svg" alt="" width="28" height="28"> <span>Orbit</span></a>
+    <ul class="topnav-links">
+      <li class="active"><a href="/en/stable/index.html">Docs</a></li>
+      <li><a href="/en/stable/api-reference-orbit.html">API</a></li>
+      <li><a href="/en/stable/changelog.html">Changelog</a></li>
+      <li><a href="https://git.example.com/orbit/orbit">Source</a></li>
+      <li><a href="https://forum.example.com/c/orbit">Community</a></li>
+    </ul>
+    <div class="version-switcher">
+      <label for="version-select" class="sr-only">Version</label>
+      <select id="version-select" onchange="location.href=this.value">
+        <option value="/en/stable/quickstart.html" selected>3.2.1 (stable)</option>
+        <option value="/en/3.1/quickstart.html">3.1.2</option>
+        <option value="/en/2.9/quickstart.html">2.9.0 (EOL 2026-12-31)</option>
+        <option value="/en/latest/quickstart.html">latest (main)</option>
+      </select>
+    </div>
+    <form class="search" action="/en/stable/search.html" method="get" role="search">
+      <input type="search" name="q" placeholder="Search docs (Ctrl+K)" aria-label="Search docs" autocomplete="off">
+    </form>
+    <button id="theme-toggle" type="button" title="Toggle dark mode">&#9790;</button>
+  </nav>
+</header>
+
+<div class="layout">
+<aside class="sidebar" id="sidebar" aria-label="Documentation">
+  <div class="sidebar-group"><p class="caption">Getting started</p>
+    <ul>
+      <li><a href="/en/stable/index.html">Overview</a></li>
+      <li class="current"><a href="/en/stable/quickstart.html" aria-current="page">Quickstart</a></li>
+      <li><a href="/en/stable/installation.html">Installation</a></li>
+      <li><a href="/en/stable/migrating-2-to-3.html">Migrating from 2.x to 3.x</a></li>
+    </ul></div>
+  <div class="sidebar-group"><p class="caption">Core concepts</p>
+    <ul>
+      <li><a href="/en/stable/concepts-jobs.html">Jobs</a></li>
+      <li><a href="/en/stable/concepts-workers.html">Workers</a></li>
+      <li><a href="/en/stable/concepts-queues-priorities.html">Queues and priorities</a></li>
+      <li><a href="/en/stable/concepts-brokers.html">Brokers</a></li>
+      <li><a href="/en/stable/glossary.html">Glossary</a></li>
+    </ul></div>
+  <div class="sidebar-group"><p class="caption">Brokers</p>
+    <ul>
+      <li><a href="/en/stable/broker-redis.html">Redis</a></li>
+      <li><a href="/en/stable/broker-postgres.html">Postgres</a></li>
+      <li><a href="/en/stable/broker-sqs.html">Amazon SQS</a></li>
+    </ul></div>
+  <div class="sidebar-group"><p class="caption">Reliability</p>
+    <ul>
+      <li><a href="/en/stable/retries-and-backoff.html">Retries and backoff</a></li>
+      <li><a href="/en/stable/dead-letter-queue.html">Dead-letter queue</a></li>
+      <li><a href="/en/stable/idempotency.html">Idempotency</a></li>
+      <li><a href="/en/stable/leases-and-heartbeats.html">Leases and heartbeats</a></li>
+    </ul></div>
+  <div class="sidebar-group"><p class="caption">Scheduling</p>
+    <ul>
+      <li><a href="/en/stable/scheduling-cron.html">Cron schedules</a></li>
+      <li><a href="/en/stable/scheduling-delays.html">Delays</a></li>
+    </ul></div>
+  <div class="sidebar-group"><p class="caption">Flows <span class="badge">3.x</span></p>
+    <ul>
+      <li><a href="/en/stable/flows-overview.html">Overview</a></li>
+      <li><a href="/en/stable/flows-steps-and-state.html">Steps and state</a></li>
+      <li><a href="/en/stable/flows-error-handling.html">Error handling</a></li>
+    </ul></div>
+  <div class="sidebar-group"><p class="caption">Results, config &amp; CLI</p>
+    <ul>
+      <li><a href="/en/stable/results-backend.html">Result backend</a></li>
+      <li><a href="/en/stable/configuration-reference.html">orbit.toml reference</a></li>
+      <li><a href="/en/stable/environment-variables-2x.html">Environment variables (2.x)</a></li>
+      <li><a href="/en/stable/cli-reference.html">CLI reference</a></li>
+    </ul></div>
+  <div class="sidebar-group"><p class="caption">Dashboard &amp; observability</p>
+    <ul>
+      <li><a href="/en/stable/dashboard.html">Dashboard</a></li>
+      <li><a href="/en/stable/dashboard-auth-oidc.html">OIDC sign-in</a></li>
+      <li><a href="/en/stable/observability-metrics.html">Metrics</a></li>
+      <li><a href="/en/stable/observability-tracing.html">Tracing</a></li>
+    </ul></div>
+  <div class="sidebar-group"><p class="caption">Deployment &amp; operations</p>
+    <ul>
+      <li><a href="/en/stable/deployment-docker.html">Docker</a></li>
+      <li><a href="/en/stable/deployment-kubernetes.html">Kubernetes</a></li>
+      <li><a href="/en/stable/deployment-systemd.html">systemd</a></li>
+      <li><a href="/en/stable/scaling-workers.html">Scaling workers</a></li>
+      <li><a href="/en/stable/performance-tuning.html">Performance tuning</a></li>
+      <li><a href="/en/stable/security.html">Security</a></li>
+    </ul></div>
+  <div class="sidebar-group"><p class="caption">Troubleshooting</p>
+    <ul>
+      <li><a href="/en/stable/error-codes.html">Error codes</a></li>
+      <li><a href="/en/stable/troubleshooting-broker.html">Broker problems</a></li>
+      <li><a href="/en/stable/troubleshooting-duplicates.html">Jobs running twice</a></li>
+      <li><a href="/en/stable/troubleshooting-memory.html">Memory growth</a></li>
+      <li><a href="/en/stable/faq.html">FAQ</a></li>
+    </ul></div>
+  <div class="sidebar-group"><p class="caption">Reference</p>
+    <ul>
+      <li><a href="/en/stable/api-reference-orbit.html">Orbit</a></li>
+      <li><a href="/en/stable/api-reference-job.html">Jobs</a></li>
+      <li><a href="/en/stable/api-reference-flow.html">Flow and step</a></li>
+      <li><a href="/en/stable/changelog.html">Changelog</a></li>
+      <li><a href="/en/stable/contributing.html">Contributing</a></li>
+    </ul></div>
+</aside>
+
+<main id="main-content" class="content" role="main">
+  <nav class="breadcrumbs" aria-label="Breadcrumb">
+    <a href="/en/stable/index.html">Docs</a> &rsaquo; <span>Getting started</span> &rsaquo; <span aria-current="page">Quickstart</span>
+  </nav>
+
+  <article class="doc" itemscope itemtype="https://schema.org/TechArticle">
+    <div class="page-meta">
+      <span class="applies-to" title="Applies to">3.x</span> &middot;
+      <time datetime="2026-10-21" itemprop="dateModified">Updated Oct 21, 2026</time> &middot;
+      <a class="edit-link" href="https://git.example.com/orbit/orbit/edit/main/docs/quickstart.md" rel="nofollow">Edit this page</a>
+    </div>
+
+    <h1 id="quickstart" itemprop="headline">Quickstart<a class="headerlink" href="#quickstart" title="Permalink to this heading">&para;</a></h1>
+
+    <p>This guide takes you from nothing to a running worker processing jobs on a local Redis broker.
+    It takes about ten minutes. It targets <strong>Orbit 3.x</strong> (current: 3.2.1). On 2.x, configuration
+    works differently; see <a href="/en/stable/environment-variables-2x.html">Environment variables (2.x)</a>.</p>
+
+    <table class="at-a-glance">
+      <caption>At a glance</caption>
+      <tbody>
+        <tr><th scope="row">Time</th><td>~10 minutes</td></tr>
+        <tr><th scope="row">Orbit version</th><td>3.2.1 (any 3.x works)</td></tr>
+        <tr><th scope="row">Python</th><td>3.10&ndash;3.12</td></tr>
+        <tr><th scope="row">Broker</th><td>Redis 6.2+ (Docker)</td></tr>
+        <tr><th scope="row">You will run</th><td><code>orbit doctor</code>, <code>orbit worker</code>, <code>orbit dlq</code>, <code>orbit dashboard</code></td></tr>
+      </tbody>
+    </table>
+
+    <p>You need Python 3.10&ndash;3.12 and Docker (or any Redis 6.2+ you can reach).</p>
+
+    <h2 id="1-install-orbit">1. Install Orbit<a class="headerlink" href="#1-install-orbit" title="Permalink to this heading">&para;</a></h2>
+<pre class="highlight"><button class="copybtn" type="button" data-clipboard>Copy</button><code class="language-bash">python -m venv .venv &amp;&amp; source .venv/bin/activate
+pip install "orbit[redis,dashboard]&gt;=3.2.1,&lt;3.3"
+orbit --version</code></pre>
+    <p><a href="/en/stable/installation.html">Installation</a> covers the other brokers and the optional extras.</p>
+
+    <h2 id="2-start-redis">2. Start Redis<a class="headerlink" href="#2-start-redis" title="Permalink to this heading">&para;</a></h2>
+<pre class="highlight"><button class="copybtn" type="button" data-clipboard>Copy</button><code class="language-bash">docker run -d --name orbit-redis -p 6379:6379 redis:7 \
+  redis-server --appendonly yes --maxmemory-policy noeviction</code></pre>
+    <p>The two flags make Redis behave like a queue rather than a cache. The
+    <a href="/en/stable/broker-redis.html">Redis broker</a> page explains why both matter.</p>
+
+    <h2 id="3-write-orbittoml">3. Write <code>orbit.toml</code><a class="headerlink" href="#3-write-orbittoml" title="Permalink to this heading">&para;</a></h2>
+    <p>Create a project directory with this file in it:</p>
+<pre class="highlight"><button class="copybtn" type="button" data-clipboard>Copy</button><code class="language-toml"><span class="c1"># orbit.toml</span>
+<span class="k">[broker]</span>
+<span class="n">url</span> <span class="o">=</span> <span class="s2">"redis://localhost:6379/0"</span>
+
+<span class="k">[worker]</span>
+<span class="n">concurrency</span> <span class="o">=</span> <span class="mi">4</span>
+
+<span class="k">[results]</span>
+<span class="n">backend</span> <span class="o">=</span> <span class="s2">"redis"</span>
+<span class="n">ttl_days</span> <span class="o">=</span> <span class="mi">7</span></code></pre>
+    <p>Every key you leave out uses its default. The full list is in the
+    <a href="/en/stable/configuration-reference.html">configuration reference</a>. Orbit reads <code>orbit.toml</code> from the
+    current working directory, so run every command below from this directory.</p>
+
+    <h2 id="4-define-a-job">4. Define a job<a class="headerlink" href="#4-define-a-job" title="Permalink to this heading">&para;</a></h2>
+<pre class="highlight"><button class="copybtn" type="button" data-clipboard>Copy</button><code class="language-python"><span class="c1"># tasks.py</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">from</span> <span class="nn">orbit</span> <span class="kn">import</span> <span class="n">Orbit</span>
+
+<span class="n">app</span> <span class="o">=</span> <span class="n">Orbit</span><span class="p">()</span>  <span class="c1"># broker URL comes from orbit.toml</span>
+
+<span class="nd">@app</span><span class="o">.</span><span class="n">job</span><span class="p">(</span><span class="n">retries</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">backoff</span><span class="o">=</span><span class="s2">"exponential"</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="s2">"30s"</span><span class="p">,</span> <span class="n">idempotency_key</span><span class="o">=</span><span class="s2">"order_id"</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">send_receipt</span><span class="p">(</span><span class="n">order_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"sending receipt for </span><span class="si">{</span><span class="n">order_id</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># pretend to call an email API</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s2">"order_id"</span><span class="p">:</span> <span class="n">order_id</span><span class="p">,</span> <span class="s2">"status"</span><span class="p">:</span> <span class="s2">"sent"</span><span class="p">}</span>
+
+<span class="nd">@app</span><span class="o">.</span><span class="n">job</span><span class="p">()</span>
+<span class="k">def</span> <span class="nf">send_digest</span><span class="p">():</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"weekly digest"</span><span class="p">)</span>
+
+<span class="n">app</span><span class="o">.</span><span class="n">schedule</span><span class="p">(</span><span class="n">send_digest</span><span class="p">,</span> <span class="n">cron</span><span class="o">=</span><span class="s2">"0 9 * * MON"</span><span class="p">)</span></code></pre>
+    <p>A few things to notice:</p>
+    <ul>
+      <li>Arguments must be JSON-serializable, so pass an ID and not an object
+      (<a href="/en/stable/concepts-jobs.html">Jobs</a>).</li>
+      <li><code>idempotency_key="order_id"</code> means enqueueing the same order twice creates one job
+      (<a href="/en/stable/idempotency.html">Idempotency</a>).</li>
+      <li><code>app.schedule</code> registers a <a href="/en/stable/scheduling-cron.html">cron schedule</a>. Any running worker fires it.</li>
+    </ul>
+
+    <h2 id="5-check-your-setup">5. Check your setup<a class="headerlink" href="#5-check-your-setup" title="Permalink to this heading">&para;</a></h2>
+<pre class="highlight console"><button class="copybtn" type="button" data-clipboard>Copy</button><code class="language-console"><span class="gp">$ </span>orbit doctor
+<span class="go">orbit 3.2.1 (python 3.12.6)</span>
+<span class="go">[ok]   config    orbit.toml loaded (3 sections)</span>
+<span class="go">[ok]   broker    redis://localhost:6379/0 reachable (PING 0.3 ms)</span>
+<span class="go">[ok]   results   redis backend reachable</span></code></pre>
+    <p>If the broker line fails with <strong>ORB-1001 BrokerConnectionError</strong>, Redis isn&rsquo;t running or isn&rsquo;t
+    on port 6379. If you see <strong>ORB-1802 UnknownConfigKey</strong>, there is a typo in <code>orbit.toml</code>.</p>
+
+    <h2 id="6-start-a-worker">6. Start a worker<a class="headerlink" href="#6-start-a-worker" title="Permalink to this heading">&para;</a></h2>
+    <p>In a second terminal, from the same directory:</p>
+<pre class="highlight"><button class="copybtn" type="button" data-clipboard>Copy</button><code class="language-bash">orbit worker --queues default,high --concurrency 4</code></pre>
+<pre class="highlight"><code class="language-text">INFO  orbit.worker  orbit 3.2.1 worker w-3c1e starting
+INFO  orbit.worker  queues=default,high concurrency=4 prefetch=10
+INFO  orbit.broker  connected redis://localhost:6379/0
+INFO  orbit.worker  registered jobs: tasks.send_receipt, tasks.send_digest</code></pre>
+    <p>The worker must be able to import your job modules, which is why it runs from the project
+    directory. <a href="/en/stable/concepts-workers.html">Workers</a> explains concurrency, prefetch and shutdown.</p>
+
+    <h2 id="7-enqueue-jobs">7. Enqueue jobs<a class="headerlink" href="#7-enqueue-jobs" title="Permalink to this heading">&para;</a></h2>
+    <p>Back in the first terminal:</p>
+<pre class="highlight"><button class="copybtn" type="button" data-clipboard>Copy</button><code class="language-python"># enqueue.py
+from tasks import send_receipt
+
+handle = send_receipt.enqueue(order_id="A-1001")
+print("queued", handle.id)
+print(handle.result(timeout="30s"))
+
+# Higher priority, and not before 10 seconds from now
+send_receipt.enqueue(order_id="A-1002", priority="high", delay="10s")</code></pre>
+<pre class="highlight console"><code class="language-console">$ python enqueue.py
+queued j_5f2a0c
+{'order_id': 'A-1001', 'status': 'sent'}</code></pre>
+    <p>The worker terminal shows each job start and finish. Run <code>enqueue.py</code> a second time and
+    <code>A-1001</code> is <strong>not</strong> sent again. The idempotency key returns the existing job instead.</p>
+    <p>Now break something on purpose. Make <code>send_receipt</code> raise an exception, restart the worker and
+    enqueue a new order ID. You&rsquo;ll see the retries back off and then
+    <strong>ORB-1301 RetryExhausted</strong> as the job moves to the dead-letter queue:</p>
+<pre class="highlight"><button class="copybtn" type="button" data-clipboard>Copy</button><code class="language-bash">orbit dlq list
+orbit dlq replay &lt;job_id&gt;   # after fixing the bug</code></pre>
+    <p>See <a href="/en/stable/retries-and-backoff.html">Retries and backoff</a> and <a href="/en/stable/dead-letter-queue.html">Dead-letter queue</a>.</p>
+
+    <h2 id="8-open-the-dashboard">8. Open the dashboard<a class="headerlink" href="#8-open-the-dashboard" title="Permalink to this heading">&para;</a></h2>
+<pre class="highlight"><button class="copybtn" type="button" data-clipboard>Copy</button><code class="language-bash">orbit dashboard --port 7777</code></pre>
+    <p>The dashboard prints a sign-in URL with a one-time token to its log. Open it to see queues,
+    running jobs, the DLQ and your schedule. Token mode is fine on a laptop. Before you share a
+    dashboard with a team, read <a href="/en/stable/dashboard.html">Dashboard</a> and
+    <a href="/en/stable/dashboard-auth-oidc.html">Dashboard auth with OIDC</a>.</p>
+
+    <h2 id="9-stop-the-worker">9. Stop the worker<a class="headerlink" href="#9-stop-the-worker" title="Permalink to this heading">&para;</a></h2>
+    <p>Press Ctrl+C. The worker stops claiming jobs, finishes the ones it is running, and exits. On
+    Linux and macOS, <code>SIGTERM</code> does the same. On Windows only Ctrl+C works; see
+    <a href="/en/stable/concepts-workers.html#shutdown">Workers</a>.</p>
+
+    <h2 id="next-steps">Next steps<a class="headerlink" href="#next-steps" title="Permalink to this heading">&para;</a></h2>
+    <ul>
+      <li>Model a multi-step process with <a href="/en/stable/flows-overview.html">Flows</a>.</li>
+      <li>Learn how Orbit avoids losing jobs, and why it occasionally runs one twice:
+      <a href="/en/stable/leases-and-heartbeats.html">Leases and heartbeats</a>.</li>
+      <li>Deploy for real: <a href="/en/stable/deployment-docker.html">Docker</a>, <a href="/en/stable/deployment-kubernetes.html">Kubernetes</a> or
+      <a href="/en/stable/deployment-systemd.html">systemd</a>.</li>
+      <li>Coming from 2.x? Read <a href="/en/stable/migrating-2-to-3.html">Migrating from 2.x to 3.x</a>.</li>
+    </ul>
+  </article>
+
+  <div class="feedback" id="feedback">
+    <span>Was this page helpful?</span>
+    <button type="button" data-vote="yes" onclick="oa('feedback',{doc:'quickstart',v:1});this.parentNode.innerHTML='Thanks for the feedback!'">&#128077; Yes</button>
+    <button type="button" data-vote="no" onclick="oa('feedback',{doc:'quickstart',v:0});this.parentNode.innerHTML='Thanks! <a href=&quot;https://git.example.com/orbit/orbit/issues/new?labels=comp:docs&quot;>Tell us what was missing</a>'">&#128078; No</button>
+  </div>
+
+  <nav class="prev-next" aria-label="Previous and next pages">
+    <a class="prev" href="/en/stable/index.html" rel="prev">&larr; Orbit documentation</a>
+    <a class="next" href="/en/stable/installation.html" rel="next">Installation &rarr;</a>
+  </nav>
+</main>
+
+<aside class="toc" aria-label="On this page">
+  <p class="toc-title">On this page</p>
+  <ul>
+    <li><a href="#1-install-orbit">1. Install Orbit</a></li>
+    <li><a href="#2-start-redis">2. Start Redis</a></li>
+    <li><a href="#3-write-orbittoml">3. Write orbit.toml</a></li>
+    <li><a href="#4-define-a-job">4. Define a job</a></li>
+    <li><a href="#5-check-your-setup">5. Check your setup</a></li>
+    <li><a href="#6-start-a-worker">6. Start a worker</a></li>
+    <li><a href="#7-enqueue-jobs">7. Enqueue jobs</a></li>
+    <li><a href="#8-open-the-dashboard">8. Open the dashboard</a></li>
+    <li><a href="#9-stop-the-worker">9. Stop the worker</a></li>
+    <li><a href="#next-steps">Next steps</a></li>
+  </ul>
+</aside>
+</div>
+
+<!-- newsletter modal, opened by /_static/newsletter.js after 45s on page -->
+<div class="modal" id="newsletter-modal" role="dialog" aria-labelledby="nl-title" hidden>
+  <div class="modal-body">
+    <h3 id="nl-title">Get Orbit release notes by email</h3>
+    <p>One email per release. No spam. Unsubscribe any time.</p>
+    <form action="https://lists.example.com/subscribe/orbit-announce" method="post">
+      <input type="email" name="email" placeholder="you@example.com" required>
+      <button type="submit">Subscribe</button>
+    </form>
+    <button class="modal-close" type="button" aria-label="Close">&times;</button>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <div class="footer-cols">
+    <div><h4>Docs</h4><ul><li><a href="/en/stable/quickstart.html">Quickstart</a></li><li><a href="/en/stable/error-codes.html">Error codes</a></li><li><a href="/en/stable/faq.html">FAQ</a></li></ul></div>
+    <div><h4>Project</h4><ul><li><a href="https://git.example.com/orbit/orbit">Source code</a></li><li><a href="/en/stable/contributing.html">Contributing</a></li><li><a href="/en/stable/security.html">Security policy</a></li></ul></div>
+    <div><h4>Community</h4><ul><li><a href="https://forum.example.com/c/orbit">Forum</a></li><li><a href="https://chat.example.com/orbit">Chat</a></li></ul></div>
+  </div>
+  <p class="legal">&copy; 2026 The Orbit maintainers. Documentation released under <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0-1.0</a>.
+  Built with orbit-docs-theme 1.14.0. <a href="/privacy.html">Privacy</a> &middot; <a href="#" onclick="openCookiePrefs();return false;">Cookie settings</a></p>
+</footer>
+
+<div class="cookie-banner" id="cookie-banner" role="dialog" aria-live="polite" aria-label="Cookie consent">
+  We use cookies to remember your theme and to understand how the docs are used.
+  See our <a href="/privacy.html" style="color:#93c5fd">privacy notice</a>.
+  <button type="button" id="cookie-accept">Accept all</button>
+  <button type="button" id="cookie-reject">Only necessary</button>
+  <button type="button" onclick="openCookiePrefs()">Preferences</button>
+</div>
+
+<script>
+(function () {
+  var KEY = "orbit_docs_consent";
+  var banner = document.getElementById("cookie-banner");
+  try { if (localStorage.getItem(KEY)) banner.style.display = "none"; } catch (e) {}
+  function decide(v) { try { localStorage.setItem(KEY, v); } catch (e) {} banner.style.display = "none"; oa("consent", v); }
+  document.getElementById("cookie-accept").onclick = function () { decide("all"); };
+  document.getElementById("cookie-reject").onclick = function () { decide("necessary"); };
+  window.openCookiePrefs = function () { banner.style.display = "block"; };
+  try { if (localStorage.getItem("announce-2x-eol")) document.getElementById("announce-bar").style.display = "none"; } catch (e) {}
+})();
+document.querySelectorAll("pre .copybtn").forEach(function (b) {
+  b.addEventListener("click", function () {
+    var code = b.parentNode.querySelector("code").innerText;
+    navigator.clipboard && navigator.clipboard.writeText(code);
+    b.textContent = "Copied!"; setTimeout(function () { b.textContent = "Copy"; }, 1500);
+  });
+});
+document.getElementById("theme-toggle").addEventListener("click", function () {
+  var h = document.documentElement; h.dataset.theme = h.dataset.theme === "dark" ? "light" : "dark";
+});
+</script>
+<script src="/_static/search-index.3.2.1.js" defer></script>
+<script src="/_static/newsletter.js" defer></script>
+</body>
+</html>

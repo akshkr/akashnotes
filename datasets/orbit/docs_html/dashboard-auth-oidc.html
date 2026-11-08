@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en" data-content_root="../">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="color-scheme" content="light dark">
+<meta name="orbit:doc-id" content="dashboard-auth-oidc">
+<meta name="orbit:applies-to" content="3.x">
+<title>Dashboard OIDC sign-in - Orbit 3.2.1 documentation</title>
+<link rel="canonical" href="https://docs.orbit.example.com/en/stable/dashboard-auth-oidc.html" />
+<link rel="index" title="Index" href="/en/stable/genindex.html" />
+<link rel="search" title="Search" href="/en/stable/search.html" />
+<link rel="next" title="Metrics" href="/en/stable/observability-metrics.html" />
+<link rel="prev" title="Dashboard" href="/en/stable/dashboard.html" />
+<link rel="stylesheet" type="text/css" href="/_static/pygments.css?v=8f2a5e10" />
+<link rel="stylesheet" type="text/css" href="/_static/styles/furo-orbit.css?v=3b1c09a4" />
+<link rel="stylesheet" type="text/css" href="/_static/copybutton.css?v=76b2166b" />
+<script src="/_static/documentation_options.js?v=3.2.1"></script>
+<script src="/_static/doctools.js?v=9a2dae69"></script>
+<script src="/_static/sphinx_highlight.js?v=dc90522c"></script>
+<script src="/_static/clipboard.min.js?v=a7894cd8"></script>
+<script src="/_static/copybutton.js?v=f281be69"></script>
+<!-- Consent manager (loads before analytics) -->
+<script src="https://consent.example.org/cmp/v2/stub.js" data-domain-script="0000-FAKE-orbit-docs"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function oa(){ dataLayer.push(arguments); }
+  oa("consent", "default", { analytics: "denied" });
+  oa("init", "OA-000000-FAKE");
+  oa("page", { doc_id: "dashboard-auth-oidc", section: "Dashboard", version: "3.2.1" });
+</script>
+<script async src="https://analytics.example.com/oa.js"></script>
+<style>
+  .version-warning{background:#fef3c7;border-bottom:1px solid #f59e0b;padding:8px 16px;font-size:14px}
+  .mobile-header,.mobile-drawer{display:none}
+  @media (max-width:63em){.mobile-header{display:flex}.sidebar-drawer{display:none}}
+  .admonition.note{border-left:.2rem solid #00b0ff;background:rgba(0,176,255,.08);padding:.5rem 1rem}
+  .admonition.warning{border-left:.2rem solid #ff9100;background:rgba(255,145,0,.08);padding:.5rem 1rem}
+  #cmp-banner{position:fixed;top:0;left:0;right:0;background:#fff;border-bottom:2px solid #6366f1;padding:16px 24px;z-index:2147483000;box-shadow:0 4px 12px rgba(0,0,0,.12)}
+  #cmp-banner .cmp-btns{margin-top:8px}
+</style>
+</head>
+<body>
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24"><title>Contents</title><path d="M4 6h16M4 12h16M4 18h10"/></symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24"><title>Menu</title><path d="M3 12h18M3 6h18M3 18h18"/></symbol>
+</svg>
+
+<div id="cmp-banner" role="dialog" aria-modal="true" aria-labelledby="cmp-title" aria-describedby="cmp-desc">
+  <h2 id="cmp-title" style="font-size:16px;margin:0">We value your privacy</h2>
+  <p id="cmp-desc" style="margin:4px 0 0">docs.orbit.example.com uses cookies and similar technologies to measure page views and improve the documentation. You can accept all, reject non-essential cookies, or choose which categories to allow.</p>
+  <div class="cmp-btns">
+    <button type="button" id="cmp-accept-all">Accept all</button>
+    <button type="button" id="cmp-reject-all">Reject non-essential</button>
+    <button type="button" id="cmp-settings" aria-expanded="false" aria-controls="cmp-prefs">Cookie settings</button>
+  </div>
+  <div id="cmp-prefs" hidden>
+    <label><input type="checkbox" checked disabled> Strictly necessary</label>
+    <label><input type="checkbox" id="cmp-analytics"> Analytics</label>
+    <button type="button" id="cmp-save">Save choices</button>
+  </div>
+</div>
+
+<div class="version-warning" role="note">
+  You are reading the docs for <strong>Orbit 3.2.1 (stable)</strong>. OIDC dashboard sign-in was rewritten in 3.2.0.
+  If you run 3.1.x, see the <a href="/en/3.1/dashboard-auth-oidc.html">3.1 version of this page</a>.
+</div>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
+<label class="overlay sidebar-overlay" for="__navigation"><div class="visually-hidden">Hide navigation sidebar</div></label>
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left"><label class="nav-overlay-icon" for="__navigation"><div class="visually-hidden">Toggle site navigation sidebar</div><i class="icon"><svg><use href="#svg-menu"></use></svg></i></label></div>
+    <div class="header-center"><a href="/en/stable/index.html"><div class="brand">Orbit 3.2.1 documentation</div></a></div>
+    <div class="header-right"><label class="toc-overlay-icon toc-header-icon" for="__toc"><i class="icon"><svg><use href="#svg-toc"></use></svg></i></label></div>
+  </header>
+
+  <!-- mobile drawer: duplicate of the sidebar, rendered for small screens -->
+  <nav class="mobile-drawer" aria-hidden="true">
+    <ul>
+      <li><a href="/en/stable/dashboard.html">Dashboard</a></li>
+      <li class="current"><a href="/en/stable/dashboard-auth-oidc.html">Dashboard OIDC sign-in</a></li>
+      <li><a href="/en/stable/observability-metrics.html">Metrics</a></li>
+      <li><a href="/en/stable/observability-tracing.html">Tracing</a></li>
+      <li><a href="/en/stable/security.html">Security</a></li>
+    </ul>
+  </nav>
+
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container"><div class="sidebar-sticky">
+      <a class="sidebar-brand" href="/en/stable/index.html"><div class="sidebar-logo-container"><img class="sidebar-logo" src="/_static/orbit-logo.svg" alt="Logo"/></div><span class="sidebar-brand-text">Orbit 3.2.1 documentation</span></a>
+      <form class="sidebar-search-container" method="get" action="/en/stable/search.html" role="search"><input class="sidebar-search" placeholder="Search" name="q" aria-label="Search"><input type="hidden" name="check_keywords" value="yes"><input type="hidden" name="area" value="default"></form>
+      <div class="sidebar-scroll"><div class="sidebar-tree">
+        <p class="caption" role="heading"><span class="caption-text">Getting started</span></p>
+        <ul><li class="toctree-l1"><a class="reference internal" href="/en/stable/quickstart.html">Quickstart</a></li><li class="toctree-l1"><a class="reference internal" href="/en/stable/installation.html">Installation</a></li><li class="toctree-l1"><a class="reference internal" href="/en/stable/migrating-2-to-3.html">Migrating from 2.x to 3.x</a></li></ul>
+        <p class="caption" role="heading"><span class="caption-text">Concepts</span></p>
+        <ul><li class="toctree-l1"><a class="reference internal" href="/en/stable/concepts-jobs.html">Jobs</a></li><li class="toctree-l1"><a class="reference internal" href="/en/stable/concepts-workers.html">Workers</a></li><li class="toctree-l1"><a class="reference internal" href="/en/stable/concepts-queues-priorities.html">Queues and priorities</a></li><li class="toctree-l1"><a class="reference internal" href="/en/stable/concepts-brokers.html">Brokers</a></li></ul>
+        <p class="caption" role="heading"><span class="caption-text">Dashboard &amp; observability</span></p>
+        <ul class="current">
+          <li class="toctree-l1"><a class="reference internal" href="/en/stable/dashboard.html">Dashboard</a></li>
+          <li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Dashboard OIDC sign-in</a></li>
+          <li class="toctree-l1"><a class="reference internal" href="/en/stable/observability-metrics.html">Metrics</a></li>
+          <li class="toctree-l1"><a class="reference internal" href="/en/stable/observability-tracing.html">Tracing</a></li>
+        </ul>
+        <p class="caption" role="heading"><span class="caption-text">Operations</span></p>
+        <ul><li class="toctree-l1"><a class="reference internal" href="/en/stable/deployment-docker.html">Docker</a></li><li class="toctree-l1"><a class="reference internal" href="/en/stable/deployment-kubernetes.html">Kubernetes</a></li><li class="toctree-l1"><a class="reference internal" href="/en/stable/deployment-systemd.html">systemd</a></li><li class="toctree-l1"><a class="reference internal" href="/en/stable/security.html">Security</a></li></ul>
+        <p class="caption" role="heading"><span class="caption-text">Troubleshooting &amp; reference</span></p>
+        <ul><li class="toctree-l1"><a class="reference internal" href="/en/stable/error-codes.html">Error codes</a></li><li class="toctree-l1"><a class="reference internal" href="/en/stable/faq.html">FAQ</a></li><li class="toctree-l1"><a class="reference internal" href="/en/stable/configuration-reference.html">orbit.toml reference</a></li><li class="toctree-l1"><a class="reference internal" href="/en/stable/cli-reference.html">CLI reference</a></li><li class="toctree-l1"><a class="reference internal" href="/en/stable/changelog.html">Changelog</a></li></ul>
+      </div></div>
+    </div></div>
+  </aside>
+
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link"><span>Back to top</span></a>
+        <div class="content-icon-container">
+          <div class="edit-this-page"><a class="muted-link" href="https://git.example.com/orbit/orbit/edit/main/docs/dashboard-auth-oidc.md" title="Edit this page"><span class="visually-hidden">Edit this page</span>&#9998;</a></div>
+          <div class="theme-toggle-container theme-toggle-content"><button class="theme-toggle" onclick="document.body.dataset.theme=(document.body.dataset.theme==='dark'?'light':'dark')"><div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>&#9681;</button></div>
+        </div>
+        <article role="main" id="furo-main-content">
+<section id="dashboard-oidc-sign-in">
+<h1>Dashboard OIDC sign-in<a class="headerlink" href="#dashboard-oidc-sign-in" title="Link to this heading">&#182;</a></h1>
+<p><span class="sd-badge sd-bg-info">3.x</span> <span class="sd-badge">updated 2026-10-28</span></p>
+<p>With OIDC, people sign in to the <a class="reference internal" href="/en/stable/dashboard.html"><span class="doc">dashboard</span></a> with your company identity provider (IdP) instead of the random startup token. Choose OIDC for shared dashboards, multiple replicas, or sign-ins tied to a named user.</p>
+
+<section id="how-it-works">
+<h2>How it works<a class="headerlink" href="#how-it-works" title="Link to this heading">&#182;</a></h2>
+<p>The dashboard is an OIDC <strong>public client</strong>. It uses the authorization code flow with <strong>PKCE</strong> and <strong>does not need a client secret</strong>, so <code class="docutils literal notranslate"><span class="pre">orbit.toml</span></code> contains no IdP secret at all. Only two settings are needed:</p>
+<div class="highlight-toml notranslate"><div class="highlight"><pre><span></span><span class="k">[dashboard]</span>
+<span class="n">auth</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"oidc"</span>
+<span class="n">oidc_issuer</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"https://login.example.com/"</span>
+<span class="n">oidc_client_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"orbit-dashboard"</span>
+</pre></div></div>
+<p>At startup the dashboard fetches <code class="docutils literal notranslate"><span class="pre">&lt;oidc_issuer&gt;/.well-known/openid-configuration</span></code> and the IdP&#8217;s signing keys. When a user signs in, it validates the ID token: signature, <code>iss</code>, <code>aud</code> (must equal <code>oidc_client_id</code>) and expiry. It then creates a session. Sessions are stored <strong>in the broker</strong>, so they survive restarts and work on every replica.</p>
+</section>
+
+<section id="register-the-dashboard-with-your-idp">
+<h2>Register the dashboard with your IdP<a class="headerlink" href="#register-the-dashboard-with-your-idp" title="Link to this heading">&#182;</a></h2>
+<p>Settings you will need in your IdP (the exact labels differ between providers):</p>
+<div class="table-wrapper docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Setting</p></th>
+<th class="head"><p>Value</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Application type</p></td>
+<td><p>Public client / SPA / &#8220;native&#8221;, with PKCE required</p></td>
+</tr>
+<tr class="row-odd"><td><p>Redirect (callback) URI</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">https://orbit.example.com/auth/callback</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p>Post-logout redirect URI</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">https://orbit.example.com/</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>Scopes</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">openid</span> <span class="pre">profile</span> <span class="pre">email</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p>Grant type</p></td>
+<td><p>Authorization code</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>The callback path is always <code>/auth/callback</code>. The scheme and host are taken from the incoming request, which matters behind a proxy (see below). For local testing, register <code>http://localhost:7777/auth/callback</code> as well.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Orbit does not check groups or roles. <strong>Anyone your IdP lets sign in to this client gets full dashboard access</strong>, including DLQ replay and purge. Control access in the IdP by assigning the application only to the right group.</p>
+</div>
+</section>
+
+<section id="startup-checks-and-orb-1702">
+<h2>Startup checks and ORB-1702<a class="headerlink" href="#startup-checks-and-orb-1702" title="Link to this heading">&#182;</a></h2>
+<p>The dashboard refuses to start, and logs <strong><code>ORB-1702 OIDCMisconfigured</code></strong>, when:</p>
+<ul class="simple">
+<li><p><code>oidc_issuer</code> or <code>oidc_client_id</code> is missing,</p></li>
+<li><p>the discovery document cannot be fetched (DNS, TLS or firewall problem), or</p></li>
+<li><p>the <code>issuer</code> value in the discovery document does not <strong>exactly</strong> match <code>oidc_issuer</code>.</p></li>
+</ul>
+<p>Watch the trailing slash: copy the <code>issuer</code> value exactly from the discovery document:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>curl<span class="w"> </span>-s<span class="w"> </span>https://login.example.com/.well-known/openid-configuration<span class="w"> </span><span class="p">|</span><span class="w"> </span>python3<span class="w"> </span>-c<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span><span class="s1">'import json,sys; print(json.load(sys.stdin)["issuer"])'</span>
+</pre></div></div>
+</section>
+
+<section id="sign-in-failures-and-orb-1701">
+<h2>Sign-in failures and ORB-1701<a class="headerlink" href="#sign-in-failures-and-orb-1701" title="Link to this heading">&#182;</a></h2>
+<p>When a sign-in reaches the callback but fails validation, the user sees &#8220;Sign-in failed&#8221; and the log gets <strong><code>ORB-1701 DashboardAuthFailed</code></strong> with a reason:</p>
+<div class="table-wrapper docutils container">
+<table class="docutils align-default">
+<thead><tr class="row-odd"><th class="head"><p>Reason in log</p></th><th class="head"><p>Meaning</p></th><th class="head"><p>Fix</p></th></tr></thead>
+<tbody>
+<tr class="row-even"><td><p><code>aud mismatch</code></p></td><td><p>The token was issued for another client</p></td><td><p>Check <code>oidc_client_id</code></p></td></tr>
+<tr class="row-odd"><td><p><code>token expired</code> / <code>iat in future</code></p></td><td><p>The dashboard host&#8217;s clock is off</p></td><td><p>Run NTP on the host. Allowed skew is 60&nbsp;s</p></td></tr>
+<tr class="row-even"><td><p><code>state mismatch</code></p></td><td><p>The state cookie was lost between login and callback</p></td><td><p>Usually a proxy scheme problem; see below</p></td></tr>
+<tr class="row-odd"><td><p><code>pkce verification failed</code></p></td><td><p>The IdP is not set up for PKCE</p></td><td><p>Mark the client as public / PKCE required</p></td></tr>
+</tbody>
+</table>
+</div>
+</section>
+
+<section id="reverse-proxies-and-redirect-loops">
+<h2>Reverse proxies and redirect loops<a class="headerlink" href="#reverse-proxies-and-redirect-loops" title="Link to this heading">&#182;</a></h2>
+<div class="admonition warning">
+<p class="admonition-title">Known issue in 3.2.0, still open</p>
+<p>If TLS is terminated at a reverse proxy, the dashboard can fall into an <strong>endless redirect loop</strong> after the IdP sign-in. <strong>Workaround:</strong> make sure the proxy sends <code>X-Forwarded-Proto: https</code> to the dashboard.</p>
+</div>
+<p>Why it loops: the dashboard sees a plain-HTTP request from the proxy. It builds an <code>http://</code> callback URL and sets its state cookie without the <code>Secure</code> flag. The browser comes back on <code>https://</code>, the proxy redirects <code>http</code> to <code>https</code> again, the state check fails, and the dashboard starts a new sign-in. This repeats forever. Some browsers stop after about 20 redirects with <code>ERR_TOO_MANY_REDIRECTS</code>. The log shows a run of <code>ORB-1701 ... state mismatch</code> lines.</p>
+<p>When the dashboard receives <code>X-Forwarded-Proto</code>, it uses that scheme for the callback and the cookie.</p>
+<p><strong>nginx</strong></p>
+<div class="highlight-nginx notranslate"><div class="highlight"><pre><span></span><span class="k">location</span><span class="w"> </span><span class="s">/</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kn">proxy_pass</span><span class="w"> </span><span class="s">http://127.0.0.1:7777</span><span class="p">;</span>
+<span class="w">    </span><span class="kn">proxy_set_header</span><span class="w"> </span><span class="s">Host</span><span class="w"> </span><span class="nv">$host</span><span class="p">;</span>
+<span class="w">    </span><span class="kn">proxy_set_header</span><span class="w"> </span><span class="s">X-Forwarded-Proto</span><span class="w"> </span><span class="s">https</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div></div>
+<p>Use the literal value <code>https</code> here. Do not use <code>$scheme</code>: when nginx itself sits behind a load balancer that terminates TLS, <code>$scheme</code> is <code>http</code>, and you get the loop again.</p>
+<p><strong>Kubernetes ingress-nginx</strong> sets <code>X-Forwarded-Proto</code> for you. If another load balancer that terminates TLS sits in front of the ingress controller, also enable <code>use-forwarded-headers: "true"</code> in the controller ConfigMap so that the original scheme is passed through. See <a class="reference internal" href="/en/stable/deployment-kubernetes.html"><span class="doc">Kubernetes deployment</span></a>.</p>
+<p><strong>AWS ALB</strong> sends <code>X-Forwarded-Proto</code> by default. The loop only appears if a sidecar proxy in between overwrites it.</p>
+<p>To confirm the header reaches the dashboard, open <code>https://orbit.example.com/auth/debug</code> while signed out. It shows the scheme, host and callback URL that the dashboard derived from the request.</p>
+</section>
+
+<section id="sessions-and-sign-out">
+<h2>Sessions and sign-out<a class="headerlink" href="#sessions-and-sign-out" title="Link to this heading">&#182;</a></h2>
+<ul class="simple">
+<li><p>A session lasts as long as the IdP&#8217;s ID token, and is then renewed by a new redirect to the IdP. If the user still has an IdP session, the redirect is invisible.</p></li>
+<li><p><strong>Sign out</strong> removes the dashboard session and redirects to the IdP&#8217;s end-session endpoint, if the IdP publishes one.</p></li>
+<li><p>Removing a user from the IdP application stops them signing in again, but <strong>does not end a session they already have</strong>. That session lasts until their current token expires. To force everyone out at once, delete the <code>orbit:dashboard:session:*</code> keys (Redis) or truncate <code>orbit_dashboard_sessions</code> (Postgres).</p></li>
+</ul>
+</section>
+
+<section id="switching-from-token-mode">
+<h2>Switching from token mode<a class="headerlink" href="#switching-from-token-mode" title="Link to this heading">&#182;</a></h2>
+<ol class="arabic simple">
+<li><p>Register the client and set the three <code>[dashboard]</code> keys.</p></li>
+<li><p>Run <code>orbit doctor</code> to catch typos (<code>ORB-1802 UnknownConfigKey</code>).</p></li>
+<li><p>Restart the dashboard. Token sign-in URLs stop working straight away.</p></li>
+</ol>
+<p>See also: <a class="reference internal" href="/en/stable/security.html"><span class="doc">Security</span></a> and <a class="reference internal" href="/en/stable/configuration-reference.html#dashboard"><span class="std std-ref">Configuration reference</span></a>.</p>
+</section>
+</section>
+        </article>
+      </div>
+      <footer>
+        <nav class="related-pages" aria-label="Previous and next">
+          <a class="next-page" href="/en/stable/observability-metrics.html"><div class="page-info"><div class="context"><span>Next</span></div><div class="title">Metrics</div></div></a>
+          <a class="prev-page" href="/en/stable/dashboard.html"><div class="page-info"><div class="context"><span>Previous</span></div><div class="title">Dashboard</div></div></a>
+        </nav>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">Copyright &#169; 2026, The Orbit maintainers (docs: CC0-1.0)</div>
+            Made with <a href="https://sphinx.example.org/">Sphinx</a> and a fork of the Furo theme
+            <div class="last-updated">Last updated on Oct 28, 2026</div>
+          </div>
+          <div class="right-details"><div class="icons"><a class="muted-link" href="https://git.example.com/orbit/orbit" aria-label="Source">src</a> <a class="muted-link" href="https://chat.example.com/orbit" aria-label="Chat">chat</a></div></div>
+        </div>
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container"><span class="toc-title">On this page</span></div>
+        <div class="toc-tree-container"><div class="toc-tree"><ul>
+          <li><a class="reference internal" href="#">Dashboard OIDC sign-in</a><ul>
+            <li><a class="reference internal" href="#how-it-works">How it works</a></li>
+            <li><a class="reference internal" href="#register-the-dashboard-with-your-idp">Register the dashboard with your IdP</a></li>
+            <li><a class="reference internal" href="#startup-checks-and-orb-1702">Startup checks and ORB-1702</a></li>
+            <li><a class="reference internal" href="#sign-in-failures-and-orb-1701">Sign-in failures and ORB-1701</a></li>
+            <li><a class="reference internal" href="#reverse-proxies-and-redirect-loops">Reverse proxies and redirect loops</a></li>
+            <li><a class="reference internal" href="#sessions-and-sign-out">Sessions and sign-out</a></li>
+            <li><a class="reference internal" href="#switching-from-token-mode">Switching from token mode</a></li>
+          </ul></li>
+        </ul></div></div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<script>
+(function(){
+  var b = document.getElementById("cmp-banner");
+  var saved = null; try { saved = localStorage.getItem("cmp_choice"); } catch (e) {}
+  if (saved) b.style.display = "none";
+  function save(v){ try { localStorage.setItem("cmp_choice", v); } catch (e) {} b.style.display = "none"; if (v === "all") oa("consent","update",{analytics:"granted"}); }
+  document.getElementById("cmp-accept-all").onclick = function(){ save("all"); };
+  document.getElementById("cmp-reject-all").onclick = function(){ save("necessary"); };
+  document.getElementById("cmp-settings").onclick = function(){ var p = document.getElementById("cmp-prefs"); p.hidden = !p.hidden; this.setAttribute("aria-expanded", String(!p.hidden)); };
+  document.getElementById("cmp-save").onclick = function(){ save(document.getElementById("cmp-analytics").checked ? "all" : "necessary"); };
+})();
+</script>
+<script>
+  // copybutton config (sphinx-copybutton)
+  const COPYBUTTON = { selector: "div.highlight pre", prompt: "^\\$ ", success: "Copied!" };
+</script>
+<script defer src="/_static/scripts/furo.js?v=5fa4622c"></script>
+</body>
+</html>

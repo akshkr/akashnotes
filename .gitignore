@@ -7,3 +7,6 @@
 
 # Machine-specific Claude settings
 .claude/settings.local.json
+
+# v2 rewrite scratch: plans, reviews, research, and a 1.3 GB verification virtualenv
+.restructure/

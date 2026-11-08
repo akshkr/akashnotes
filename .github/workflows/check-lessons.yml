@@ -1,0 +1,38 @@
+name: Check lessons
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  lessons:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      # Stdlib only. Checks fences, script_id rules, stitched-import bugs, deprecated APIs,
+      # the lesson template and the 2-hour day budget (capstones auto-detected).
+      - name: Lesson gate
+        run: python tools/lesson_check.py . --budget --quiet
+      # Internal links resolve, each What's Next links the next day, no forward prerequisites.
+      - name: Course QA
+        run: python tools/course_qa.py
+
+  diagrams:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: Install Mermaid CLI   # ⚠ verify the version pin when applying
+        run: npm install -g @mermaid-js/mermaid-cli@11
+      - name: Render every Mermaid diagram
+        env:
+          MMDC_PUPPETEER_CONFIG: /tmp/puppeteer.json
+        run: |
+          echo '{"args":["--no-sandbox"]}' > /tmp/puppeteer.json
+          python tools/lesson_check.py . --mermaid --no-template --quiet

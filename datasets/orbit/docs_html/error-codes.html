@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Error codes (ORB-xxxx) &middot; Orbit docs</title>
+<meta name="description" content="Every Orbit error code from ORB-1001 to ORB-2101 with its cause and fix.">
+<meta name="keywords" content="orbit, error codes, ORB-1001, ORB-1101, ORB-1301, ORB-1901, ORB-2101, troubleshooting">
+<meta name="orbit:doc-id" content="error-codes">
+<meta name="orbit:applies-to" content="all">
+<meta name="robots" content="index,follow">
+<link rel="canonical" href="https://docs.orbit.example.com/en/stable/error-codes.html">
+<link rel="stylesheet" href="/_static/theme.8c1f3e.css?v=3.2.1">
+<link rel="stylesheet" href="/_static/legacy-reference.css">
+<!--[if lt IE 9]><script src="/_static/html5shiv.min.js"></script><![endif]-->
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function oa(){ dataLayer.push(arguments); }
+  oa("init", "OA-000000-FAKE", { anonymize_ip: true });
+  oa("page", { doc_id: "error-codes", section: "Reference", version: "3.2.1" });
+</script>
+<script async src="https://analytics.example.com/oa.js"></script>
+<script async src="https://heatmap.example.net/tag.js?site=FAKE-4411"></script>
+<style type="text/css">
+  body{margin:0;font:15px/1.55 -apple-system,Segoe UI,Roboto,sans-serif;color:#1f2937}
+  #topbar{background:#0b1220;color:#cbd5e1}
+  #topbar a{color:#e2e8f0;text-decoration:none;margin-right:14px}
+  #wrap{max-width:1280px;margin:0 auto;display:flex}
+  #nav{width:240px;border-right:1px solid #e5e7eb;font-size:14px;padding:12px}
+  #content{flex:1;padding:12px 36px;min-width:0}
+  .err{border:1px solid #e5e7eb;border-radius:6px;padding:10px 14px;margin:12px 0}
+  .err h3{margin:0 0 6px;font-family:ui-monospace,Menlo,monospace}
+  .err .hidden-by-filter{display:none}
+  .backtotop{font-size:12px;float:right}
+  .cookiebar{background:#fffbeb;border-bottom:1px solid #fcd34d;padding:8px 16px;font-size:13px}
+  .cookiebar button{font-size:12px}
+  #support-widget{position:fixed;right:20px;bottom:20px;width:56px;height:56px;border-radius:50%;background:#6d28d9;color:#fff;border:0;font-size:24px}
+</style>
+</head>
+<body id="error-codes" class="reference">
+<div class="cookiebar" id="cookiebar">
+  &#127850; This website uses cookies. Some are essential, others help us improve the docs.
+  <button onclick="document.cookie='ckb=1;path=/;max-age=31536000';document.getElementById('cookiebar').style.display='none'">Got it</button>
+  <button onclick="document.cookie='ckb=0;path=/;max-age=31536000';window['oa-disable']=true;document.getElementById('cookiebar').style.display='none'">Decline</button>
+  <a href="/privacy.html#cookies">More info</a>
+</div>
+<script>if(document.cookie.indexOf('ckb=')>-1){document.getElementById('cookiebar').style.display='none';}</script>
+
+<div id="topbar">
+  <table width="100%" cellspacing="0" cellpadding="8" border="0" role="presentation"><tr>
+    <td><a href="/en/stable/index.html"><b>&#9711; Orbit</b></a>
+        <a href="/en/stable/index.html">Docs</a>
+        <a href="/en/stable/api-reference-orbit.html">API</a>
+        <a href="/en/stable/changelog.html">Changelog</a>
+        <a href="https://git.example.com/orbit/orbit/issues">Issues</a></td>
+    <td align="right">
+      <form action="/en/stable/search.html" method="get" style="display:inline"><input type="text" name="q" size="24" placeholder="Search for an ORB code..."></form>
+      &nbsp;<select onchange="location=this.value" aria-label="Docs version"><option value="/en/stable/error-codes.html" selected>v3.2.1</option><option value="/en/3.1/error-codes.html">v3.1.2</option><option value="/en/2.9/error-codes.html">v2.9.0</option></select>
+    </td>
+  </tr></table>
+</div>
+
+<div id="wrap">
+<nav id="nav" aria-label="Section navigation">
+  <b>Troubleshooting</b>
+  <ul>
+    <li><b><a href="/en/stable/error-codes.html">Error codes</a></b></li>
+    <li><a href="/en/stable/troubleshooting-broker.html">Broker problems</a></li>
+    <li><a href="/en/stable/troubleshooting-duplicates.html">Jobs running twice</a></li>
+    <li><a href="/en/stable/troubleshooting-memory.html">Memory growth</a></li>
+    <li><a href="/en/stable/faq.html">FAQ</a></li>
+  </ul>
+  <b>Jump to a code</b>
+  <ul class="code-index">
+    <li><a href="#orb-1001-brokerconnectionerror">ORB-1001</a> &middot; <a href="#orb-1002-brokerautherror">1002</a> &middot; <a href="#orb-1901-brokerratelimited">1901</a></li>
+    <li><a href="#orb-1101-leaseexpired">ORB-1101</a> &middot; <a href="#orb-1102-workerheartbeatlost">1102</a> &middot; <a href="#orb-2101-workeroom">2101</a></li>
+    <li><a href="#orb-1201-serializationerror">ORB-1201</a> &middot; <a href="#orb-1202-payloadtoolarge">1202</a></li>
+    <li><a href="#orb-1301-retryexhausted">ORB-1301</a></li>
+    <li><a href="#orb-1401-scheduleparseerror">ORB-1401</a> &middot; <a href="#orb-1402-scheduledrift">1402</a></li>
+    <li><a href="#orb-1501-flowcycledetected">ORB-1501</a> &middot; <a href="#orb-1502-steptimeout">1502</a> &middot; <a href="#orb-1503-flowstatecorrupt">1503</a></li>
+    <li><a href="#orb-1601-resultbackendunavailable">ORB-1601</a></li>
+    <li><a href="#orb-1701-dashboardauthfailed">ORB-1701</a> &middot; <a href="#orb-1702-oidcmisconfigured">1702</a></li>
+    <li><a href="#orb-1801-configmigrationerror">ORB-1801</a> &middot; <a href="#orb-1802-unknownconfigkey">1802</a></li>
+    <li><a href="#orb-2001-idempotencyconflict">ORB-2001</a></li>
+  </ul>
+  <b>Other sections</b>
+  <ul>
+    <li><a href="/en/stable/quickstart.html">Quickstart</a></li>
+    <li><a href="/en/stable/concepts-jobs.html">Jobs</a></li>
+    <li><a href="/en/stable/concepts-brokers.html">Brokers</a></li>
+    <li><a href="/en/stable/retries-and-backoff.html">Retries and backoff</a></li>
+    <li><a href="/en/stable/dead-letter-queue.html">Dead-letter queue</a></li>
+    <li><a href="/en/stable/flows-overview.html">Flows</a></li>
+    <li><a href="/en/stable/configuration-reference.html">orbit.toml reference</a></li>
+    <li><a href="/en/stable/cli-reference.html">CLI reference</a></li>
+    <li><a href="/en/stable/dashboard.html">Dashboard</a></li>
+    <li><a href="/en/stable/changelog.html">Changelog</a></li>
+  </ul>
+</nav>
+
+<div id="content" role="main">
+<p class="crumbs"><a href="/en/stable/index.html">Home</a> &raquo; <a href="/en/stable/troubleshooting-broker.html">Troubleshooting</a> &raquo; Error codes</p>
+<a name="top"></a>
+<h1>Error codes <a class="permalink" href="#error-codes" title="Permalink">&para;</a></h1>
+<p class="pageinfo"><small>Applies to: <b>all versions</b> &nbsp;|&nbsp; Last updated: 2026-11-05 &nbsp;|&nbsp; <a href="https://git.example.com/orbit/orbit/blob/main/docs/error-codes.md">View source</a></small></p>
+
+<p>Every error Orbit raises or logs has a stable code of the form <code>ORB-NNNN</code>. Codes never change
+meaning between releases, so it's safe to search for them, alert on them and match on them.
+In Python, each code is an exception class with the same name, for example
+<code>BrokerConnectionError</code> for ORB-1001.</p>
+
+<pre class="log">2026-10-22T08:14:03Z WARN  orbit.worker ORB-1101 LeaseExpired job=j_5f2a0c queue=default lease_seconds=300</pre>
+
+<table class="ranges" border="1" cellpadding="4" cellspacing="0">
+  <tr bgcolor="#f3f4f6"><th>Range</th><th>Area</th></tr>
+  <tr><td>10xx</td><td>Broker connectivity</td></tr>
+  <tr><td>11xx</td><td>Leases and worker liveness</td></tr>
+  <tr><td>12xx</td><td>Payloads</td></tr>
+  <tr><td>13xx</td><td>Retries</td></tr>
+  <tr><td>14xx</td><td>Scheduler</td></tr>
+  <tr><td>15xx</td><td>Flows (3.x only)</td></tr>
+  <tr><td>16xx</td><td>Result backend</td></tr>
+  <tr><td>17xx</td><td>Dashboard auth</td></tr>
+  <tr><td>18xx</td><td>Configuration (3.x only)</td></tr>
+  <tr><td>19xx</td><td>Broker rate limits</td></tr>
+  <tr><td>20xx</td><td>Idempotency</td></tr>
+  <tr><td>21xx</td><td>Worker resources</td></tr>
+</table>
+
+<p><label for="code-filter"><b>Filter:</b></label> <input id="code-filter" type="search" placeholder="e.g. 1101 or lease" oninput="filterCodes(this.value)"> <span id="filter-count"></span></p>
+
+<h2 id="broker">Broker <a class="permalink" href="#broker">&para;</a></h2>
+
+<div class="err" data-code="ORB-1001">
+<h3 id="orb-1001-brokerconnectionerror">ORB-1001 BrokerConnectionError <a class="permalink" href="#orb-1001-brokerconnectionerror">&para;</a></h3>
+<p><b>Cause:</b> The broker is unreachable. Common reasons are a wrong host or port, DNS, a firewall,
+or the broker restarting. <b>Fix:</b> Run <code>orbit doctor</code>, then check <code>[broker] url</code> (on 2.x,
+<code>ORBIT_BROKER_URL</code>). A flood of these right after a Redis failover on 3.1.0 is a known bug, fixed
+in 3.1.2. See <a href="/en/stable/troubleshooting-broker.html">troubleshooting-broker</a>.</p>
+</div>
+
+<div class="err" data-code="ORB-1002">
+<h3 id="orb-1002-brokerautherror">ORB-1002 BrokerAuthError <a class="permalink" href="#orb-1002-brokerautherror">&para;</a></h3>
+<p><b>Cause:</b> The broker rejected the credentials. <b>Fix:</b> Check the user and password in the URL,
+the Redis ACLs, the Postgres role, or the IAM permissions for SQS.</p>
+</div>
+
+<div class="err" data-code="ORB-1901">
+<h3 id="orb-1901-brokerratelimited">ORB-1901 BrokerRateLimited <a class="permalink" href="#orb-1901-brokerratelimited">&para;</a></h3>
+<p><b>Cause:</b> SQS throttled a request from a worker or producer. This is most common on FIFO
+queues. <b>Fix:</b> Lower the number of receive calls (fewer workers, <code>prefetch</code> &le; 10), spread work
+across message groups, or switch to a standard queue and make the job body idempotent. See
+<a href="/en/stable/broker-sqs.html#fifo-queues-and-throttling-orb-1901">broker-sqs</a>.</p>
+<pre class="log">WARN orbit.broker.sqs [ORB-1901] BrokerRateLimited: SendMessage throttled on
+orbit-prod-default.fifo (attempt 2/5, retrying in 0.4s)</pre>
+</div>
+<span class="backtotop"><a href="#top">&uarr; back to top</a></span>
+
+<h2 id="leases-and-workers">Leases and workers <a class="permalink" href="#leases-and-workers">&para;</a></h2>
+
+<div class="err" data-code="ORB-1101">
+<h3 id="orb-1101-leaseexpired">ORB-1101 LeaseExpired <a class="permalink" href="#orb-1101-leaseexpired">&para;</a></h3>
+<p><b>Cause:</b> A job outlived its lease, so it may run twice. <b>Fix:</b> Make sure heartbeats can renew
+the lease (<code>[worker] heartbeat_seconds</code>), or raise <code>[worker] lease_seconds</code> for long jobs. On 2.x,
+use <code>ORBIT_LEASE</code>. See <a href="/en/stable/troubleshooting-duplicates.html">troubleshooting-duplicates</a>.</p>
+</div>
+
+<div class="err" data-code="ORB-1102">
+<h3 id="orb-1102-workerheartbeatlost">ORB-1102 WorkerHeartbeatLost <a class="permalink" href="#orb-1102-workerheartbeatlost">&para;</a></h3>
+<p><b>Cause:</b> The broker stopped receiving a worker's heartbeats. The worker may have frozen, lost
+its network connection, or been killed. <b>Fix:</b> Look for CPU-bound code that blocks the worker
+and for network partitions. The worker's jobs are redelivered when their leases expire.</p>
+</div>
+
+<div class="err" data-code="ORB-2101">
+<h3 id="orb-2101-workeroom">ORB-2101 WorkerOOM <a class="permalink" href="#orb-2101-workeroom">&para;</a></h3>
+<p><b>Cause:</b> A worker process was killed for exceeding available memory. <b>Fix:</b> Lower
+<code>concurrency</code>, keep payloads small, and on 3.2.x keep <code>prefetch</code> &le; 100. See
+<a href="/en/stable/troubleshooting-memory.html">troubleshooting-memory</a>.</p>
+</div>
+<span class="backtotop"><a href="#top">&uarr; back to top</a></span>
+
+<h2 id="payloads">Payloads <a class="permalink" href="#payloads">&para;</a></h2>
+
+<div class="err" data-code="ORB-1201">
+<h3 id="orb-1201-serializationerror">ORB-1201 SerializationError <a class="permalink" href="#orb-1201-serializationerror">&para;</a></h3>
+<p><b>Cause:</b> Job arguments aren't JSON-serializable, for example a <code>datetime</code>, a <code>set</code> or an ORM
+object. <b>Fix:</b> Pass primitives and IDs, and convert other types explicitly.</p>
+</div>
+
+<div class="err" data-code="ORB-1202">
+<h3 id="orb-1202-payloadtoolarge">ORB-1202 PayloadTooLarge <a class="permalink" href="#orb-1202-payloadtoolarge">&para;</a></h3>
+<p><b>Cause:</b> The arguments, or a Flow step result, are over <code>[limits] max_payload_kb</code> (default
+512). <b>Fix:</b> Store large data elsewhere and pass a reference.</p>
+</div>
+
+<h2 id="retries">Retries <a class="permalink" href="#retries">&para;</a></h2>
+
+<div class="err" data-code="ORB-1301">
+<h3 id="orb-1301-retryexhausted">ORB-1301 RetryExhausted <a class="permalink" href="#orb-1301-retryexhausted">&para;</a></h3>
+<p><b>Cause:</b> A job failed on every attempt allowed by its retry policy, and Orbit moved it to the
+DLQ. <b>Fix:</b> Inspect it with <code>orbit dlq list</code>, fix the root cause, then run
+<code>orbit dlq replay &lt;job_id&gt;</code>. See <a href="/en/stable/dead-letter-queue.html">dead-letter-queue</a>.</p>
+<pre class="shell">$ orbit dlq list
+$ orbit dlq replay &lt;job_id&gt;</pre>
+</div>
+<span class="backtotop"><a href="#top">&uarr; back to top</a></span>
+
+<h2 id="scheduler">Scheduler <a class="permalink" href="#scheduler">&para;</a></h2>
+
+<div class="err" data-code="ORB-1401">
+<h3 id="orb-1401-scheduleparseerror">ORB-1401 ScheduleParseError <a class="permalink" href="#orb-1401-scheduleparseerror">&para;</a></h3>
+<p><b>Cause:</b> The cron expression passed to <code>app.schedule(..., cron=...)</code> is invalid. <b>Fix:</b> Use
+five fields, for example <code>"0 9 * * MON"</code>.</p>
+</div>
+
+<div class="err" data-code="ORB-1402">
+<h3 id="orb-1402-scheduledrift">ORB-1402 ScheduleDrift <a class="permalink" href="#orb-1402-scheduledrift">&para;</a></h3>
+<p><b>Cause:</b> A scheduled run fired noticeably late or early. The usual reasons are a DST transition
+or clock skew between hosts. <b>Fix:</b> Keep hosts NTP-synced and run every worker in UTC. See
+<a href="/en/stable/scheduling-cron.html">scheduling-cron</a>.</p>
+</div>
+
+<h2 id="flows-3x">Flows (3.x) <a class="permalink" href="#flows-3x">&para;</a></h2>
+
+<div class="err" data-code="ORB-1501">
+<h3 id="orb-1501-flowcycledetected">ORB-1501 FlowCycleDetected <a class="permalink" href="#orb-1501-flowcycledetected">&para;</a></h3>
+<p><b>Cause:</b> The <code>after=</code> dependencies form a loop. <b>Fix:</b> Make the step graph acyclic.</p>
+</div>
+
+<div class="err" data-code="ORB-1502">
+<h3 id="orb-1502-steptimeout">ORB-1502 StepTimeout <a class="permalink" href="#orb-1502-steptimeout">&para;</a></h3>
+<p><b>Cause:</b> A step ran longer than its timeout (the <code>step(..., timeout=)</code> override, or else its
+job's <code>timeout</code>). <b>Fix:</b> Raise the timeout or split the step into smaller steps.</p>
+</div>
+
+<div class="err" data-code="ORB-1503">
+<h3 id="orb-1503-flowstatecorrupt">ORB-1503 FlowStateCorrupt <a class="permalink" href="#orb-1503-flowstatecorrupt">&para;</a></h3>
+<p><b>Cause:</b> A run's record in the result backend is missing or can't be decoded while the run is
+still in progress. The usual reasons are Redis eviction (<code>maxmemory-policy</code> not <code>noeviction</code>),
+keys or rows deleted or edited by hand, or workers on different 3.x minor versions writing the
+same run. <b>Fix:</b> Purge the run's DLQ entries and start a fresh run. See
+<a href="/en/stable/flows-error-handling.html#recovering-from-orb-1503">flows-error-handling</a>.</p>
+</div>
+<span class="backtotop"><a href="#top">&uarr; back to top</a></span>
+
+<h2 id="results">Results <a class="permalink" href="#results">&para;</a></h2>
+
+<div class="err" data-code="ORB-1601">
+<h3 id="orb-1601-resultbackendunavailable">ORB-1601 ResultBackendUnavailable <a class="permalink" href="#orb-1601-resultbackendunavailable">&para;</a></h3>
+<p><b>Cause:</b> Orbit can't reach the result backend, or <code>[results] backend</code> doesn't match the broker
+(for example the default <code>"redis"</code> with an SQS broker). <b>Fix:</b> Check <code>[results] backend</code> and its
+connectivity. While the backend is down, enqueues with an idempotency key are refused, workers
+don't acknowledge jobs whose results they can't write (so those jobs run again once their lease
+expires), and flow runs can't advance. See <a href="/en/stable/results-backend.html">results-backend</a>.</p>
+</div>
+
+<h2 id="dashboard">Dashboard <a class="permalink" href="#dashboard">&para;</a></h2>
+
+<div class="err" data-code="ORB-1701">
+<h3 id="orb-1701-dashboardauthfailed">ORB-1701 DashboardAuthFailed <a class="permalink" href="#orb-1701-dashboardauthfailed">&para;</a></h3>
+<p><b>Cause:</b> A bad token or a rejected OIDC login. <b>Fix:</b> Check <code>[dashboard] auth</code> and the user's
+credentials.</p>
+</div>
+
+<div class="err" data-code="ORB-1702">
+<h3 id="orb-1702-oidcmisconfigured">ORB-1702 OIDCMisconfigured <a class="permalink" href="#orb-1702-oidcmisconfigured">&para;</a></h3>
+<p><b>Cause:</b> <code>oidc_issuer</code> or <code>oidc_client_id</code> is missing or wrong. <b>Fix:</b> See
+<a href="/en/stable/dashboard-auth-oidc.html">dashboard-auth-oidc</a>.</p>
+</div>
+
+<h2 id="configuration-3x">Configuration (3.x) <a class="permalink" href="#configuration-3x">&para;</a></h2>
+
+<div class="err" data-code="ORB-1801">
+<h3 id="orb-1801-configmigrationerror">ORB-1801 ConfigMigrationError <a class="permalink" href="#orb-1801-configmigrationerror">&para;</a></h3>
+<p><b>Cause:</b> <code>orbit migrate-config orbit.ini</code> could not convert a setting. <b>Fix:</b> Convert that
+key by hand. On 3.0.1, also re-run with 3.0.3 or later, which no longer drops <code>[retries]</code>.</p>
+</div>
+
+<div class="err" data-code="ORB-1802">
+<h3 id="orb-1802-unknownconfigkey">ORB-1802 UnknownConfigKey <a class="permalink" href="#orb-1802-unknownconfigkey">&para;</a></h3>
+<p><b>Cause:</b> <code>orbit.toml</code> has a typo or an unsupported key. <b>Fix:</b> Compare it with
+<a href="/en/stable/configuration-reference.html">configuration-reference</a>.</p>
+</div>
+
+<h2 id="idempotency">Idempotency <a class="permalink" href="#idempotency">&para;</a></h2>
+
+<div class="err" data-code="ORB-2001">
+<h3 id="orb-2001-idempotencyconflict">ORB-2001 IdempotencyConflict <a class="permalink" href="#orb-2001-idempotencyconflict">&para;</a></h3>
+<p><b>Cause:</b> A job was enqueued with an idempotency key that matches an existing job, but with
+different arguments. <b>Fix:</b> Derive the key from everything that makes the work unique. See
+<a href="/en/stable/idempotency.html">idempotency</a>.</p>
+</div>
+<span class="backtotop"><a href="#top">&uarr; back to top</a></span>
+
+<hr>
+<p class="helpful">Didn't find your code? <a href="https://git.example.com/orbit/orbit/issues/new?labels=comp:docs">Open a docs issue</a> &middot; <a href="/en/stable/faq.html">Read the FAQ</a></p>
+</div>
+</div>
+
+<footer id="footer" style="background:#f9fafb;border-top:1px solid #e5e7eb;padding:18px;text-align:center;font-size:13px">
+  <p>&copy; 2026 The Orbit maintainers &middot; Documentation licensed <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0-1.0</a> &middot; <a href="/privacy.html">Privacy</a> &middot; <a href="/en/stable/security.html">Security</a></p>
+  <p><small>Page generated 2026-11-05 07:41 UTC &middot; build 9e0d4b7</small></p>
+</footer>
+
+<button id="support-widget" type="button" aria-label="Open help chat" title="Need help?">?</button>
+
+<script>
+function filterCodes(q) {
+  q = (q || "").toLowerCase().trim();
+  var shown = 0, items = document.querySelectorAll(".err");
+  for (var i = 0; i < items.length; i++) {
+    var hit = !q || items[i].textContent.toLowerCase().indexOf(q) !== -1;
+    items[i].style.display = hit ? "" : "none";
+    if (hit) shown++;
+  }
+  document.getElementById("filter-count").textContent = q ? shown + " of " + items.length + " codes" : "";
+}
+if (location.hash && /^#orb-\d{4}$/i.test(location.hash)) {
+  // short links like #orb-1101 -> full anchor
+  var el = document.querySelector('[data-code="' + location.hash.slice(1).toUpperCase() + '"] h3');
+  if (el) el.scrollIntoView();
+}
+document.getElementById("support-widget").onclick = function () {
+  var s = document.createElement("script");
+  s.src = "https://chat.example.com/widget/loader.js?site=orbit-docs";
+  document.body.appendChild(s);
+  this.disabled = true;
+};
+</script>
+<script type="application/json" id="error-index">
+{"generated":"2026-11-05","codes":[
+{"code":"ORB-1001","name":"BrokerConnectionError","area":"Broker connectivity"},
+{"code":"ORB-1002","name":"BrokerAuthError","area":"Broker connectivity"},
+{"code":"ORB-1101","name":"LeaseExpired","area":"Leases and worker liveness"},
+{"code":"ORB-1102","name":"WorkerHeartbeatLost","area":"Leases and worker liveness"},
+{"code":"ORB-1201","name":"SerializationError","area":"Payloads"},
+{"code":"ORB-1202","name":"PayloadTooLarge","area":"Payloads"},
+{"code":"ORB-1301","name":"RetryExhausted","area":"Retries"},
+{"code":"ORB-1401","name":"ScheduleParseError","area":"Scheduler"},
+{"code":"ORB-1402","name":"ScheduleDrift","area":"Scheduler"},
+{"code":"ORB-1501","name":"FlowCycleDetected","area":"Flows"},
+{"code":"ORB-1502","name":"StepTimeout","area":"Flows"},
+{"code":"ORB-1503","name":"FlowStateCorrupt","area":"Flows"},
+{"code":"ORB-1601","name":"ResultBackendUnavailable","area":"Result backend"},
+{"code":"ORB-1701","name":"DashboardAuthFailed","area":"Dashboard auth"},
+{"code":"ORB-1702","name":"OIDCMisconfigured","area":"Dashboard auth"},
+{"code":"ORB-1801","name":"ConfigMigrationError","area":"Configuration"},
+{"code":"ORB-1802","name":"UnknownConfigKey","area":"Configuration"},
+{"code":"ORB-1901","name":"BrokerRateLimited","area":"Broker rate limits"},
+{"code":"ORB-2001","name":"IdempotencyConflict","area":"Idempotency"},
+{"code":"ORB-2101","name":"WorkerOOM","area":"Worker resources"}]}
+</script>
+</body>
+</html>
